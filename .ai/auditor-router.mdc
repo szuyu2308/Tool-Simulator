@@ -1,0 +1,45 @@
+---
+name: auditor-router
+description: Router chọn protocol audit phù hợp (CODE vs PROMPT/SCHEMA). Bắt buộc tuân thủ.
+---
+
+## Mục tiêu
+Chọn đúng protocol audit theo *loại file* và *loại thay đổi* để tránh áp nhầm checklist.
+
+---
+
+## A) Khi nào dùng CODE protocol (theo `.vibe1-vi`)
+Áp dụng khi chỉnh sửa **code chạy thật**, ví dụ:
+- File: `*.py, *.js, *.ts, *.go, *.java, *.cs, *.sh, *.ps1`
+- Thay đổi: logic, control-flow, retry, scheduler, worker/orchestrator, API routes, xử lý lỗi, I/O, threading/async
+
+**Yêu cầu bắt buộc**
+- Phân loại rủi ro Type A/B/C
+- Type B/C: phải show diff + chờ user duyệt trước khi áp dụng
+- Validation: syntax/brackets/async-await + caller impact (nếu có)
+
+---
+
+## B) Khi nào dùng PROMPT/SCHEMA protocol (theo `.vibe1-vi-prompts`)
+Áp dụng khi chỉnh sửa **prompt/schema/instructions cho LLM**, ví dụ:
+- File rules: `.cursor/rules/*.mdc`
+- Prompt templates / schemas: `*_prompt.*`, `*_schema.*`, `system_instructions.*`
+- Nội dung mang tính “hướng dẫn AI phải làm gì”, thay vì “code chạy”
+
+**Yêu cầu bắt buộc**
+- Show diff theo format prompt-auditor (có `SCHEMA_TYPE`)
+- Validation: semantic coherence (không mâu thuẫn, không mơ hồ, format XML/JSON/YAML/Markdown hợp lệ)
+- Type B/C: chờ user duyệt trước khi áp dụng
+
+---
+
+## C) Trường hợp mơ hồ
+Nếu không chắc đây là CODE hay PROMPT/SCHEMA:
+- **Phải hỏi lại user** trước khi sửa.
+- Không tự ý chọn.
+
+---
+
+## D) Ưu tiên
+Nếu có xung đột rule:
+- **Router này quyết định protocol phải dùng trước**, sau đó mới áp các rule chi tiết.

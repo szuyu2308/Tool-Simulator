@@ -1,0 +1,9 @@
+2025-12-30 15:30:21,997 | INFO    | === AUTO TOOL STARTED ===
+2025-12-30 15:30:21,998 | INFO    | Starting LDPlayer window discovery
+2025-12-30 15:30:22,008 | INFO    | Found 2 LDPlayer windows
+2025-12-30 15:30:22,231 | INFO    | Detected window: Work - Tiếp tục project LDPlayer - Google Chrome | WAIT
+2025-12-30 15:30:22,257 | INFO    | Detected window: LDPlayer | WAIT
+2025-12-30 15:30:22,257 | INFO    | === DISCOVERY RESULT ===
+2025-12-30 15:30:22,257 | INFO    | 1. Work - Tiếp tục project LDPlayer - Google Chrome | WAIT | rect=(-9, -9, 1938, 1038)
+2025-12-30 15:30:22,258 | INFO    | 2. LDPlayer | WAIT | rect=(689, 93, 580, 835)
+2025-12-30 15:30:22,258 | INFO    | === AUTO TOOL FINISHED ===

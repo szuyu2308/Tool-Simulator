@@ -1,0 +1,247 @@
+---
+name: vibe1-vi
+description: Bản Việt hóa 1:1 của vibe1 (giữ nguyên mức độ nghiêm ngặt)
+---
+
+# Tổng quan
+
+Các quy tắc này LUÔN LUÔN HOẠT ĐỘNG cho dự án này.
+Assistant bắt buộc phải tuân thủ chúng mà không cần được nhắc lại.
+
+Bạn phải tuân thủ nghiêm ngặt Code Change Auditor Protocol dưới đây.
+
+Bạn KHÔNG được phép:
+- Sửa đổi nhiều file cùng lúc nếu không có phê duyệt rõ ràng
+- Thay đổi logic mà không phân loại rủi ro (Type A/B/C)
+- Áp dụng thay đổi Type B hoặc Type C mà không hiển thị diff và chờ xác nhận
+
+Vi phạm protocol này được xem là thất bại.
+
+# ============================================================================
+# Code Change Auditor Protocol (.clauderc)
+# Version: 2.0 (Universal)
+# Tested: Claude Haiku 4.5, 99.5% success rate
+# Purpose: Cung cấp framework review code có cấu trúc với phân loại rủi ro
+# ============================================================================
+
+## BỘ CHỈ DẪN DÀNH CHO AI CODE ASSISTANTS
+
+Khi chỉnh sửa code trong dự án này, hãy tuân theo hệ thống phân loại rủi ro sau:
+
+### PHÂN LOẠI RỦI RO
+
+**Type A (An toàn - Áp dụng ngay)**
+- File hoặc function mới không có phụ thuộc
+- Comment, documentation, hoặc docstrings
+- File test
+- File cấu hình trong phạm vi cô lập
+- Validation: ✓ Không lỗi bracket/syntax, ✓ Không ảnh hưởng code hiện có
+
+**Type B (Rủi ro - Hiển thị Diff + Chờ phê duyệt)**
+- Thay đổi logic trong các function hiện có
+- Refactor code đang hoạt động
+- Thêm tham số có default
+- Sửa đổi control flow
+- Validation: ✓ Syntax hợp lệ, ✓ Đã phân tích tất cả callers, ✓ Không breaking changes
+
+**Type C (Nguy hiểm - Phân tích tác động đầy đủ)**
+- Thay đổi API phá vỡ (breaking)
+- Sửa signature mà không backward compat
+- Thay đổi thuật toán cốt lõi
+- Sửa đổi schema database
+- Validation: ✓ Phân tích tác động hoàn tất, ✓ Lộ trình migration được ghi rõ, ✓ Có đưa ra alternatives
+
+### CÁC QUY TẮC CỦA PROTOCOL
+
+**Rule 1: Hiển thị Diffs**
+Luôn cung cấp diff format cho Type B/C:
+FILE: target.js
+ACTION: Mô tả ngắn gọn
+RISK: Type A/B/C
+dòng cũ
+dòng mới
+WHY: Lý do
+IMPACT: Ai/cái gì bị ảnh hưởng
+VALIDATION: ✓ các kiểm tra đã pass
+
+
+**Rule 2: Gánh nặng chứng minh**
+Khi sửa code đang hoạt động, phải đưa ra bằng chứng:
+- Vì sao cần thay đổi (không mang tính chủ quan)
+- Bằng chứng của vấn đề (error, performance, security)
+- Test coverage để validation
+- Kế hoạch rollback nếu cần
+
+**Rule 3: Một thay đổi cho mỗi lần chỉnh**
+- Không gộp nhiều thay đổi không liên quan
+- Mỗi lần chỉnh phải có một mục đích rõ ràng, duy nhất
+- Từ chối yêu cầu mơ hồ ("improve this file")
+
+**Rule 4: Validate trước khi áp dụng**
+- Bracket matching: [], {}, ()
+- Template literal closure: backticks
+- Quote matching: "", ''
+- Không có orphaned keywords: if/else, try/catch
+- Async/await pairing
+
+**Rule 5: Truyền đạt Alternatives**
+Đối với Type C changes, phải cung cấp:
+- Option A: Cách tiếp cận an toàn hơn (không breaking)
+- Option B: Cách tiếp cận hiện tại (kèm tác động)
+- Recommendation kèm lập luận
+- Để user lựa chọn
+
+### CHECKLIST VALIDATION
+
+Trước khi phê duyệt bất kỳ thay đổi nào:
+- [ ] Syntax validation passed
+- [ ] Không có brackets/quotes không khớp
+- [ ] Không có orphaned control flow
+- [ ] Đã xác định callers bị ảnh hưởng
+- [ ] Breaking changes được ghi rõ
+- [ ] Thay đổi là đơn nhất (không gộp)
+- [ ] Lý do dựa trên bằng chứng
+
+### QUY TẮC THEO NGÔN NGỮ
+
+**JavaScript/TypeScript**
+- Validate: function signatures, async/await, template literals
+- Catch: null pointer diffs, async function without await, var shadowing
+- Test: với test suite hiện có nếu có
+
+**Python**
+- Validate: indentation, decorator syntax, type hints
+- Catch: mixed spaces/tabs, import order, function signature changes
+- Test: chạy pytest nếu có
+
+**Rust**
+- Validate: lifetime annotations, borrow rules, trait bounds
+- Catch: ownership violations, mutable reference diffs
+- Test: cargo check trước khi đề xuất
+
+**Go**
+- Validate: interface implementations, defer stacks, goroutine safety
+- Catch: nil pointer diffs, channel deadlocks
+- Test: go vet trước khi đề xuất
+
+**Java/C#**
+- Validate: class hierarchy, exception handling, async patterns
+- Catch: null diffs, override issues, type mismatches
+- Test: với package manager (Maven, MSBuild)
+
+### MỤC TIÊU HIỆU NĂNG
+
+- Type A decisions: ngay lập tức (không cần chờ)
+- Type B diff review: < 30 giây cho user
+- Type C impact analysis: < 1 phút cho user
+- Tổng phiên làm việc: < 5 tương tác cho các tác vụ phổ biến
+
+### VÍ DỤ
+
+**Ví dụ 1: Type A (An toàn)**
+
+USER: "Add JSDoc comment to parseJSON function"
+RESPONSE:
+FILE: utils.js
+ACTION: Add JSDoc
+RISK: Type A - An toàn
+/
+* Parse JSON string with error handling
+* @param {string} data - JSON string to parse
+* @returns {Object} Parsed JSON object
+* @throws {SyntaxError} If invalid JSON
+/
+function parseJSON(data) {
+return JSON.parse(data);
+}
+APPLIED ✓
+
+
+**Ví dụ 2: Type B (Rủi ro)**
+
+USER: "Add timeout parameter to fetchData()"
+RESPONSE:
+FILE: api.js
+ACTION: Add timeout parameter
+RISK: Type B - Rủi ro (signature change)
+function fetchData(url) {
+function fetchData(url, timeout = 5000) {
+return fetch(url, { timeout });
+}
+CALLERS (3 found):
+handler.js:42 ✓ Uses defaults
+index.js:15 ✓ Uses defaults
+worker.js:88 ✓ Positional arg
+VALIDATION: ✓ Syntax OK, ✓ Backward compatible
+CONFIDENCE: 100%
+Apply this change? [YES/NO]
+
+
+**Ví dụ 3: Type C (Nguy hiểm)**
+
+USER: "Change fetchData to return Promise<void> instead of data"
+RESPONSE:
+FILE: api.js
+ACTION: Return type change
+RISK: Type C - NGUY HIỂM
+BREAKING CHANGE: YES (semantic)
+CALLERS (5 found):
+handler.js:42 - expects returned data ❌
+service.js:15 - assigns to variable ❌
+worker.js:88 - passes to processData() ❌
+test.js:10 - expects return value ❌
+index.js:5 - logs result ❌
+IMPACT: 5 call sites broken
+ALTERNATIVES:
+Option A (SAFER): Create new fetchAndProcess() function
+Preserves existing fetchData()
+Non-breaking
+Dual API during transition
+Option B (CURRENT): Modify fetchData() return type
+Breaking
+Requires 5 updates
+Migration period needed
+RECOMMENDATION: Option A
+Which approach? [A/B]
+
+
+### TESTING
+
+Edge cases validated (10/10 pass):
+1. New function (Type A) - Pass ✓
+2. Syntax error prevention - Pass ✓
+3. Template literal validation - Pass ✓
+4. Async/await pairing - Pass ✓
+5. Bracket balancing - Pass ✓
+6. Breaking change detection - Pass ✓
+7. Semantic analysis - Pass ✓
+8. Bundled change rejection - Pass ✓
+9. Vague request handling - Pass ✓
+10. Working code modification - Pass ✓
+
+### LỊCH SỬ PHIÊN BẢN
+
+- v2.0: Universal (works with all major languages)
+- v1.0: JavaScript-specific pilot
+
+### CHỈ SỐ THÀNH CÔNG
+
+- Success rate: 99.5% (10 edge cases)
+- Cost reduction: 75% vs Sonnet 4
+- Model used: Claude Haiku 4.5
+- Average session: < 5 tương tác
+
+### TÙY BIẾN
+
+Để điều chỉnh cho dự án của bạn:
+1. Thêm project-specific validation rules bên dưới
+2. Chỉnh phần theo ngôn ngữ nếu cần
+3. Điều chỉnh ngưỡng rủi ro nếu cần
+4. Ghi rõ các ràng buộc riêng của dự án
+
+### QUY TẮC RIÊNG THEO DỰ ÁN
+
+[Thêm các quy tắc riêng của dự án ở đây]
+
+---
+END OF .clauderc - Câu hỏi? Đọc README.md hoặc chạy deployment script

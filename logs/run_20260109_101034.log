@@ -1,0 +1,12 @@
+2026-01-09 10:10:34,260 | INFO    | [ADB] Found ADB at: adb
+2026-01-09 10:10:34,425 | INFO    | [ADB] Found ADB at: adb
+2026-01-09 10:10:34,671 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-09 10:10:34,671 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-09 10:10:34,671 | INFO    | [WORKER] 1: Scale factors = 1.074x, 1.036y
+2026-01-09 10:10:34,710 | INFO    | [WorkerMgr] Loaded 1 assignments
+2026-01-09 10:10:43,163 | INFO    | [WorkerMgr] Removed assignment for 787216 (was Worker 1)
+2026-01-09 10:10:43,164 | INFO    | [WorkerMgr] Saved 0 assignments
+2026-01-09 10:10:44,146 | INFO    | [UI] Deleted Worker for 1 LDPlayer(s)
+2026-01-09 10:10:46,099 | INFO    | [WorkerMgr] Assigned 787216 → Worker 1
+2026-01-09 10:10:46,100 | INFO    | [WorkerMgr] Saved 1 assignments
+2026-01-09 10:10:47,079 | INFO    | [UI] Assigned 1 LDPlayer(s) to Worker IDs

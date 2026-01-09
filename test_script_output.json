@@ -1,0 +1,87 @@
+{
+  "sequence": [
+    {
+      "id": "4d07b511-0fe2-40b5-bce3-d530437488ec",
+      "parent_id": null,
+      "name": "Start",
+      "type": "Click",
+      "enabled": true,
+      "on_fail": "Skip",
+      "on_fail_label": null,
+      "variables_out": [],
+      "button_type": "Left",
+      "x": 100,
+      "y": 100,
+      "humanize_delay_min_ms": 50,
+      "humanize_delay_max_ms": 200,
+      "wheel_delta": null
+    },
+    {
+      "id": "8b3ada7b-0a54-42a5-947d-786fa80013e3",
+      "parent_id": null,
+      "name": "Wait1",
+      "type": "Wait",
+      "enabled": true,
+      "on_fail": "Skip",
+      "on_fail_label": null,
+      "variables_out": [],
+      "wait_type": "Timeout",
+      "timeout_sec": 2,
+      "pixel_x": null,
+      "pixel_y": null,
+      "pixel_color": null,
+      "pixel_tolerance": null,
+      "screen_threshold": 0.9,
+      "region_x1": null,
+      "region_y1": null,
+      "region_x2": null,
+      "region_y2": null
+    },
+    {
+      "id": "8fecb835-c4dd-4f9c-9225-aca11613a1f8",
+      "parent_id": null,
+      "name": "Press1",
+      "type": "KeyPress",
+      "enabled": true,
+      "on_fail": "Skip",
+      "on_fail_label": null,
+      "variables_out": [],
+      "key": "Enter",
+      "repeat": 3,
+      "delay_between_ms": 100
+    },
+    {
+      "id": "bdcf9b03-e641-490b-8d21-b9dec17347b4",
+      "parent_id": null,
+      "name": "Type1",
+      "type": "Text",
+      "enabled": true,
+      "on_fail": "Skip",
+      "on_fail_label": null,
+      "variables_out": [],
+      "content": "Hello",
+      "text_mode": "Humanize",
+      "speed_min_cps": 10,
+      "speed_max_cps": 30,
+      "focus_x": null,
+      "focus_y": null
+    },
+    {
+      "id": "df26907d-0f30-4ca9-b98f-7cdad7a62efe",
+      "parent_id": null,
+      "name": "Loop",
+      "type": "Goto",
+      "enabled": true,
+      "on_fail": "Skip",
+      "on_fail_label": null,
+      "variables_out": [],
+      "target_label": "Start",
+      "condition_expr": null
+    }
+  ],
+  "variables_global": {
+    "iteration": 0
+  },
+  "max_iterations": 100,
+  "on_error_handler": null
+}

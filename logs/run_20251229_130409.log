@@ -1,0 +1,11 @@
+2025-12-29 13:04:09,165 | INFO    | === AUTO TOOL STARTED ===
+2025-12-29 13:04:09,166 | INFO    | Starting LDPlayer window discovery
+2025-12-29 13:04:09,169 | INFO    | Found 3 LDPlayer windows
+2025-12-29 13:04:09,278 | INFO    | Detected window: LDPlayer | WAIT
+2025-12-29 13:04:09,305 | INFO    | Detected window: LDPlayer-1 | WAIT
+2025-12-29 13:04:09,329 | INFO    | Detected window: LDMultiPlayer | WAIT
+2025-12-29 13:04:09,329 | INFO    | === DISCOVERY RESULT ===
+2025-12-29 13:04:09,330 | INFO    | 1. LDPlayer | WAIT | rect=(1326, 39, 580, 835)
+2025-12-29 13:04:09,330 | INFO    | 2. LDPlayer-1 | WAIT | rect=(767, 3, 542, 995)
+2025-12-29 13:04:09,330 | INFO    | 3. LDMultiPlayer | WAIT | rect=(592, 232, 736, 556)
+2025-12-29 13:04:09,332 | INFO    | === AUTO TOOL FINISHED ===

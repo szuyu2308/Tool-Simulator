@@ -1,0 +1,39 @@
+2026-01-09 08:18:57,251 | INFO    | [ADB] Found ADB at: adb
+2026-01-09 08:18:57,258 | INFO    | [ADB] Found ADB at: adb
+2026-01-09 08:18:57,259 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-09 08:18:57,265 | INFO    | [ADB] Found ADB at: adb
+2026-01-09 08:18:57,265 | INFO    | [ADB] emulator-5554: Resolution 720x1280 (wm size)
+2026-01-09 08:18:57,280 | INFO    | [ADB] Found ADB at: adb
+2026-01-09 08:18:57,281 | INFO    | [ADB] emulator-5554: Resolution 1080x1920 (wm size)
+2026-01-09 08:18:57,294 | INFO    | [ADB] WARNING: ADB not found in PATH
+2026-01-09 08:18:57,295 | INFO    | [ADB] emulator-5554: wm size returned unexpected format: mBaseDisplayInfo=DisplayInfo{..., 1080 x 1920, ...}
+2026-01-09 08:18:57,296 | INFO    | [ADB] emulator-5554: dumpsys no resolution pattern found
+2026-01-09 08:18:57,496 | INFO    | [ADB] Found ADB at: adb
+2026-01-09 08:18:57,496 | INFO    | [ADB] Connected to 127.0.0.1:21503
+2026-01-09 08:18:57,501 | INFO    | [ADB] Found ADB at: adb
+2026-01-09 08:18:57,501 | INFO    | [ADB] emulator-5554: Resolution 1080x1920 (wm size)
+2026-01-09 08:18:57,502 | INFO    | [WORKER] 1: Auto-detected resolution 1080x1920 from ADB device emulator-5554
+2026-01-09 08:18:57,502 | INFO    | [WORKER] 1: Scale factors = 0.500x, 0.500y
+2026-01-09 08:18:57,512 | INFO    | [ADB] emulator-5554: Resolution 1080x1920 (wm size)
+2026-01-09 08:18:57,513 | INFO    | [WORKER] 1: Auto-detected resolution 1080x1920 from ADB device emulator-5554
+2026-01-09 08:18:57,513 | INFO    | [WORKER] 1: Scale factors = 0.500x, 0.500y
+2026-01-09 08:18:57,522 | INFO    | [ADB] emulator-5554: Resolution 1080x1920 (wm size)
+2026-01-09 08:18:57,524 | INFO    | [WORKER] 1: Auto-detected resolution 1080x1920 from ADB device emulator-5554
+2026-01-09 08:18:57,525 | INFO    | [WORKER] 1: Scale factors = 0.500x, 0.500y
+2026-01-09 08:18:57,551 | INFO    | [ADB] emulator-5554: Resolution 1080x1920 (wm size)
+2026-01-09 08:18:57,551 | INFO    | [WORKER] 1: Auto-detected resolution 1080x1920 from ADB device emulator-5554
+2026-01-09 08:18:57,551 | INFO    | [WORKER] 1: Scale factors = 0.500x, 0.500y
+2026-01-09 08:18:57,596 | INFO    | [ADB] emulator-5554: wm size failed: ADB not found
+2026-01-09 08:18:57,596 | INFO    | [ADB] emulator-5554: dumpsys failed: ADB not found
+2026-01-09 08:18:57,597 | INFO    | [WORKER] 1: Using fallback resolution 540x960 (client area)
+2026-01-09 08:18:57,597 | INFO    | [WORKER] 1: Scale factors = 1.000x, 1.000y
+2026-01-09 08:18:57,645 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-09 08:18:57,646 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-09 08:18:57,646 | INFO    | [WORKER] 1: Scale factors = 1.000x, 1.000y
+2026-01-09 08:18:57,647 | INFO    | [ADB] emulator-5555: Resolution 1080x1920 (wm size)
+2026-01-09 08:18:57,648 | INFO    | [WORKER] 2: Auto-detected resolution 1080x1920 from ADB device emulator-5555
+2026-01-09 08:18:57,648 | INFO    | [WORKER] 2: Scale factors = 0.500x, 0.500y
+2026-01-09 08:18:57,664 | INFO    | [ADB] WARNING: ADB not found in PATH
+2026-01-09 08:18:57,666 | INFO    | [ADB] Failed to get devices: Command 'adb' timed out after 5 seconds
+2026-01-09 08:18:57,682 | INFO    | [ADB] WARNING: ADB not found in PATH
+2026-01-09 08:18:57,693 | INFO    | [ADB] WARNING: ADB not found in PATH

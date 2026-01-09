@@ -1,0 +1,26 @@
+from core.tech import time
+from core.state_machine import StateResult
+
+
+class DelayHandler:
+    """
+    State type: DELAY
+    params:
+      - time: float (seconds)
+    """
+
+    def execute(self, worker, state, context):
+        delay_time = state.get("params", {}).get("time", 0)
+
+        if delay_time <= 0:
+            return {
+                "status": StateResult.SUCCESS,
+                "data": {}
+            }
+
+        time.sleep(delay_time)
+
+        return {
+            "status": StateResult.SUCCESS,
+            "data": {}
+        }
