@@ -17,6 +17,7 @@ class CommandType(Enum):
 class ButtonType(Enum):
     LEFT = "Left"
     RIGHT = "Right"
+    MIDDLE = "Middle"  # Added for middle mouse button
     DOUBLE = "Double"
     WHEEL_UP = "WheelUp"
     WHEEL_DOWN = "WheelDown"
@@ -559,11 +560,26 @@ class Script:
         self._build_label_map()
 
     def _build_label_map(self):
-        """Build label map from all commands"""
+        """Build label map from all commands including nested"""
         self.label_map = {}
-        for cmd in self.sequence:
+        self._add_commands_to_label_map(self.sequence)
+    
+    def _add_commands_to_label_map(self, commands: List[Command]):
+        """Recursively add commands to label map"""
+        for cmd in commands:
             if cmd.name:
                 self.label_map[cmd.name] = cmd.id
+            
+            # Handle nested commands in RepeatCommand
+            if isinstance(cmd, RepeatCommand) and cmd.inner_commands:
+                self._add_commands_to_label_map(cmd.inner_commands)
+            
+            # Handle nested commands in ConditionCommand
+            if isinstance(cmd, ConditionCommand):
+                if cmd.nested_then:
+                    self._add_commands_to_label_map(cmd.nested_then)
+                if cmd.nested_else:
+                    self._add_commands_to_label_map(cmd.nested_else)
 
     def get_command_by_id(self, cmd_id: str) -> Optional[Command]:
         """Get command by ID"""

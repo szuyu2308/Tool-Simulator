@@ -2,3 +2,7 @@ pywin32
 mss
 opencv-python
 numpy
+# Macro Recorder Engine (Milestone 1)
+pynput>=1.7.6
+pyperclip>=1.8.2
+psutil>=5.9.0

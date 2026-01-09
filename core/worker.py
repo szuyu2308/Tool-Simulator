@@ -1,8 +1,13 @@
 from core.tech import win32gui, logging, mss
 from core.adb_manager import ADBManager
 from core.models import Script, Command, CommandType, OnFailAction
+from core.emulator import EmulatorInstance, ClientRect
+from core.capture import get_capture_manager, CaptureManager, Frame
+from core.input import InputManager, ButtonType as InputButtonType, HotKeyOrder
 from utils.logger import log
 import time
+import threading
+import numpy as np
 from typing import Dict, Any, Optional
 
 # Global ADB instance (reuse across workers to avoid redundant instance creation)
@@ -17,8 +22,12 @@ def get_adb_manager():
 
 class WorkerStatus:
     IDLE = "IDLE"
-    BUSY = "BUSY"
+    RUNNING = "RUNNING"
+    PAUSED = "PAUSED"
+    STOPPED = "STOPPED"
     ERROR = "ERROR"
+    NOT_READY = "NOT_READY"
+    BUSY = "BUSY"  # Legacy compatibility
 
     def __init__(self, worker_id, hwnd, client_rect, res_width=None, res_height=None, adb_device=None, adb_manager=None, logger=None):
         """
@@ -39,6 +48,14 @@ class WorkerStatus:
 
         # Client area thật (screen coord)
         self.client_x, self.client_y, self.client_w, self.client_h = client_rect
+        
+        # Create ClientRect object for coordinate conversion
+        self.client_rect = ClientRect(
+            x=self.client_x,
+            y=self.client_y,
+            w=self.client_w,
+            h=self.client_h
+        )
 
         # ADB device identifier (e.g., "emulator-5554" hoặc "127.0.0.1:21503")
         self.adb_device = adb_device
@@ -76,8 +93,24 @@ class WorkerStatus:
         # Logger
         self.logger = logger or logging.getLogger(f"Worker-{self.id}")
 
-        # Screen capturer
+        # Screen capturer (legacy)
         self._sct = mss.mss()
+        
+        # New providers
+        self._capture_manager: CaptureManager = get_capture_manager()
+        self._input_manager: Optional[InputManager] = None
+        self._init_providers()
+    
+    def _init_providers(self):
+        """Initialize input/capture providers"""
+        adb = get_adb_manager()
+        self._input_manager = InputManager(
+            hwnd=self.hwnd,
+            client_rect=self.client_rect,
+            adb_manager=adb,
+            adb_serial=self.adb_device
+        )
+        log(f"[WORKER] {self.id}: Providers initialized (Capture: {self._capture_manager.active_provider_name})")
 
 class Worker(WorkerStatus):
     """Worker class that extends WorkerStatus with action methods and script execution"""
@@ -91,6 +124,9 @@ class Worker(WorkerStatus):
         self.paused: bool = False            # Pause flag
         self.stopped: bool = False           # Stop flag
         self.current_script: Optional[Script] = None  # Currently running script
+        
+        # Execution thread
+        self._execution_thread: Optional[threading.Thread] = None
         
     def set_command(self, command_name, command_config):
         if self.status != WorkerStatus.IDLE:
@@ -349,7 +385,7 @@ class Worker(WorkerStatus):
             return False, None
 
     def _execute_wait(self, cmd) -> tuple:
-        """Execute Wait command with polling"""
+        """Execute Wait command with polling using CaptureManager"""
         from core.models import WaitCommand, WaitType
         if not isinstance(cmd, WaitCommand):
             return False, None
@@ -365,11 +401,41 @@ class Worker(WorkerStatus):
             return True, None
         
         elif cmd.wait_type == WaitType.PIXEL_COLOR:
-            # Poll pixel color every 100ms
+            # Poll pixel color with WAIT_TTL (0.1s refresh)
+            target_color = cmd.pixel_color
+            target_x, target_y = cmd.pixel_x, cmd.pixel_y
+            tolerance = cmd.pixel_tolerance or 10
+            
+            if not target_color or target_x is None or target_y is None:
+                log(f"[WORKER {self.id}] Wait: PixelColor missing parameters")
+                return False, None
+            
             while time.time() - start_time < timeout:
-                # TODO: Implement pixel color check
-                # For now, just timeout
-                time.sleep(0.1)
+                # Get fresh frame with force_refresh for Wait polling
+                frame = self._capture_manager.get_frame(
+                    hwnd=self.hwnd,
+                    x=self.client_rect.x,
+                    y=self.client_rect.y,
+                    w=self.client_rect.w,
+                    h=self.client_rect.h,
+                    force_refresh=True  # Use WAIT_TTL (0.1s)
+                )
+                
+                if frame and frame.pixels is not None:
+                    # Check pixel at target location
+                    if 0 <= target_y < frame.height and 0 <= target_x < frame.width:
+                        pixel = frame.pixels[target_y, target_x]
+                        # pixel is BGR
+                        pixel_b, pixel_g, pixel_r = pixel[0], pixel[1], pixel[2]
+                        target_r, target_g, target_b = target_color[0], target_color[1], target_color[2]
+                        
+                        diff = abs(pixel_r - target_r) + abs(pixel_g - target_g) + abs(pixel_b - target_b)
+                        
+                        if diff <= tolerance * 3:
+                            log(f"[WORKER {self.id}] Wait: PixelColor matched at ({target_x},{target_y})")
+                            return True, None
+                
+                time.sleep(0.1)  # Poll interval
                 
                 if self.stopped:
                     return False, None
@@ -378,9 +444,33 @@ class Worker(WorkerStatus):
             return False, None
         
         elif cmd.wait_type == WaitType.SCREEN_CHANGE:
-            # Poll screen change every 100ms
-            # TODO: Implement screen change detection
+            # Poll screen change detection
+            prev_frame = None
+            change_threshold = cmd.screen_threshold or 0.05  # 5% change
+            
             while time.time() - start_time < timeout:
+                # Get fresh frame
+                frame = self._capture_manager.get_frame(
+                    hwnd=self.hwnd,
+                    x=self.client_rect.x,
+                    y=self.client_rect.y,
+                    w=self.client_rect.w,
+                    h=self.client_rect.h,
+                    force_refresh=True
+                )
+                
+                if frame and frame.pixels is not None:
+                    if prev_frame is not None:
+                        # Calculate frame difference
+                        diff = np.abs(frame.pixels.astype(float) - prev_frame.astype(float))
+                        change_ratio = np.mean(diff) / 255.0
+                        
+                        if change_ratio >= change_threshold:
+                            log(f"[WORKER {self.id}] Wait: ScreenChange detected (ratio={change_ratio:.3f})")
+                            return True, None
+                    
+                    prev_frame = frame.pixels.copy()
+                
                 time.sleep(0.1)
                 
                 if self.stopped:
@@ -392,32 +482,34 @@ class Worker(WorkerStatus):
         return True, None
 
     def _execute_condition(self, cmd, script: Script) -> tuple:
-        """Execute Condition command with expression evaluation"""
+        """Execute Condition command with expression evaluation and nested commands"""
         from core.models import ConditionCommand
         if not isinstance(cmd, ConditionCommand):
             return False, None
         
-        # Simple expression evaluation
-        # TODO: Implement proper expression parser
-        # For now, use eval with restricted globals
+        # Expression evaluation with restricted globals for safety
         try:
             result = eval(cmd.expr, {"__builtins__": {}}, {"variables": self.variables})
             log(f"[WORKER {self.id}] Condition '{cmd.expr}' = {result}")
             
             if result:
                 # True branch
-                if cmd.then_label:
+                # Priority: nested_then > then_label
+                if cmd.nested_then:
+                    self._execute_nested_commands(cmd.nested_then, script, self.variables)
+                elif cmd.then_label:
                     next_cmd = script.get_command_by_label(cmd.then_label)
                     if next_cmd:
                         return True, next_cmd.id
-                # TODO: Execute nested_then commands
             else:
                 # False branch
-                if cmd.else_label:
+                # Priority: nested_else > else_label
+                if cmd.nested_else:
+                    self._execute_nested_commands(cmd.nested_else, script, self.variables)
+                elif cmd.else_label:
                     next_cmd = script.get_command_by_label(cmd.else_label)
                     if next_cmd:
                         return True, next_cmd.id
-                # TODO: Execute nested_else commands
             
             return True, None
             
@@ -426,22 +518,42 @@ class Worker(WorkerStatus):
             return False, None
 
     def _execute_repeat(self, cmd, script: Script) -> tuple:
-        """Execute Repeat command with nested commands"""
+        """Execute Repeat command with nested commands and isolated variables"""
         from core.models import RepeatCommand
         if not isinstance(cmd, RepeatCommand):
             return False, None
         
         log(f"[WORKER {self.id}] Repeat: count={cmd.count}, until={cmd.until_condition_expr}")
         
-        # TODO: Implement repeat logic with isolated variables
-        # For now, just execute inner commands once
+        # Max count: 0 = infinite (limited by MaxIterations)
+        max_count = cmd.count if cmd.count > 0 else script.max_iterations
         iteration = 0
-        max_count = cmd.count if cmd.count > 0 else 999999
         
-        while iteration < max_count and self.iteration_count < script.max_iterations:
+        while iteration < max_count and self.iteration_count < script.max_iterations and not self.stopped:
             iteration += 1
             
-            # Check until condition
+            # Handle pause
+            while self.paused and not self.stopped:
+                time.sleep(0.1)
+            
+            if self.stopped:
+                return False, None
+            
+            # Isolate variables for this iteration (copy current state)
+            loop_variables = self.variables.copy()
+            loop_variables["_loop_index"] = iteration
+            
+            log(f"[WORKER {self.id}] Repeat iteration {iteration}/{max_count}")
+            
+            # Execute inner commands
+            inner_success = self._execute_nested_commands(cmd.inner_commands, script, loop_variables)
+            
+            # Merge loop variables back (exclude _loop_index)
+            for key, value in loop_variables.items():
+                if not key.startswith("_loop_"):
+                    self.variables[key] = value
+            
+            # Check until condition AFTER each iteration
             if cmd.until_condition_expr:
                 try:
                     result = eval(cmd.until_condition_expr, {"__builtins__": {}}, {"variables": self.variables})
@@ -451,12 +563,56 @@ class Worker(WorkerStatus):
                 except Exception as e:
                     log(f"[WORKER {self.id}] Repeat: Until condition eval error: {e}")
             
-            # Execute inner commands
-            # TODO: Implement nested command execution
-            if self.stopped:
-                return False, None
+            self.iteration_count += 1
         
         return True, None
+    
+    def _execute_nested_commands(self, commands: list, script: Script, local_vars: dict) -> bool:
+        """Execute a list of nested commands with local variable scope"""
+        if not commands:
+            return True
+        
+        # Temporarily swap variables
+        original_vars = self.variables
+        self.variables = local_vars
+        
+        try:
+            for cmd in commands:
+                if self.stopped:
+                    return False
+                
+                # Handle pause
+                while self.paused and not self.stopped:
+                    time.sleep(0.1)
+                
+                if not cmd.enabled:
+                    continue
+                
+                log(f"[WORKER {self.id}] (nested) Executing: {cmd.name} ({cmd.type.value})")
+                
+                try:
+                    success, next_id = self._execute_command(cmd, script)
+                    
+                    if not success:
+                        # Handle OnFail for nested commands
+                        if cmd.on_fail == OnFailAction.STOP:
+                            log(f"[WORKER {self.id}] (nested) OnFail=Stop, aborting")
+                            return False
+                        elif cmd.on_fail == OnFailAction.GOTO_LABEL:
+                            # GotoLabel in nested context breaks out
+                            log(f"[WORKER {self.id}] (nested) OnFail=GotoLabel, breaking")
+                            return False
+                        # Skip continues to next command
+                
+                except Exception as e:
+                    log(f"[WORKER {self.id}] (nested) Error in '{cmd.name}': {e}")
+                    if cmd.on_fail == OnFailAction.STOP:
+                        return False
+            
+            return True
+        finally:
+            # Restore original variables (but keep modifications in local_vars)
+            self.variables = original_vars
 
     def _execute_goto(self, cmd, script: Script) -> tuple:
         """Execute Goto command with optional condition"""
@@ -485,76 +641,201 @@ class Worker(WorkerStatus):
         return True, target_cmd.id
 
     def _execute_click(self, cmd) -> bool:
-        """Execute Click command"""
-        from core.models import ClickCommand
+        """Execute Click command using InputManager"""
+        from core.models import ClickCommand, ButtonType
         if not isinstance(cmd, ClickCommand):
             return False
         
         log(f"[WORKER {self.id}] Click: {cmd.button_type.value} at ({cmd.x}, {cmd.y})")
         
-        # TODO: Implement actual click with humanization
-        # For now, just log
-        time.sleep(0.1)  # Simulate action
+        # Map ButtonType enum to InputButtonType
+        button_map = {
+            ButtonType.LEFT: InputButtonType.LEFT,
+            ButtonType.RIGHT: InputButtonType.RIGHT,
+            ButtonType.DOUBLE: InputButtonType.DOUBLE,
+            ButtonType.WHEEL_UP: InputButtonType.WHEEL_UP,
+            ButtonType.WHEEL_DOWN: InputButtonType.WHEEL_DOWN,
+        }
         
-        return True
+        input_button = button_map.get(cmd.button_type, InputButtonType.LEFT)
+        
+        # Execute click via InputManager (client coordinates)
+        success = self._input_manager.click(
+            client_x=cmd.x,
+            client_y=cmd.y,
+            button=input_button,
+            humanize_delay_min=cmd.humanize_delay_min_ms,
+            humanize_delay_max=cmd.humanize_delay_max_ms,
+            wheel_delta=cmd.wheel_delta or 0
+        )
+        
+        return success
 
     def _execute_keypress(self, cmd) -> bool:
-        """Execute KeyPress command"""
+        """Execute KeyPress command using InputManager"""
         from core.models import KeyPressCommand
         if not isinstance(cmd, KeyPressCommand):
             return False
         
         log(f"[WORKER {self.id}] KeyPress: {cmd.key} x{cmd.repeat}")
         
-        # TODO: Implement actual keypress
-        time.sleep(0.1)  # Simulate action
+        # Execute keypress via InputManager
+        success = self._input_manager.keypress(
+            key=cmd.key,
+            repeat=cmd.repeat,
+            delay_ms=cmd.delay_between_ms
+        )
         
-        return True
+        return success
 
     def _execute_text(self, cmd) -> bool:
-        """Execute Text command"""
-        from core.models import TextCommand
+        """Execute Text command using InputManager"""
+        from core.models import TextCommand, TextMode
         if not isinstance(cmd, TextCommand):
             return False
         
-        log(f"[WORKER {self.id}] Text: '{cmd.content}' mode={cmd.text_mode.value}")
+        log(f"[WORKER {self.id}] Text: '{cmd.content[:30]}...' mode={cmd.text_mode.value}")
         
-        # TODO: Implement actual text input
-        time.sleep(0.1)  # Simulate action
+        if cmd.text_mode == TextMode.PASTE:
+            success = self._input_manager.paste_text(
+                text=cmd.content,
+                focus_x=cmd.focus_x,
+                focus_y=cmd.focus_y
+            )
+        else:  # HUMANIZE
+            success = self._input_manager.type_text_humanize(
+                text=cmd.content,
+                cps_min=cmd.speed_min_cps,
+                cps_max=cmd.speed_max_cps,
+                focus_x=cmd.focus_x,
+                focus_y=cmd.focus_y
+            )
         
-        return True
+        return success
 
     def _execute_crop_image(self, cmd) -> bool:
-        """Execute CropImage command"""
-        from core.models import CropImageCommand
+        """Execute CropImage command using CaptureManager"""
+        from core.models import CropImageCommand, ScanMode
         if not isinstance(cmd, CropImageCommand):
             return False
         
         log(f"[WORKER {self.id}] CropImage: region=({cmd.x1},{cmd.y1})-({cmd.x2},{cmd.y2}) color={cmd.target_color}")
         
-        # TODO: Implement actual image detection
-        # For now, set dummy result
-        self.variables[cmd.output_var] = {
-            "x": cmd.x1,
-            "y": cmd.y1,
-            "confidence": 0.0
-        }
+        # Get fresh frame
+        frame = self._capture_manager.get_frame(
+            hwnd=self.hwnd,
+            x=self.client_rect.x,
+            y=self.client_rect.y,
+            w=self.client_rect.w,
+            h=self.client_rect.h
+        )
         
-        time.sleep(0.1)  # Simulate action
-        return True
+        if not frame:
+            log(f"[WORKER {self.id}] CropImage: Failed to capture frame")
+            self.variables[cmd.output_var] = None
+            return False
+        
+        # Extract region
+        region = frame.pixels[cmd.y1:cmd.y2, cmd.x1:cmd.x2]
+        
+        # Search for target color
+        result = self._find_color_in_region(
+            region, cmd.target_color, cmd.tolerance, cmd.scan_mode, cmd.x1, cmd.y1
+        )
+        
+        # Store result in variables
+        self.variables[cmd.output_var] = result
+        
+        if result:
+            log(f"[WORKER {self.id}] CropImage: Found at ({result['x']}, {result['y']}) conf={result['confidence']:.2f}")
+        else:
+            log(f"[WORKER {self.id}] CropImage: Color not found")
+        
+        return result is not None
+    
+    def _find_color_in_region(self, region: np.ndarray, target_color: tuple, 
+                              tolerance: int, scan_mode, offset_x: int, offset_y: int) -> Optional[dict]:
+        """Find target color in region"""
+        from core.models import ScanMode
+        
+        if region.size == 0:
+            return None
+        
+        # Target color is RGB, image is BGR
+        target_b, target_g, target_r = target_color[2], target_color[1], target_color[0]
+        
+        # Create color difference mask
+        diff_b = np.abs(region[:, :, 0].astype(int) - target_b)
+        diff_g = np.abs(region[:, :, 1].astype(int) - target_g)
+        diff_r = np.abs(region[:, :, 2].astype(int) - target_r)
+        
+        total_diff = diff_b + diff_g + diff_r
+        
+        if scan_mode == ScanMode.EXACT:
+            # Find exact match within tolerance
+            matches = np.where(total_diff <= tolerance * 3)
+            if len(matches[0]) > 0:
+                # Return first match
+                y, x = matches[0][0], matches[1][0]
+                confidence = 1.0 - (total_diff[y, x] / (255 * 3))
+                return {
+                    "x": offset_x + x,
+                    "y": offset_y + y,
+                    "confidence": float(confidence)
+                }
+        
+        elif scan_mode == ScanMode.MAX_MATCH:
+            # Find best match
+            min_idx = np.unravel_index(np.argmin(total_diff), total_diff.shape)
+            y, x = min_idx
+            min_diff = total_diff[y, x]
+            
+            if min_diff <= tolerance * 3:
+                confidence = 1.0 - (min_diff / (255 * 3))
+                return {
+                    "x": offset_x + x,
+                    "y": offset_y + y,
+                    "confidence": float(confidence)
+                }
+        
+        elif scan_mode == ScanMode.GRID:
+            # Grid search (sample every 10 pixels)
+            step = 10
+            best_match = None
+            best_diff = float('inf')
+            
+            for y in range(0, region.shape[0], step):
+                for x in range(0, region.shape[1], step):
+                    diff = total_diff[y, x]
+                    if diff < best_diff:
+                        best_diff = diff
+                        best_match = (x, y)
+            
+            if best_match and best_diff <= tolerance * 3:
+                confidence = 1.0 - (best_diff / (255 * 3))
+                return {
+                    "x": offset_x + best_match[0],
+                    "y": offset_y + best_match[1],
+                    "confidence": float(confidence)
+                }
+        
+        return None
 
     def _execute_hotkey(self, cmd) -> bool:
-        """Execute HotKey command"""
-        from core.models import HotKeyCommand
+        """Execute HotKey command using InputManager"""
+        from core.models import HotKeyCommand, HotKeyOrder as ModelHotKeyOrder
         if not isinstance(cmd, HotKeyCommand):
             return False
         
         log(f"[WORKER {self.id}] HotKey: {'+'.join(cmd.keys)} order={cmd.hotkey_order.value}")
         
-        # TODO: Implement actual hotkey
-        time.sleep(0.1)  # Simulate action
+        # Map HotKeyOrder enum
+        order = HotKeyOrder.SIMULTANEOUS if cmd.hotkey_order == ModelHotKeyOrder.SIMULTANEOUS else HotKeyOrder.SEQUENCE
         
-        return True
+        # Execute hotkey via InputManager
+        success = self._input_manager.hotkey(cmd.keys, order)
+        
+        return success
 
     def _handle_on_fail(self, cmd: Command, script: Script, current_id: str) -> Optional[str]:
         """

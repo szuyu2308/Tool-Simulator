@@ -1,0 +1,17 @@
+2026-01-09 14:10:49,226 | INFO    | [ADB] Found ADB at: adb
+2026-01-09 14:10:49,462 | INFO    | [ADB] Found ADB at: adb
+2026-01-09 14:10:50,226 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-09 14:10:50,227 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-09 14:10:50,228 | INFO    | [WORKER] 1: Scale factors = 1.074x, 1.036y
+2026-01-09 14:10:50,325 | INFO    | [CAPTURE] BetterCam not installed
+2026-01-09 14:10:50,626 | INFO    | [CAPTURE] DXCam initialized successfully
+2026-01-09 14:10:50,628 | INFO    | [CAPTURE] Active provider: DXCam
+2026-01-09 14:10:50,629 | INFO    | [WORKER] 1: Providers initialized (Capture: DXCam)
+2026-01-09 14:10:50,635 | INFO    | [WorkerMgr] Loaded 1 assignments
+2026-01-09 14:11:03,942 | INFO    | [WORKER 1] Script stop requested
+2026-01-09 14:11:25,500 | INFO    | [UI] Captured position: screen(1044, 649) → client(355, 636)
+2026-01-09 14:11:32,666 | INFO    | [UI] Captured position: screen(1112, 643) → client(423, 630)
+2026-01-09 14:11:48,120 | INFO    | [UI] Captured position: screen(968, 499) → client(279, 486)
+2026-01-09 14:12:00,167 | INFO    | [UI] Captured position: screen(1103, 622) → client(414, 609)
+2026-01-09 14:12:39,626 | INFO    | [UI] Captured region: (268,528) - (395,600)
+2026-01-09 14:12:58,504 | INFO    | [UI] Captured region: (376,587) - (0,285)
