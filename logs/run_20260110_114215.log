@@ -1,0 +1,108 @@
+2026-01-10 11:42:15,357 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 11:42:15,468 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 11:42:16,460 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 11:42:16,468 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 11:42:16,471 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 11:42:16,471 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 11:42:16,529 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 11:42:16,530 | INFO    | [UI] Global hotkeys registered
+2026-01-10 11:42:16,798 | INFO    | [UI] Global hotkeys registered: {'record': 'F9', 'play': 'F10', 'pause': 'F11', 'stop': 'F12'}
+2026-01-10 11:42:20,918 | INFO    | [UI] Global hotkeys unregistered
+2026-01-10 11:42:28,274 | INFO    | [UI] Global hotkeys registered: {'record': 'F9', 'play': 'F10', 'pause': 'F11', 'stop': 'F12'}
+2026-01-10 11:42:34,574 | INFO    | [UI] Hotkey settings saved
+2026-01-10 11:42:34,576 | INFO    | [UI] Global hotkeys registered: {'record': 'F10', 'play': 'F10', 'pause': 'F11', 'stop': 'F12'}
+2026-01-10 11:42:43,899 | INFO    | [RECORDER] Configured: target=None, ignore_ui={1115946}
+2026-01-10 11:42:43,924 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 11:42:43,924 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 11:42:44,055 | INFO    | [RECORDER] Added ignore hwnd: 4458484
+2026-01-10 11:42:45,220 | INFO    | [RECORDER] Mouse down at (1053, 615) button=Button.left
+2026-01-10 11:42:45,292 | INFO    | [RECORDER] Mouse up at (1053, 615) button=Button.left
+2026-01-10 11:42:46,160 | INFO    | [RECORDER] Mouse down at (776, 555) button=Button.left
+2026-01-10 11:42:47,256 | INFO    | [RECORDER] Mouse up at (426, 395) button=Button.left
+2026-01-10 11:42:49,457 | INFO    | [RECORDER] Key down: f9 (vk=None)
+2026-01-10 11:42:50,977 | INFO    | [RECORDER] Key down: f9 (vk=None)
+2026-01-10 11:42:53,407 | INFO    | [RECORDER] Mouse down at (364, 822) button=Button.left
+2026-01-10 11:42:53,431 | INFO    | [RECORDER] Stopped. 2510 events captured
+2026-01-10 11:42:53,502 | INFO    | [UI] Added 9 recorded actions
+2026-01-10 11:42:53,523 | INFO    | [UI] Recording stopped
+2026-01-10 11:42:58,646 | INFO    | [UI] Global hotkeys unregistered
+2026-01-10 11:42:59,385 | INFO    | [UI] Global hotkeys registered: {'record': 'F10', 'play': 'F10', 'pause': 'F11', 'stop': 'F12'}
+2026-01-10 11:43:02,320 | INFO    | [UI] Hotkey settings saved
+2026-01-10 11:43:02,320 | INFO    | [UI] Global hotkeys registered: {'record': 'F9', 'play': 'F10', 'pause': 'F11', 'stop': 'F12'}
+2026-01-10 11:43:10,229 | INFO    | [RECORDER] Configured: target=None, ignore_ui={1115946}
+2026-01-10 11:43:10,251 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 11:43:10,251 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 11:43:10,284 | INFO    | [RECORDER] Added ignore hwnd: 4655092
+2026-01-10 11:43:11,063 | INFO    | [RECORDER] Mouse down at (789, 521) button=Button.left
+2026-01-10 11:43:11,149 | INFO    | [RECORDER] Mouse up at (789, 521) button=Button.left
+2026-01-10 11:43:11,826 | INFO    | [RECORDER] Mouse down at (801, 616) button=Button.left
+2026-01-10 11:43:13,016 | INFO    | [RECORDER] Mouse up at (481, 258) button=Button.left
+2026-01-10 11:43:13,676 | INFO    | [RECORDER] Mouse down at (775, 465) button=Button.left
+2026-01-10 11:43:13,768 | INFO    | [RECORDER] Mouse up at (775, 465) button=Button.left
+2026-01-10 11:43:14,136 | INFO    | [RECORDER] Stopped. 1442 events captured
+2026-01-10 11:43:14,236 | INFO    | [UI] Added 5 recorded actions
+2026-01-10 11:43:14,255 | INFO    | [UI] Recording stopped
+2026-01-10 11:43:21,825 | INFO    | [UI] Playback loop: 14 actions, target_hwnd=None
+2026-01-10 11:43:21,825 | INFO    | [UI] Playback started (Screen mode - no workers)
+2026-01-10 11:43:21,825 | INFO    | [UI] Executing action 0: CLICK = {'button': 'left', 'x': 1053, 'y': 615, 'screen_coords': True}
+2026-01-10 11:43:21,895 | INFO    | [UI] Executing action 1: WAIT = {'ms': 869}
+2026-01-10 11:43:22,780 | INFO    | [UI] Executing action 2: DRAG = {'button': 'left', 'x1': 776, 'y1': 555, 'x2': 426, 'y2': 395, 'duration_ms': 1095, 'screen_coords': True}
+2026-01-10 11:43:24,610 | INFO    | [UI] Executing action 3: WAIT = {'ms': 2203}
+2026-01-10 11:43:26,832 | INFO    | [UI] Executing action 4: KEY_PRESS = {'key': 'f9', 'repeat': 1}
+2026-01-10 11:43:26,901 | INFO    | [UI] Executing action 5: WAIT = {'ms': 1518}
+2026-01-10 11:43:28,424 | INFO    | [UI] Executing action 6: KEY_PRESS = {'key': 'f9', 'repeat': 1}
+2026-01-10 11:43:28,482 | INFO    | [UI] Executing action 7: WAIT = {'ms': 2430}
+2026-01-10 11:43:30,928 | INFO    | [UI] Executing action 8: CLICK = {'button': 'left', 'x': 364, 'y': 822, 'screen_coords': True}
+2026-01-10 11:43:31,002 | INFO    | [UI] Executing action 9: CLICK = {'button': 'left', 'x': 789, 'y': 521, 'screen_coords': True}
+2026-01-10 11:43:31,061 | INFO    | [UI] Executing action 10: WAIT = {'ms': 680}
+2026-01-10 11:43:31,747 | INFO    | [UI] Executing action 11: DRAG = {'button': 'left', 'x1': 801, 'y1': 616, 'x2': 481, 'y2': 258, 'duration_ms': 1186, 'screen_coords': True}
+2026-01-10 11:43:33,684 | INFO    | [UI] Executing action 12: WAIT = {'ms': 660}
+2026-01-10 11:43:34,355 | INFO    | [UI] Executing action 13: CLICK = {'button': 'left', 'x': 775, 'y': 465, 'screen_coords': True}
+2026-01-10 11:43:34,439 | INFO    | [UI] Playback complete
+2026-01-10 11:43:34,471 | INFO    | [UI] Playback complete
+2026-01-10 11:43:43,837 | INFO    | [UI] Global hotkeys unregistered
+2026-01-10 11:43:44,729 | INFO    | [UI] Global hotkeys registered: {'record': 'F9', 'play': 'F10', 'pause': 'F11', 'stop': 'F12'}
+2026-01-10 11:43:47,182 | INFO    | [UI] Hotkey settings saved
+2026-01-10 11:43:47,182 | INFO    | [UI] Global hotkeys registered: {'record': 'F9', 'play': 'F8', 'pause': 'F11', 'stop': 'F12'}
+2026-01-10 11:43:52,177 | INFO    | [UI] Global hotkeys unregistered
+2026-01-10 11:43:57,927 | INFO    | [UI] Global hotkeys registered: {'record': 'F9', 'play': 'F8', 'pause': 'F11', 'stop': 'F12'}
+2026-01-10 11:44:00,399 | INFO    | [UI] Global hotkeys unregistered
+2026-01-10 11:44:01,679 | INFO    | [UI] Global hotkeys registered: {'record': 'F9', 'play': 'F8', 'pause': 'F11', 'stop': 'F12'}
+2026-01-10 11:44:04,096 | INFO    | [UI] Global hotkeys unregistered
+2026-01-10 11:44:04,864 | INFO    | [UI] Global hotkeys registered: {'record': 'F9', 'play': 'F8', 'pause': 'F11', 'stop': 'F12'}
+2026-01-10 11:44:06,030 | INFO    | [UI] Global hotkeys unregistered
+2026-01-10 11:44:07,078 | INFO    | [UI] Global hotkeys registered: {'record': 'F9', 'play': 'F8', 'pause': 'F11', 'stop': 'F12'}
+2026-01-10 11:44:10,122 | INFO    | [UI] Hotkey settings saved
+2026-01-10 11:44:10,122 | INFO    | [UI] Global hotkeys registered: {'record': 'F9', 'play': 'F10', 'pause': 'F11', 'stop': 'F12'}
+2026-01-10 11:44:30,257 | INFO    | [RECORDER] Configured: target=None, ignore_ui={1115946}
+2026-01-10 11:44:30,268 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 11:44:30,268 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 11:44:30,288 | INFO    | [RECORDER] Added ignore hwnd: 1181074
+2026-01-10 11:44:30,747 | INFO    | [RECORDER] Mouse down at (873, 623) button=Button.left
+2026-01-10 11:44:31,023 | INFO    | [RECORDER] Mouse up at (598, 474) button=Button.left
+2026-01-10 11:44:32,016 | INFO    | [RECORDER] Mouse down at (501, 234) button=Button.left
+2026-01-10 11:44:32,555 | INFO    | [RECORDER] Mouse up at (857, 480) button=Button.left
+2026-01-10 11:44:33,944 | INFO    | [RECORDER] Stopped. 1562 events captured
+2026-01-10 11:44:34,010 | INFO    | [UI] Added 3 recorded actions
+2026-01-10 11:44:34,046 | INFO    | [UI] Recording stopped
+2026-01-10 11:44:36,856 | INFO    | [UI] Playback loop: 17 actions, target_hwnd=None
+2026-01-10 11:44:36,856 | INFO    | [UI] Playback started (Screen mode - no workers)
+2026-01-10 11:44:36,866 | INFO    | [UI] Executing action 0: CLICK = {'button': 'left', 'x': 1053, 'y': 615, 'screen_coords': True}
+2026-01-10 11:44:36,948 | INFO    | [UI] Executing action 1: WAIT = {'ms': 869}
+2026-01-10 11:44:37,828 | INFO    | [UI] Executing action 2: DRAG = {'button': 'left', 'x1': 776, 'y1': 555, 'x2': 426, 'y2': 395, 'duration_ms': 1095, 'screen_coords': True}
+2026-01-10 11:44:39,662 | INFO    | [UI] Executing action 3: WAIT = {'ms': 2203}
+2026-01-10 11:44:41,876 | INFO    | [UI] Executing action 4: KEY_PRESS = {'key': 'f9', 'repeat': 1}
+2026-01-10 11:44:41,934 | INFO    | [UI] Executing action 5: WAIT = {'ms': 1518}
+2026-01-10 11:44:43,461 | INFO    | [UI] Executing action 6: KEY_PRESS = {'key': 'f9', 'repeat': 1}
+2026-01-10 11:44:43,523 | INFO    | [UI] Executing action 7: WAIT = {'ms': 2430}
+2026-01-10 11:44:45,960 | INFO    | [UI] Executing action 8: CLICK = {'button': 'left', 'x': 364, 'y': 822, 'screen_coords': True}
+2026-01-10 11:44:46,018 | INFO    | [UI] Executing action 9: CLICK = {'button': 'left', 'x': 789, 'y': 521, 'screen_coords': True}
+2026-01-10 11:44:46,084 | INFO    | [UI] Executing action 10: WAIT = {'ms': 680}
+2026-01-10 11:44:46,778 | INFO    | [UI] Executing action 11: DRAG = {'button': 'left', 'x1': 801, 'y1': 616, 'x2': 481, 'y2': 258, 'duration_ms': 1186, 'screen_coords': True}
+2026-01-10 11:44:48,622 | INFO    | [UI] Executing action 12: WAIT = {'ms': 660}
+2026-01-10 11:44:49,296 | INFO    | [UI] Executing action 13: CLICK = {'button': 'left', 'x': 775, 'y': 465, 'screen_coords': True}
+2026-01-10 11:44:49,361 | INFO    | [UI] Executing action 14: DRAG = {'button': 'left', 'x1': 873, 'y1': 623, 'x2': 598, 'y2': 474, 'duration_ms': 278, 'screen_coords': True}
+2026-01-10 11:44:49,944 | INFO    | [UI] Executing action 15: WAIT = {'ms': 990}
+2026-01-10 11:44:50,944 | INFO    | [UI] Executing action 16: DRAG = {'button': 'left', 'x1': 501, 'y1': 234, 'x2': 857, 'y2': 480, 'duration_ms': 539, 'screen_coords': True}
+2026-01-10 11:44:51,836 | INFO    | [UI] Playback complete
+2026-01-10 11:44:51,863 | INFO    | [UI] Playback complete

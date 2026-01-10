@@ -1,0 +1,890 @@
+2026-01-10 09:03:38,405 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 09:03:38,594 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 09:03:38,729 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 09:03:38,729 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-10 09:03:38,729 | INFO    | [WORKER] 1: Scale factors = 1.074x, 1.036y
+2026-01-10 09:03:38,775 | INFO    | [CAPTURE] BetterCam not installed
+2026-01-10 09:03:39,034 | INFO    | [CAPTURE] DXCam initialized successfully
+2026-01-10 09:03:39,037 | INFO    | [CAPTURE] Active provider: DXCam
+2026-01-10 09:03:39,038 | INFO    | [WORKER] 1: Providers initialized (Capture: DXCam)
+2026-01-10 09:03:39,040 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 09:03:40,121 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 09:03:40,122 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 09:03:40,122 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 09:03:40,123 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 09:03:40,342 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 09:03:40,359 | INFO    | [UI] Global hotkeys registered
+2026-01-10 09:03:47,714 | INFO    | [RECORDER] Configured: target=None, ignore_ui=198406
+2026-01-10 09:03:47,739 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 09:03:47,740 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 09:03:48,415 | INFO    | [RECORDER] Mouse down at (1092, 376) button=Button.left
+2026-01-10 09:03:48,523 | INFO    | [RECORDER] Mouse up at (1092, 376) button=Button.left
+2026-01-10 09:03:48,943 | INFO    | [RECORDER] Scroll at (1092, 376) dx=0 dy=-1
+2026-01-10 09:03:49,020 | INFO    | [RECORDER] Scroll at (1092, 376) dx=0 dy=-1
+2026-01-10 09:03:49,174 | INFO    | [RECORDER] Scroll at (1092, 376) dx=0 dy=-1
+2026-01-10 09:03:49,343 | INFO    | [RECORDER] Scroll at (1092, 376) dx=0 dy=-1
+2026-01-10 09:03:49,490 | INFO    | [RECORDER] Scroll at (1092, 376) dx=0 dy=-1
+2026-01-10 09:03:49,606 | INFO    | [RECORDER] Scroll at (1092, 376) dx=0 dy=-1
+2026-01-10 09:03:49,943 | INFO    | [RECORDER] Scroll at (1092, 376) dx=0 dy=1
+2026-01-10 09:03:49,975 | INFO    | [RECORDER] Scroll at (1092, 376) dx=0 dy=1
+2026-01-10 09:03:50,015 | INFO    | [RECORDER] Scroll at (1092, 376) dx=0 dy=1
+2026-01-10 09:03:50,088 | INFO    | [RECORDER] Scroll at (1092, 376) dx=0 dy=1
+2026-01-10 09:03:50,170 | INFO    | [RECORDER] Scroll at (1092, 376) dx=0 dy=1
+2026-01-10 09:03:50,291 | INFO    | [RECORDER] Scroll at (1092, 376) dx=0 dy=1
+2026-01-10 09:03:50,390 | INFO    | [RECORDER] Scroll at (1092, 376) dx=0 dy=1
+2026-01-10 09:03:50,843 | INFO    | [RECORDER] Mouse down at (1007, 357) button=Button.right
+2026-01-10 09:03:50,930 | INFO    | [RECORDER] Mouse up at (1007, 357) button=Button.right
+2026-01-10 09:03:51,355 | INFO    | [RECORDER] Mouse down at (893, 370) button=Button.left
+2026-01-10 09:03:51,423 | INFO    | [RECORDER] Mouse up at (893, 370) button=Button.left
+2026-01-10 09:03:51,692 | INFO    | [RECORDER] Scroll at (901, 424) dx=0 dy=-1
+2026-01-10 09:03:51,730 | INFO    | [RECORDER] Scroll at (901, 424) dx=0 dy=-1
+2026-01-10 09:03:51,857 | INFO    | [RECORDER] Scroll at (901, 424) dx=0 dy=-1
+2026-01-10 09:03:52,459 | INFO    | [RECORDER] Scroll at (901, 424) dx=0 dy=1
+2026-01-10 09:03:52,555 | INFO    | [RECORDER] Scroll at (901, 424) dx=0 dy=1
+2026-01-10 09:03:54,663 | INFO    | [RECORDER] Mouse down at (125, 99) button=Button.left
+2026-01-10 09:03:54,735 | INFO    | [RECORDER] Mouse up at (125, 99) button=Button.left
+2026-01-10 09:03:54,737 | INFO    | [RECORDER] Stopped. 1230 events captured
+2026-01-10 09:03:54,741 | INFO    | [UI] Added 54 recorded actions
+2026-01-10 09:03:54,743 | INFO    | [UI] Recording stopped
+2026-01-10 09:04:11,097 | INFO    | [UI] Playback loop: 54 actions, target_hwnd=657034
+2026-01-10 09:04:11,098 | INFO    | [UI] Executing action 0: WAIT = {'ms': 209}
+2026-01-10 09:04:11,100 | INFO    | [UI] Playback started
+2026-01-10 09:04:11,308 | INFO    | [UI] Executing action 1: CLICK = {'button': 'left', 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:04:11,364 | INFO    | [UI] Executing action 2: WAIT = {'ms': 109}
+2026-01-10 09:04:11,478 | INFO    | [UI] Executing action 3: WAIT = {'ms': 419}
+2026-01-10 09:04:11,899 | INFO    | [UI] Executing action 4: WHEEL = {'delta': -120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:04:11,952 | INFO    | [UI] Executing action 5: WAIT = {'ms': 78}
+2026-01-10 09:04:12,033 | INFO    | [UI] Executing action 6: WHEEL = {'delta': -120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:04:12,087 | INFO    | [UI] Executing action 7: WAIT = {'ms': 154}
+2026-01-10 09:04:12,246 | INFO    | [UI] Executing action 8: WHEEL = {'delta': -120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:04:12,330 | INFO    | [UI] Executing action 9: WAIT = {'ms': 168}
+2026-01-10 09:04:12,501 | INFO    | [UI] Executing action 10: WHEEL = {'delta': -120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:04:12,553 | INFO    | [UI] Executing action 11: WAIT = {'ms': 147}
+2026-01-10 09:04:12,702 | INFO    | [UI] Executing action 12: WHEEL = {'delta': -120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:04:12,753 | INFO    | [UI] Executing action 13: WAIT = {'ms': 116}
+2026-01-10 09:04:12,870 | INFO    | [UI] Executing action 14: WHEEL = {'delta': -120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:04:12,922 | INFO    | [UI] Executing action 15: WAIT = {'ms': 338}
+2026-01-10 09:04:13,261 | INFO    | [UI] Executing action 16: WHEEL = {'delta': 120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:04:13,313 | INFO    | [UI] Executing action 17: WHEEL = {'delta': 120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:04:13,364 | INFO    | [UI] Executing action 18: WHEEL = {'delta': 120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:04:13,416 | INFO    | [UI] Executing action 19: WAIT = {'ms': 72}
+2026-01-10 09:04:13,489 | INFO    | [UI] Executing action 20: WHEEL = {'delta': 120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:04:13,540 | INFO    | [UI] Executing action 21: WAIT = {'ms': 81}
+2026-01-10 09:04:13,622 | INFO    | [UI] Executing action 22: WHEEL = {'delta': 120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:04:13,674 | INFO    | [UI] Executing action 23: WAIT = {'ms': 123}
+2026-01-10 09:04:13,798 | INFO    | [UI] Executing action 24: WHEEL = {'delta': 120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:04:13,850 | INFO    | [UI] Executing action 25: WAIT = {'ms': 98}
+2026-01-10 09:04:13,949 | INFO    | [UI] Executing action 26: WHEEL = {'delta': 120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:04:14,001 | INFO    | [UI] Executing action 27: WAIT = {'ms': 299}
+2026-01-10 09:04:14,302 | INFO    | [UI] Executing action 28: CLICK = {'button': 'right', 'x': 1007, 'y': 357, 'screen_coords': True}
+2026-01-10 09:04:14,359 | INFO    | [UI] Executing action 29: WAIT = {'ms': 87}
+2026-01-10 09:04:14,447 | INFO    | [UI] Executing action 30: WAIT = {'ms': 145}
+2026-01-10 09:04:14,595 | INFO    | [UI] Executing action 31: WAIT = {'ms': 64}
+2026-01-10 09:04:14,661 | INFO    | [UI] Executing action 32: CLICK = {'button': 'left', 'x': 893, 'y': 370, 'screen_coords': True}
+2026-01-10 09:04:14,705 | INFO    | [UI] Executing action 33: WAIT = {'ms': 68}
+2026-01-10 09:04:14,774 | INFO    | [UI] Executing action 34: WAIT = {'ms': 61}
+2026-01-10 09:04:14,836 | INFO    | [UI] Executing action 35: WHEEL = {'delta': -120, 'x': 901, 'y': 424, 'screen_coords': True}
+2026-01-10 09:04:14,889 | INFO    | [UI] Executing action 36: WHEEL = {'delta': -120, 'x': 901, 'y': 424, 'screen_coords': True}
+2026-01-10 09:04:14,942 | INFO    | [UI] Executing action 37: WAIT = {'ms': 127}
+2026-01-10 09:04:15,070 | INFO    | [UI] Executing action 38: WHEEL = {'delta': -120, 'x': 901, 'y': 424, 'screen_coords': True}
+2026-01-10 09:04:15,123 | INFO    | [UI] Executing action 39: WAIT = {'ms': 603}
+2026-01-10 09:04:15,727 | INFO    | [UI] Executing action 40: WHEEL = {'delta': 120, 'x': 901, 'y': 424, 'screen_coords': True}
+2026-01-10 09:04:15,779 | INFO    | [UI] Executing action 41: WAIT = {'ms': 95}
+2026-01-10 09:04:15,874 | INFO    | [UI] Executing action 42: WHEEL = {'delta': 120, 'x': 901, 'y': 424, 'screen_coords': True}
+2026-01-10 09:04:15,926 | INFO    | [UI] Executing action 43: WAIT = {'ms': 380}
+2026-01-10 09:04:16,307 | INFO    | [UI] Executing action 44: KEY_PRESS = {'key': 'Key.alt_l', 'repeat': 1}
+2026-01-10 09:04:16,308 | INFO    | [UI] Executing action 45: WAIT = {'ms': 72}
+2026-01-10 09:04:16,382 | INFO    | [UI] Executing action 46: KEY_PRESS = {'key': 'Key.tab', 'repeat': 1}
+2026-01-10 09:04:16,383 | INFO    | [UI] Executing action 47: WAIT = {'ms': 72}
+2026-01-10 09:04:16,456 | INFO    | [UI] Executing action 48: WAIT = {'ms': 112}
+2026-01-10 09:04:16,570 | INFO    | [UI] Executing action 49: WAIT = {'ms': 363}
+2026-01-10 09:04:16,934 | INFO    | [UI] Executing action 50: WAIT = {'ms': 64}
+2026-01-10 09:04:17,003 | INFO    | [UI] Executing action 51: WAIT = {'ms': 281}
+2026-01-10 09:04:17,287 | INFO    | [UI] Executing action 52: CLICK = {'button': 'left', 'x': 125, 'y': 99, 'screen_coords': True}
+2026-01-10 09:04:17,330 | INFO    | [UI] Executing action 53: WAIT = {'ms': 72}
+2026-01-10 09:04:17,404 | INFO    | [UI] Playback complete
+2026-01-10 09:04:17,407 | INFO    | [UI] Playback complete
+2026-01-10 09:05:47,405 | INFO    | [RECORDER] Configured: target=657034, ignore_ui=198406
+2026-01-10 09:05:47,410 | INFO    | [RECORDER] Filtered: coords (131,176) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,412 | INFO    | [RECORDER] Filtered: coords (131,176) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,415 | INFO    | [RECORDER] Filtered: coords (132,176) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,416 | INFO    | [RECORDER] Filtered: coords (133,176) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,423 | INFO    | [RECORDER] Filtered: coords (135,176) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,423 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 09:05:47,424 | INFO    | [UI] Recording started (V2 adapter), target hwnd: 657034
+2026-01-10 09:05:47,425 | INFO    | [RECORDER] Filtered: coords (136,176) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,426 | INFO    | [RECORDER] Filtered: coords (136,176) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,429 | INFO    | [RECORDER] Filtered: coords (137,176) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,431 | INFO    | [RECORDER] Filtered: coords (138,176) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,440 | INFO    | [RECORDER] Filtered: coords (143,176) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,442 | INFO    | [RECORDER] Filtered: coords (144,177) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,444 | INFO    | [RECORDER] Filtered: coords (146,177) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,446 | INFO    | [RECORDER] Filtered: coords (147,177) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,447 | INFO    | [RECORDER] Filtered: coords (148,177) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,449 | INFO    | [RECORDER] Filtered: coords (148,178) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,451 | INFO    | [RECORDER] Filtered: coords (150,178) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,455 | INFO    | [RECORDER] Filtered: coords (152,178) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,457 | INFO    | [RECORDER] Filtered: coords (154,179) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,458 | INFO    | [RECORDER] Filtered: coords (156,179) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,460 | INFO    | [RECORDER] Filtered: coords (156,179) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,462 | INFO    | [RECORDER] Filtered: coords (159,179) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,463 | INFO    | [RECORDER] Filtered: coords (159,180) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,464 | INFO    | [RECORDER] Filtered: coords (161,180) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,465 | INFO    | [RECORDER] Filtered: coords (162,180) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,465 | INFO    | [RECORDER] Filtered: coords (162,181) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,465 | INFO    | [RECORDER] Filtered: coords (164,181) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,470 | INFO    | [RECORDER] Filtered: coords (166,182) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,470 | INFO    | [RECORDER] Filtered: coords (167,182) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,471 | INFO    | [RECORDER] Filtered: coords (168,182) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,472 | INFO    | [RECORDER] Filtered: coords (170,182) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,474 | INFO    | [RECORDER] Filtered: coords (170,182) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,474 | INFO    | [RECORDER] Filtered: coords (171,182) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,475 | INFO    | [RECORDER] Filtered: coords (173,183) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,477 | INFO    | [RECORDER] Filtered: coords (174,183) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,478 | INFO    | [RECORDER] Filtered: coords (175,184) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,479 | INFO    | [RECORDER] Filtered: coords (176,184) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,479 | INFO    | [RECORDER] Filtered: coords (177,184) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,480 | INFO    | [RECORDER] Filtered: coords (178,184) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,481 | INFO    | [RECORDER] Filtered: coords (179,185) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,482 | INFO    | [RECORDER] Filtered: coords (181,185) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,484 | INFO    | [RECORDER] Filtered: coords (182,185) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,486 | INFO    | [RECORDER] Filtered: coords (186,186) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,489 | INFO    | [RECORDER] Filtered: coords (188,186) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,490 | INFO    | [RECORDER] Filtered: coords (189,186) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,492 | INFO    | [RECORDER] Filtered: coords (192,187) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,493 | INFO    | [RECORDER] Filtered: coords (192,188) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,494 | INFO    | [RECORDER] Filtered: coords (194,188) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,495 | INFO    | [RECORDER] Filtered: coords (195,188) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,496 | INFO    | [RECORDER] Filtered: coords (195,188) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,496 | INFO    | [RECORDER] Filtered: coords (197,188) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,498 | INFO    | [RECORDER] Filtered: coords (198,188) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,499 | INFO    | [RECORDER] Filtered: coords (199,188) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,500 | INFO    | [RECORDER] Filtered: coords (200,189) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,501 | INFO    | [RECORDER] Filtered: coords (201,189) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,503 | INFO    | [RECORDER] Filtered: coords (203,190) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,504 | INFO    | [RECORDER] Filtered: coords (204,190) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,505 | INFO    | [RECORDER] Filtered: coords (205,191) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,505 | INFO    | [RECORDER] Filtered: coords (207,191) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,507 | INFO    | [RECORDER] Filtered: coords (207,191) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,507 | INFO    | [RECORDER] Filtered: coords (209,191) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,508 | INFO    | [RECORDER] Filtered: coords (210,191) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,510 | INFO    | [RECORDER] Filtered: coords (210,191) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,511 | INFO    | [RECORDER] Filtered: coords (212,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,511 | INFO    | [RECORDER] Filtered: coords (213,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,512 | INFO    | [RECORDER] Filtered: coords (214,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,513 | INFO    | [RECORDER] Filtered: coords (215,193) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,514 | INFO    | [RECORDER] Filtered: coords (215,193) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,516 | INFO    | [RECORDER] Filtered: coords (216,193) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,518 | INFO    | [RECORDER] Filtered: coords (218,194) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,729 | INFO    | [RECORDER] Filtered: coords (218,194) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,732 | INFO    | [RECORDER] Filtered: coords (219,194) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,733 | INFO    | [RECORDER] Filtered: coords (220,194) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,739 | INFO    | [RECORDER] Filtered: coords (222,194) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,742 | INFO    | [RECORDER] Filtered: coords (224,193) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,747 | INFO    | [RECORDER] Filtered: coords (228,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,750 | INFO    | [RECORDER] Filtered: coords (232,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,753 | INFO    | [RECORDER] Filtered: coords (235,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,757 | INFO    | [RECORDER] Filtered: coords (239,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,761 | INFO    | [RECORDER] Filtered: coords (245,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,762 | INFO    | [RECORDER] Filtered: coords (247,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,763 | INFO    | [RECORDER] Filtered: coords (249,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,765 | INFO    | [RECORDER] Filtered: coords (250,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,770 | INFO    | [RECORDER] Filtered: coords (256,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,771 | INFO    | [RECORDER] Filtered: coords (259,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,772 | INFO    | [RECORDER] Filtered: coords (260,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,774 | INFO    | [RECORDER] Filtered: coords (262,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,775 | INFO    | [RECORDER] Filtered: coords (265,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,778 | INFO    | [RECORDER] Filtered: coords (269,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,779 | INFO    | [RECORDER] Filtered: coords (271,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,780 | INFO    | [RECORDER] Filtered: coords (273,193) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,781 | INFO    | [RECORDER] Filtered: coords (274,193) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,782 | INFO    | [RECORDER] Filtered: coords (276,193) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,783 | INFO    | [RECORDER] Filtered: coords (278,194) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,784 | INFO    | [RECORDER] Filtered: coords (279,194) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,786 | INFO    | [RECORDER] Filtered: coords (284,195) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,788 | INFO    | [RECORDER] Filtered: coords (286,195) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,790 | INFO    | [RECORDER] Filtered: coords (289,195) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,792 | INFO    | [RECORDER] Filtered: coords (291,196) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,793 | INFO    | [RECORDER] Filtered: coords (293,196) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,793 | INFO    | [RECORDER] Filtered: coords (294,196) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,795 | INFO    | [RECORDER] Filtered: coords (296,196) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,795 | INFO    | [RECORDER] Filtered: coords (297,197) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,797 | INFO    | [RECORDER] Filtered: coords (298,197) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,798 | INFO    | [RECORDER] Filtered: coords (300,197) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,798 | INFO    | [RECORDER] Filtered: coords (301,197) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,799 | INFO    | [RECORDER] Filtered: coords (302,197) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,800 | INFO    | [RECORDER] Filtered: coords (304,197) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,804 | INFO    | [RECORDER] Filtered: coords (306,197) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,804 | INFO    | [RECORDER] Filtered: coords (307,197) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,805 | INFO    | [RECORDER] Filtered: coords (307,197) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,806 | INFO    | [RECORDER] Filtered: coords (309,197) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,807 | INFO    | [RECORDER] Filtered: coords (309,197) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,808 | INFO    | [RECORDER] Filtered: coords (310,198) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,809 | INFO    | [RECORDER] Filtered: coords (311,198) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,809 | INFO    | [RECORDER] Filtered: coords (312,198) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,810 | INFO    | [RECORDER] Filtered: coords (313,198) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,811 | INFO    | [RECORDER] Filtered: coords (314,198) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,812 | INFO    | [RECORDER] Filtered: coords (315,198) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,813 | INFO    | [RECORDER] Filtered: coords (315,199) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,814 | INFO    | [RECORDER] Filtered: coords (316,199) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,815 | INFO    | [RECORDER] Filtered: coords (317,199) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,815 | INFO    | [RECORDER] Filtered: coords (317,199) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,820 | INFO    | [RECORDER] Filtered: coords (319,199) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,821 | INFO    | [RECORDER] Filtered: coords (320,199) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,822 | INFO    | [RECORDER] Filtered: coords (321,199) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,824 | INFO    | [RECORDER] Filtered: coords (322,200) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,824 | INFO    | [RECORDER] Filtered: coords (322,200) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,826 | INFO    | [RECORDER] Filtered: coords (323,200) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,828 | INFO    | [RECORDER] Filtered: coords (324,200) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,829 | INFO    | [RECORDER] Filtered: coords (324,201) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,831 | INFO    | [RECORDER] Filtered: coords (324,201) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,834 | INFO    | [RECORDER] Filtered: coords (325,201) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:47,842 | INFO    | [RECORDER] Filtered: coords (326,201) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,099 | INFO    | [RECORDER] Filtered: coords (327,201) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,101 | INFO    | [RECORDER] Filtered: coords (327,201) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,105 | INFO    | [RECORDER] Filtered: coords (329,201) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,110 | INFO    | [RECORDER] Filtered: coords (332,201) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,111 | INFO    | [RECORDER] Filtered: coords (335,201) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,112 | INFO    | [RECORDER] Filtered: coords (335,202) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,113 | INFO    | [RECORDER] Filtered: coords (337,202) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,120 | INFO    | [RECORDER] Filtered: coords (347,202) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,122 | INFO    | [RECORDER] Filtered: coords (351,202) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,123 | INFO    | [RECORDER] Filtered: coords (353,203) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,125 | INFO    | [RECORDER] Filtered: coords (355,203) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,125 | INFO    | [RECORDER] Filtered: coords (357,203) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,125 | INFO    | [RECORDER] Filtered: coords (358,203) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,128 | INFO    | [RECORDER] Filtered: coords (359,203) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,129 | INFO    | [RECORDER] Filtered: coords (361,204) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,131 | INFO    | [RECORDER] Filtered: coords (365,204) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,132 | INFO    | [RECORDER] Filtered: coords (366,204) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,133 | INFO    | [RECORDER] Filtered: coords (371,205) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,135 | INFO    | [RECORDER] Filtered: coords (374,205) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,138 | INFO    | [RECORDER] Filtered: coords (378,206) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,140 | INFO    | [RECORDER] Filtered: coords (384,207) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,142 | INFO    | [RECORDER] Filtered: coords (392,208) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,143 | INFO    | [RECORDER] Filtered: coords (394,208) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,144 | INFO    | [RECORDER] Filtered: coords (396,208) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,146 | INFO    | [RECORDER] Filtered: coords (399,209) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,148 | INFO    | [RECORDER] Filtered: coords (405,209) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,149 | INFO    | [RECORDER] Filtered: coords (410,209) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,153 | INFO    | [RECORDER] Filtered: coords (422,211) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,158 | INFO    | [RECORDER] Filtered: coords (432,212) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,160 | INFO    | [RECORDER] Filtered: coords (435,213) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,161 | INFO    | [RECORDER] Filtered: coords (442,214) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,162 | INFO    | [RECORDER] Filtered: coords (444,214) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,162 | INFO    | [RECORDER] Filtered: coords (448,214) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,163 | INFO    | [RECORDER] Filtered: coords (450,215) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,164 | INFO    | [RECORDER] Filtered: coords (452,215) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,165 | INFO    | [RECORDER] Filtered: coords (455,216) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,167 | INFO    | [RECORDER] Filtered: coords (459,216) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,170 | INFO    | [RECORDER] Filtered: coords (466,217) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,171 | INFO    | [RECORDER] Filtered: coords (471,218) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,175 | INFO    | [RECORDER] Filtered: coords (482,219) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,176 | INFO    | [RECORDER] Filtered: coords (485,220) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,177 | INFO    | [RECORDER] Filtered: coords (486,220) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,177 | INFO    | [RECORDER] Filtered: coords (490,220) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,179 | INFO    | [RECORDER] Filtered: coords (493,221) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,180 | INFO    | [RECORDER] Filtered: coords (495,221) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,181 | INFO    | [RECORDER] Filtered: coords (502,222) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,182 | INFO    | [RECORDER] Filtered: coords (505,222) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,183 | INFO    | [RECORDER] Filtered: coords (506,222) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,184 | INFO    | [RECORDER] Filtered: coords (510,222) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,185 | INFO    | [RECORDER] Filtered: coords (513,222) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,187 | INFO    | [RECORDER] Filtered: coords (515,222) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,191 | INFO    | [RECORDER] Filtered: coords (527,224) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,192 | INFO    | [RECORDER] Filtered: coords (529,224) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,193 | INFO    | [RECORDER] Filtered: coords (531,224) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,194 | INFO    | [RECORDER] Filtered: coords (534,224) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,195 | INFO    | [RECORDER] Filtered: coords (537,225) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,196 | INFO    | [RECORDER] Filtered: coords (540,225) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,196 | INFO    | [RECORDER] Filtered: coords (542,225) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,198 | INFO    | [RECORDER] Filtered: coords (545,225) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,200 | INFO    | [RECORDER] Filtered: coords (549,226) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,202 | INFO    | [RECORDER] Filtered: coords (555,226) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,202 | INFO    | [RECORDER] Filtered: coords (556,226) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,203 | INFO    | [RECORDER] Filtered: coords (559,227) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,205 | INFO    | [RECORDER] Filtered: coords (562,227) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,206 | INFO    | [RECORDER] Filtered: coords (562,227) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,208 | INFO    | [RECORDER] Filtered: coords (565,227) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,209 | INFO    | [RECORDER] Filtered: coords (565,227) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,210 | INFO    | [RECORDER] Filtered: coords (566,227) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,211 | INFO    | [RECORDER] Filtered: coords (567,227) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,212 | INFO    | [RECORDER] Filtered: coords (568,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,212 | INFO    | [RECORDER] Filtered: coords (569,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,213 | INFO    | [RECORDER] Filtered: coords (570,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,214 | INFO    | [RECORDER] Filtered: coords (570,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,215 | INFO    | [RECORDER] Filtered: coords (571,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,216 | INFO    | [RECORDER] Filtered: coords (572,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,219 | INFO    | [RECORDER] Filtered: coords (573,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,221 | INFO    | [RECORDER] Filtered: coords (574,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,223 | INFO    | [RECORDER] Filtered: coords (575,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,224 | INFO    | [RECORDER] Filtered: coords (575,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,226 | INFO    | [RECORDER] Filtered: coords (575,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,229 | INFO    | [RECORDER] Filtered: coords (576,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,243 | INFO    | [RECORDER] Filtered: coords (576,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,245 | INFO    | [RECORDER] Filtered: coords (576,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,249 | INFO    | [RECORDER] Filtered: coords (575,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,250 | INFO    | [RECORDER] Filtered: coords (574,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,252 | INFO    | [RECORDER] Filtered: coords (574,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,254 | INFO    | [RECORDER] Filtered: coords (573,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,256 | INFO    | [RECORDER] Filtered: coords (572,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,257 | INFO    | [RECORDER] Filtered: coords (571,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,258 | INFO    | [RECORDER] Filtered: coords (571,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,258 | INFO    | [RECORDER] Filtered: coords (570,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,259 | INFO    | [RECORDER] Filtered: coords (569,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,262 | INFO    | [RECORDER] Filtered: coords (569,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,263 | INFO    | [RECORDER] Filtered: coords (567,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,264 | INFO    | [RECORDER] Filtered: coords (566,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,265 | INFO    | [RECORDER] Filtered: coords (566,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,266 | INFO    | [RECORDER] Filtered: coords (565,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,266 | INFO    | [RECORDER] Filtered: coords (564,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,268 | INFO    | [RECORDER] Filtered: coords (564,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,269 | INFO    | [RECORDER] Filtered: coords (563,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,270 | INFO    | [RECORDER] Filtered: coords (561,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,271 | INFO    | [RECORDER] Filtered: coords (561,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,272 | INFO    | [RECORDER] Filtered: coords (560,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,273 | INFO    | [RECORDER] Filtered: coords (558,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,273 | INFO    | [RECORDER] Filtered: coords (558,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,274 | INFO    | [RECORDER] Filtered: coords (557,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,275 | INFO    | [RECORDER] Filtered: coords (555,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,275 | INFO    | [RECORDER] Filtered: coords (555,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,278 | INFO    | [RECORDER] Filtered: coords (554,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,278 | INFO    | [RECORDER] Filtered: coords (553,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,279 | INFO    | [RECORDER] Filtered: coords (552,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,280 | INFO    | [RECORDER] Filtered: coords (551,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,281 | INFO    | [RECORDER] Filtered: coords (550,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,282 | INFO    | [RECORDER] Filtered: coords (549,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,283 | INFO    | [RECORDER] Filtered: coords (547,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,284 | INFO    | [RECORDER] Filtered: coords (547,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,285 | INFO    | [RECORDER] Filtered: coords (545,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,286 | INFO    | [RECORDER] Filtered: coords (544,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,288 | INFO    | [RECORDER] Filtered: coords (544,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,290 | INFO    | [RECORDER] Filtered: coords (542,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,291 | INFO    | [RECORDER] Filtered: coords (540,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,292 | INFO    | [RECORDER] Filtered: coords (539,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,293 | INFO    | [RECORDER] Filtered: coords (538,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,294 | INFO    | [RECORDER] Filtered: coords (537,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,295 | INFO    | [RECORDER] Filtered: coords (536,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,295 | INFO    | [RECORDER] Filtered: coords (535,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,299 | INFO    | [RECORDER] Filtered: coords (531,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,302 | INFO    | [RECORDER] Filtered: coords (528,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,306 | INFO    | [RECORDER] Filtered: coords (523,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,309 | INFO    | [RECORDER] Filtered: coords (522,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,311 | INFO    | [RECORDER] Filtered: coords (519,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,312 | INFO    | [RECORDER] Filtered: coords (519,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,312 | INFO    | [RECORDER] Filtered: coords (517,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,314 | INFO    | [RECORDER] Filtered: coords (516,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,315 | INFO    | [RECORDER] Filtered: coords (515,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,320 | INFO    | [RECORDER] Filtered: coords (511,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,321 | INFO    | [RECORDER] Filtered: coords (511,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,323 | INFO    | [RECORDER] Filtered: coords (510,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,324 | INFO    | [RECORDER] Filtered: coords (509,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,326 | INFO    | [RECORDER] Filtered: coords (508,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,328 | INFO    | [RECORDER] Filtered: coords (507,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,329 | INFO    | [RECORDER] Filtered: coords (506,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,331 | INFO    | [RECORDER] Filtered: coords (506,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,334 | INFO    | [RECORDER] Filtered: coords (505,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,336 | INFO    | [RECORDER] Filtered: coords (504,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,358 | INFO    | [RECORDER] Filtered: coords (504,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,361 | INFO    | [RECORDER] Filtered: coords (505,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,363 | INFO    | [RECORDER] Filtered: coords (505,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,365 | INFO    | [RECORDER] Filtered: coords (506,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,366 | INFO    | [RECORDER] Filtered: coords (507,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,366 | INFO    | [RECORDER] Filtered: coords (508,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,368 | INFO    | [RECORDER] Filtered: coords (508,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,369 | INFO    | [RECORDER] Filtered: coords (509,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,369 | INFO    | [RECORDER] Filtered: coords (510,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,371 | INFO    | [RECORDER] Filtered: coords (510,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,372 | INFO    | [RECORDER] Filtered: coords (511,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,373 | INFO    | [RECORDER] Filtered: coords (513,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,373 | INFO    | [RECORDER] Filtered: coords (513,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,374 | INFO    | [RECORDER] Filtered: coords (515,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,375 | INFO    | [RECORDER] Filtered: coords (516,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,376 | INFO    | [RECORDER] Filtered: coords (517,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,378 | INFO    | [RECORDER] Filtered: coords (518,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,379 | INFO    | [RECORDER] Filtered: coords (519,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,380 | INFO    | [RECORDER] Filtered: coords (520,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,381 | INFO    | [RECORDER] Filtered: coords (522,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,382 | INFO    | [RECORDER] Filtered: coords (523,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,383 | INFO    | [RECORDER] Filtered: coords (525,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,384 | INFO    | [RECORDER] Filtered: coords (526,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,385 | INFO    | [RECORDER] Filtered: coords (528,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,386 | INFO    | [RECORDER] Filtered: coords (530,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,386 | INFO    | [RECORDER] Filtered: coords (532,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,388 | INFO    | [RECORDER] Filtered: coords (533,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,389 | INFO    | [RECORDER] Filtered: coords (535,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,390 | INFO    | [RECORDER] Filtered: coords (537,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,391 | INFO    | [RECORDER] Filtered: coords (540,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,392 | INFO    | [RECORDER] Filtered: coords (541,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,392 | INFO    | [RECORDER] Filtered: coords (543,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,393 | INFO    | [RECORDER] Filtered: coords (545,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,394 | INFO    | [RECORDER] Filtered: coords (548,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,395 | INFO    | [RECORDER] Filtered: coords (551,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,396 | INFO    | [RECORDER] Filtered: coords (553,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,397 | INFO    | [RECORDER] Filtered: coords (556,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,398 | INFO    | [RECORDER] Filtered: coords (559,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,399 | INFO    | [RECORDER] Filtered: coords (560,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,400 | INFO    | [RECORDER] Filtered: coords (563,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,401 | INFO    | [RECORDER] Filtered: coords (567,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,402 | INFO    | [RECORDER] Filtered: coords (570,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,404 | INFO    | [RECORDER] Filtered: coords (573,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,405 | INFO    | [RECORDER] Filtered: coords (576,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,405 | INFO    | [RECORDER] Filtered: coords (580,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,405 | INFO    | [RECORDER] Filtered: coords (584,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,407 | INFO    | [RECORDER] Filtered: coords (585,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,409 | INFO    | [RECORDER] Filtered: coords (589,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,409 | INFO    | [RECORDER] Filtered: coords (593,231) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,410 | INFO    | [RECORDER] Filtered: coords (596,231) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,411 | INFO    | [RECORDER] Filtered: coords (600,231) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,412 | INFO    | [RECORDER] Filtered: coords (604,231) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,413 | INFO    | [RECORDER] Filtered: coords (607,231) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,414 | INFO    | [RECORDER] Filtered: coords (612,232) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,415 | INFO    | [RECORDER] Filtered: coords (614,232) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,415 | INFO    | [RECORDER] Filtered: coords (619,232) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,417 | INFO    | [RECORDER] Filtered: coords (623,232) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,419 | INFO    | [RECORDER] Filtered: coords (627,233) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,419 | INFO    | [RECORDER] Filtered: coords (632,233) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,421 | INFO    | [RECORDER] Filtered: coords (635,233) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,422 | INFO    | [RECORDER] Filtered: coords (640,233) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,423 | INFO    | [RECORDER] Filtered: coords (644,234) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,424 | INFO    | [RECORDER] Filtered: coords (649,234) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,425 | INFO    | [RECORDER] Filtered: coords (654,234) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,426 | INFO    | [RECORDER] Filtered: coords (659,234) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,426 | INFO    | [RECORDER] Filtered: coords (665,235) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,427 | INFO    | [RECORDER] Filtered: coords (667,235) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,428 | INFO    | [RECORDER] Filtered: coords (672,235) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,429 | INFO    | [RECORDER] Filtered: coords (678,236) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,430 | INFO    | [RECORDER] Filtered: coords (683,236) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,431 | INFO    | [RECORDER] Filtered: coords (688,236) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,432 | INFO    | [RECORDER] Filtered: coords (695,237) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,433 | INFO    | [RECORDER] Filtered: coords (700,237) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,434 | INFO    | [RECORDER] Filtered: coords (707,237) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,435 | INFO    | [RECORDER] Filtered: coords (710,237) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,436 | INFO    | [RECORDER] Filtered: coords (716,239) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,439 | INFO    | [RECORDER] Filtered: coords (728,239) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,440 | INFO    | [RECORDER] Filtered: coords (735,239) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,441 | INFO    | [RECORDER] Filtered: coords (742,240) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,441 | INFO    | [RECORDER] Filtered: coords (744,240) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,443 | INFO    | [RECORDER] Filtered: coords (753,240) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,443 | INFO    | [RECORDER] Filtered: coords (757,240) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,444 | INFO    | [RECORDER] Filtered: coords (763,240) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,445 | INFO    | [RECORDER] Filtered: coords (770,241) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,446 | INFO    | [RECORDER] Filtered: coords (776,241) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,448 | INFO    | [RECORDER] Filtered: coords (782,241) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,449 | INFO    | [RECORDER] Filtered: coords (786,241) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,449 | INFO    | [RECORDER] Filtered: coords (793,242) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,450 | INFO    | [RECORDER] Filtered: coords (799,242) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,451 | INFO    | [RECORDER] Filtered: coords (806,242) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,452 | INFO    | [RECORDER] Filtered: coords (813,243) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,453 | INFO    | [RECORDER] Filtered: coords (820,243) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,454 | INFO    | [RECORDER] Filtered: coords (827,243) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,456 | INFO    | [RECORDER] Filtered: coords (831,243) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,456 | INFO    | [RECORDER] Filtered: coords (837,244) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,457 | INFO    | [RECORDER] Filtered: coords (844,244) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,458 | INFO    | [RECORDER] Filtered: coords (851,245) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,460 | INFO    | [RECORDER] Filtered: coords (859,245) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,461 | INFO    | [RECORDER] Filtered: coords (866,245) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,462 | INFO    | [RECORDER] Filtered: coords (873,247) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,463 | INFO    | [RECORDER] Filtered: coords (880,247) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,464 | INFO    | [RECORDER] Filtered: coords (884,248) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,465 | INFO    | [RECORDER] Filtered: coords (892,248) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,465 | INFO    | [RECORDER] Filtered: coords (899,249) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,465 | INFO    | [RECORDER] Filtered: coords (906,249) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,468 | INFO    | [RECORDER] Filtered: coords (914,250) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,469 | INFO    | [RECORDER] Filtered: coords (921,250) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,469 | INFO    | [RECORDER] Filtered: coords (925,250) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,470 | INFO    | [RECORDER] Filtered: coords (935,251) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,471 | INFO    | [RECORDER] Filtered: coords (939,252) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,472 | INFO    | [RECORDER] Filtered: coords (948,252) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,473 | INFO    | [RECORDER] Filtered: coords (956,253) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,474 | INFO    | [RECORDER] Filtered: coords (963,254) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,475 | INFO    | [RECORDER] Filtered: coords (972,254) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,476 | INFO    | [RECORDER] Filtered: coords (980,256) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,478 | INFO    | [RECORDER] Filtered: coords (984,257) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,479 | INFO    | [RECORDER] Filtered: coords (996,258) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,479 | INFO    | [RECORDER] Filtered: coords (1001,258) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,480 | INFO    | [RECORDER] Filtered: coords (1008,259) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,481 | INFO    | [RECORDER] Filtered: coords (1017,260) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,482 | INFO    | [RECORDER] Filtered: coords (1025,262) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,485 | INFO    | [RECORDER] Filtered: coords (1046,265) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,490 | INFO    | [RECORDER] Filtered: coords (1079,270) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,491 | INFO    | [RECORDER] Filtered: coords (1088,271) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,492 | INFO    | [RECORDER] Filtered: coords (1102,272) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,494 | INFO    | [RECORDER] Filtered: coords (1109,274) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,496 | INFO    | [RECORDER] Filtered: coords (1126,277) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,497 | INFO    | [RECORDER] Filtered: coords (1135,279) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,499 | INFO    | [RECORDER] Filtered: coords (1143,280) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,502 | INFO    | [RECORDER] Filtered: coords (1171,284) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,504 | INFO    | [RECORDER] Filtered: coords (1187,287) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,507 | INFO    | [RECORDER] Filtered: coords (1211,292) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,508 | INFO    | [RECORDER] Filtered: coords (1215,293) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,509 | INFO    | [RECORDER] Filtered: coords (1222,294) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,510 | INFO    | [RECORDER] Filtered: coords (1231,295) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,511 | INFO    | [RECORDER] Filtered: coords (1238,296) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,512 | INFO    | [RECORDER] Filtered: coords (1245,299) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,513 | INFO    | [RECORDER] Filtered: coords (1249,299) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,514 | INFO    | [RECORDER] Filtered: coords (1255,301) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,515 | INFO    | [RECORDER] Filtered: coords (1262,302) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,516 | INFO    | [RECORDER] Filtered: coords (1269,303) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,516 | INFO    | [RECORDER] Filtered: coords (1276,304) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,518 | INFO    | [RECORDER] Filtered: coords (1283,305) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,519 | INFO    | [RECORDER] Filtered: coords (1290,308) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,520 | INFO    | [RECORDER] Filtered: coords (1294,309) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,522 | INFO    | [RECORDER] Filtered: coords (1307,311) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,523 | INFO    | [RECORDER] Filtered: coords (1314,312) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,524 | INFO    | [RECORDER] Filtered: coords (1319,313) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:48,911 | INFO    | [RECORDER] Mouse down at (1604, 441) button=Button.left
+2026-01-10 09:05:49,007 | INFO    | [RECORDER] Mouse up at (1605, 441) button=Button.left
+2026-01-10 09:05:49,310 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:49,345 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:49,401 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:49,430 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:49,503 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:49,808 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=1
+2026-01-10 09:05:49,838 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=1
+2026-01-10 09:05:49,873 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=1
+2026-01-10 09:05:49,918 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=1
+2026-01-10 09:05:49,998 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=1
+2026-01-10 09:05:50,088 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=1
+2026-01-10 09:05:50,181 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=1
+2026-01-10 09:05:50,546 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:50,581 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:50,610 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:50,639 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:50,709 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:50,740 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:50,808 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:50,843 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:50,884 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:51,124 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=1
+2026-01-10 09:05:51,148 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=1
+2026-01-10 09:05:51,165 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=1
+2026-01-10 09:05:51,185 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=1
+2026-01-10 09:05:51,213 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=1
+2026-01-10 09:05:51,264 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=1
+2026-01-10 09:05:51,319 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=1
+2026-01-10 09:05:51,409 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=1
+2026-01-10 09:05:51,634 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:51,663 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:51,684 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:51,794 | INFO    | [RECORDER] Scroll at (1605, 441) dx=0 dy=-1
+2026-01-10 09:05:52,159 | INFO    | [RECORDER] Mouse down at (1673, 446) button=Button.right
+2026-01-10 09:05:52,251 | INFO    | [RECORDER] Mouse up at (1673, 446) button=Button.right
+2026-01-10 09:05:52,571 | INFO    | [RECORDER] Mouse down at (1546, 478) button=Button.left
+2026-01-10 09:05:52,655 | INFO    | [RECORDER] Mouse up at (1546, 478) button=Button.left
+2026-01-10 09:05:52,959 | INFO    | [RECORDER] Mouse down at (1629, 469) button=Button.left
+2026-01-10 09:05:53,051 | INFO    | [RECORDER] Mouse up at (1629, 469) button=Button.left
+2026-01-10 09:05:53,664 | INFO    | [RECORDER] Filtered: coords (1325,377) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,665 | INFO    | [RECORDER] Filtered: coords (1314,374) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,669 | INFO    | [RECORDER] Filtered: coords (1270,364) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,670 | INFO    | [RECORDER] Filtered: coords (1259,361) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,671 | INFO    | [RECORDER] Filtered: coords (1252,360) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,672 | INFO    | [RECORDER] Filtered: coords (1242,357) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,673 | INFO    | [RECORDER] Filtered: coords (1232,355) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,674 | INFO    | [RECORDER] Filtered: coords (1220,352) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,675 | INFO    | [RECORDER] Filtered: coords (1209,349) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,677 | INFO    | [RECORDER] Filtered: coords (1202,347) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,678 | INFO    | [RECORDER] Filtered: coords (1192,344) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,679 | INFO    | [RECORDER] Filtered: coords (1180,343) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,679 | INFO    | [RECORDER] Filtered: coords (1170,341) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,680 | INFO    | [RECORDER] Filtered: coords (1159,338) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,681 | INFO    | [RECORDER] Filtered: coords (1147,335) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,682 | INFO    | [RECORDER] Filtered: coords (1137,334) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,683 | INFO    | [RECORDER] Filtered: coords (1125,331) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,684 | INFO    | [RECORDER] Filtered: coords (1120,330) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,685 | INFO    | [RECORDER] Filtered: coords (1108,329) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,687 | INFO    | [RECORDER] Filtered: coords (1097,326) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,688 | INFO    | [RECORDER] Filtered: coords (1086,325) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,689 | INFO    | [RECORDER] Filtered: coords (1075,322) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,690 | INFO    | [RECORDER] Filtered: coords (1064,321) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,691 | INFO    | [RECORDER] Filtered: coords (1053,319) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,692 | INFO    | [RECORDER] Filtered: coords (1046,317) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,698 | INFO    | [RECORDER] Filtered: coords (980,306) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,699 | INFO    | [RECORDER] Filtered: coords (968,304) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,700 | INFO    | [RECORDER] Filtered: coords (951,302) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,702 | INFO    | [RECORDER] Filtered: coords (928,298) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,707 | INFO    | [RECORDER] Filtered: coords (898,294) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,707 | INFO    | [RECORDER] Filtered: coords (883,291) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,708 | INFO    | [RECORDER] Filtered: coords (876,290) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,709 | INFO    | [RECORDER] Filtered: coords (864,289) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,710 | INFO    | [RECORDER] Filtered: coords (852,287) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,711 | INFO    | [RECORDER] Filtered: coords (840,285) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,713 | INFO    | [RECORDER] Filtered: coords (821,282) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,714 | INFO    | [RECORDER] Filtered: coords (811,281) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,715 | INFO    | [RECORDER] Filtered: coords (799,280) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,716 | INFO    | [RECORDER] Filtered: coords (787,277) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,717 | INFO    | [RECORDER] Filtered: coords (776,276) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,719 | INFO    | [RECORDER] Filtered: coords (746,271) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,723 | INFO    | [RECORDER] Filtered: coords (712,265) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,725 | INFO    | [RECORDER] Filtered: coords (690,263) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,726 | INFO    | [RECORDER] Filtered: coords (668,259) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,728 | INFO    | [RECORDER] Filtered: coords (661,258) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,729 | INFO    | [RECORDER] Filtered: coords (649,256) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,730 | INFO    | [RECORDER] Filtered: coords (639,255) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,731 | INFO    | [RECORDER] Filtered: coords (629,253) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,732 | INFO    | [RECORDER] Filtered: coords (617,251) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,733 | INFO    | [RECORDER] Filtered: coords (607,250) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,733 | INFO    | [RECORDER] Filtered: coords (601,249) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,735 | INFO    | [RECORDER] Filtered: coords (569,244) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,739 | INFO    | [RECORDER] Filtered: coords (540,239) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,740 | INFO    | [RECORDER] Filtered: coords (534,238) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,741 | INFO    | [RECORDER] Filtered: coords (524,236) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,742 | INFO    | [RECORDER] Filtered: coords (514,235) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,743 | INFO    | [RECORDER] Filtered: coords (505,234) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,744 | INFO    | [RECORDER] Filtered: coords (495,233) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,745 | INFO    | [RECORDER] Filtered: coords (486,230) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,746 | INFO    | [RECORDER] Filtered: coords (478,229) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,748 | INFO    | [RECORDER] Filtered: coords (468,228) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,749 | INFO    | [RECORDER] Filtered: coords (464,227) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,750 | INFO    | [RECORDER] Filtered: coords (454,225) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,751 | INFO    | [RECORDER] Filtered: coords (445,224) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,754 | INFO    | [RECORDER] Filtered: coords (421,219) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,757 | INFO    | [RECORDER] Filtered: coords (401,216) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,758 | INFO    | [RECORDER] Filtered: coords (394,215) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,758 | INFO    | [RECORDER] Filtered: coords (385,213) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,759 | INFO    | [RECORDER] Filtered: coords (378,212) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,760 | INFO    | [RECORDER] Filtered: coords (371,211) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,761 | INFO    | [RECORDER] Filtered: coords (366,210) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,762 | INFO    | [RECORDER] Filtered: coords (359,209) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,764 | INFO    | [RECORDER] Filtered: coords (355,208) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,767 | INFO    | [RECORDER] Filtered: coords (337,204) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,775 | INFO    | [RECORDER] Filtered: coords (305,198) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,776 | INFO    | [RECORDER] Filtered: coords (298,196) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,777 | INFO    | [RECORDER] Filtered: coords (296,196) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,780 | INFO    | [RECORDER] Filtered: coords (286,195) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,781 | INFO    | [RECORDER] Filtered: coords (279,193) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,785 | INFO    | [RECORDER] Filtered: coords (271,192) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,789 | INFO    | [RECORDER] Filtered: coords (262,190) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,791 | INFO    | [RECORDER] Filtered: coords (260,190) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,792 | INFO    | [RECORDER] Filtered: coords (257,189) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,793 | INFO    | [RECORDER] Filtered: coords (255,189) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,794 | INFO    | [RECORDER] Filtered: coords (255,188) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,795 | INFO    | [RECORDER] Filtered: coords (253,188) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,796 | INFO    | [RECORDER] Filtered: coords (251,188) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,798 | INFO    | [RECORDER] Filtered: coords (251,188) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,799 | INFO    | [RECORDER] Filtered: coords (249,188) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,799 | INFO    | [RECORDER] Filtered: coords (249,188) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,800 | INFO    | [RECORDER] Filtered: coords (248,187) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,802 | INFO    | [RECORDER] Filtered: coords (246,187) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,803 | INFO    | [RECORDER] Filtered: coords (246,187) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,804 | INFO    | [RECORDER] Filtered: coords (245,187) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,807 | INFO    | [RECORDER] Filtered: coords (242,186) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,810 | INFO    | [RECORDER] Filtered: coords (241,185) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,812 | INFO    | [RECORDER] Filtered: coords (240,185) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,814 | INFO    | [RECORDER] Filtered: coords (239,185) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,816 | INFO    | [RECORDER] Filtered: coords (239,185) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,821 | INFO    | [RECORDER] Filtered: coords (237,184) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,825 | INFO    | [RECORDER] Filtered: coords (236,184) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,827 | INFO    | [RECORDER] Filtered: coords (236,184) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,828 | INFO    | [RECORDER] Filtered: coords (236,183) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,831 | INFO    | [RECORDER] Filtered: coords (235,183) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,835 | INFO    | [RECORDER] Filtered: coords (235,183) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,846 | INFO    | [RECORDER] Filtered: coords (235,182) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,852 | INFO    | [RECORDER] Filtered: coords (234,182) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,862 | INFO    | [RECORDER] Filtered: coords (234,181) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,905 | INFO    | [RECORDER] Filtered: coords (232,177) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,910 | INFO    | [RECORDER] Filtered: coords (230,174) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,911 | INFO    | [RECORDER] Filtered: coords (229,173) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,912 | INFO    | [RECORDER] Filtered: coords (229,173) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,928 | INFO    | [RECORDER] Filtered: coords (217,165) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,942 | INFO    | [RECORDER] Filtered: coords (203,155) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,960 | INFO    | [RECORDER] Filtered: coords (186,146) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,963 | INFO    | [RECORDER] Filtered: coords (181,144) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,967 | INFO    | [RECORDER] Filtered: coords (179,142) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,969 | INFO    | [RECORDER] Filtered: coords (177,142) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,981 | INFO    | [RECORDER] Filtered: coords (170,138) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,993 | INFO    | [RECORDER] Filtered: coords (164,135) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,997 | INFO    | [RECORDER] Filtered: coords (162,133) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:53,999 | INFO    | [RECORDER] Filtered: coords (162,133) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,001 | INFO    | [RECORDER] Filtered: coords (160,132) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,003 | INFO    | [RECORDER] Filtered: coords (159,132) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,005 | INFO    | [RECORDER] Filtered: coords (158,130) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,008 | INFO    | [RECORDER] Filtered: coords (157,130) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,010 | INFO    | [RECORDER] Filtered: coords (157,129) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,011 | INFO    | [RECORDER] Filtered: coords (156,129) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,012 | INFO    | [RECORDER] Filtered: coords (156,128) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,013 | INFO    | [RECORDER] Filtered: coords (155,128) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,014 | INFO    | [RECORDER] Filtered: coords (155,128) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,015 | INFO    | [RECORDER] Filtered: coords (154,127) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,029 | INFO    | [RECORDER] Filtered: coords (152,124) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,030 | INFO    | [RECORDER] Filtered: coords (152,123) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,031 | INFO    | [RECORDER] Filtered: coords (152,123) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,039 | INFO    | [RECORDER] Filtered: coords (152,122) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,040 | INFO    | [RECORDER] Filtered: coords (151,121) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,044 | INFO    | [RECORDER] Filtered: coords (151,120) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,046 | INFO    | [RECORDER] Filtered: coords (151,120) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,051 | INFO    | [RECORDER] Filtered: coords (151,119) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,055 | INFO    | [RECORDER] Filtered: coords (151,118) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,056 | INFO    | [RECORDER] Filtered: coords (150,118) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,059 | INFO    | [RECORDER] Filtered: coords (150,118) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,063 | INFO    | [RECORDER] Filtered: coords (150,117) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,068 | INFO    | [RECORDER] Filtered: coords (150,116) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,070 | INFO    | [RECORDER] Filtered: coords (149,116) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,072 | INFO    | [RECORDER] Filtered: coords (149,115) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,075 | INFO    | [RECORDER] Filtered: coords (149,115) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,077 | INFO    | [RECORDER] Filtered: coords (149,115) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,078 | INFO    | [RECORDER] Filtered: coords (149,114) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,082 | INFO    | [RECORDER] Filtered: coords (148,113) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,085 | INFO    | [RECORDER] Filtered: coords (147,113) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,086 | INFO    | [RECORDER] Filtered: coords (147,112) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,089 | INFO    | [RECORDER] Filtered: coords (146,111) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,091 | INFO    | [RECORDER] Filtered: coords (145,110) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,093 | INFO    | [RECORDER] Filtered: coords (144,110) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,095 | INFO    | [RECORDER] Filtered: coords (144,109) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,098 | INFO    | [RECORDER] Filtered: coords (143,108) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,099 | INFO    | [RECORDER] Filtered: coords (142,108) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,100 | INFO    | [RECORDER] Filtered: coords (142,108) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,100 | INFO    | [RECORDER] Filtered: coords (142,108) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,101 | INFO    | [RECORDER] Filtered: coords (141,108) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,102 | INFO    | [RECORDER] Filtered: coords (141,107) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,103 | INFO    | [RECORDER] Filtered: coords (140,107) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,104 | INFO    | [RECORDER] Filtered: coords (139,106) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,105 | INFO    | [RECORDER] Filtered: coords (139,105) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,107 | INFO    | [RECORDER] Filtered: coords (138,105) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,109 | INFO    | [RECORDER] Filtered: coords (138,105) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,110 | INFO    | [RECORDER] Filtered: coords (137,105) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,111 | INFO    | [RECORDER] Filtered: coords (137,104) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,113 | INFO    | [RECORDER] Filtered: coords (136,104) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,114 | INFO    | [RECORDER] Filtered: coords (136,103) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,115 | INFO    | [RECORDER] Filtered: coords (135,103) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,116 | INFO    | [RECORDER] Filtered: coords (135,103) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,119 | INFO    | [RECORDER] Filtered: coords (134,103) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,120 | INFO    | [RECORDER] Filtered: coords (134,102) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,121 | INFO    | [RECORDER] Filtered: coords (133,102) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,123 | INFO    | [RECORDER] Filtered: coords (132,102) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,125 | INFO    | [RECORDER] Filtered: coords (132,101) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,125 | INFO    | [RECORDER] Filtered: coords (132,101) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,128 | INFO    | [RECORDER] Filtered: coords (131,101) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,129 | INFO    | [RECORDER] Filtered: coords (131,101) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,131 | INFO    | [RECORDER] Filtered: coords (130,101) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,134 | INFO    | [RECORDER] Filtered: coords (130,100) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,138 | INFO    | [RECORDER] Filtered: coords (130,100) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,147 | INFO    | [RECORDER] Filtered: coords (129,100) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,158 | INFO    | [RECORDER] Filtered: coords (129,99) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,298 | INFO    | [RECORDER] Mouse down at (129, 99) button=Button.left
+2026-01-10 09:05:54,299 | INFO    | [RECORDER] Filtered: coords (129,99) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,299 | INFO    | [RECORDER] Click filtered
+2026-01-10 09:05:54,382 | INFO    | [RECORDER] Mouse up at (129, 99) button=Button.left
+2026-01-10 09:05:54,382 | INFO    | [RECORDER] Filtered: coords (129,99) outside target rect (1326, 11, 1906, 1006)
+2026-01-10 09:05:54,384 | INFO    | [RECORDER] Click filtered
+2026-01-10 09:05:54,385 | INFO    | [RECORDER] Stopped. 850 events captured
+2026-01-10 09:05:54,391 | INFO    | [UI] Added 60 recorded actions
+2026-01-10 09:05:54,392 | INFO    | [UI] Recording stopped
+2026-01-10 09:05:55,272 | INFO    | [UI] Playback loop: 114 actions, target_hwnd=657034
+2026-01-10 09:05:55,273 | INFO    | [UI] Executing action 0: WAIT = {'ms': 209}
+2026-01-10 09:05:55,273 | INFO    | [UI] Playback started
+2026-01-10 09:05:55,484 | INFO    | [UI] Executing action 1: CLICK = {'button': 'left', 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:05:55,553 | INFO    | [UI] Executing action 2: WAIT = {'ms': 109}
+2026-01-10 09:05:55,665 | INFO    | [UI] Executing action 3: WAIT = {'ms': 419}
+2026-01-10 09:05:56,085 | INFO    | [UI] Executing action 4: WHEEL = {'delta': -120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:05:56,136 | INFO    | [UI] Executing action 5: WAIT = {'ms': 78}
+2026-01-10 09:05:56,215 | INFO    | [UI] Executing action 6: WHEEL = {'delta': -120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:05:56,268 | INFO    | [UI] Executing action 7: WAIT = {'ms': 154}
+2026-01-10 09:05:56,423 | INFO    | [UI] Executing action 8: WHEEL = {'delta': -120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:05:56,476 | INFO    | [UI] Executing action 9: WAIT = {'ms': 168}
+2026-01-10 09:05:56,644 | INFO    | [UI] Executing action 10: WHEEL = {'delta': -120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:05:56,696 | INFO    | [UI] Executing action 11: WAIT = {'ms': 147}
+2026-01-10 09:05:56,844 | INFO    | [UI] Executing action 12: WHEEL = {'delta': -120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:05:56,897 | INFO    | [UI] Executing action 13: WAIT = {'ms': 116}
+2026-01-10 09:05:57,015 | INFO    | [UI] Executing action 14: WHEEL = {'delta': -120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:05:57,068 | INFO    | [UI] Executing action 15: WAIT = {'ms': 338}
+2026-01-10 09:05:57,408 | INFO    | [UI] Executing action 16: WHEEL = {'delta': 120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:05:57,460 | INFO    | [UI] Executing action 17: WHEEL = {'delta': 120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:05:57,513 | INFO    | [UI] Executing action 18: WHEEL = {'delta': 120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:05:57,564 | INFO    | [UI] Executing action 19: WAIT = {'ms': 72}
+2026-01-10 09:05:57,637 | INFO    | [UI] Executing action 20: WHEEL = {'delta': 120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:05:57,689 | INFO    | [UI] Executing action 21: WAIT = {'ms': 81}
+2026-01-10 09:05:57,772 | INFO    | [UI] Executing action 22: WHEEL = {'delta': 120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:05:57,824 | INFO    | [UI] Executing action 23: WAIT = {'ms': 123}
+2026-01-10 09:05:57,948 | INFO    | [UI] Executing action 24: WHEEL = {'delta': 120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:05:57,999 | INFO    | [UI] Executing action 25: WAIT = {'ms': 98}
+2026-01-10 09:05:58,099 | INFO    | [UI] Executing action 26: WHEEL = {'delta': 120, 'x': 1092, 'y': 376, 'screen_coords': True}
+2026-01-10 09:05:58,151 | INFO    | [UI] Executing action 27: WAIT = {'ms': 299}
+2026-01-10 09:05:58,452 | INFO    | [UI] Executing action 28: CLICK = {'button': 'right', 'x': 1007, 'y': 357, 'screen_coords': True}
+2026-01-10 09:05:58,506 | INFO    | [UI] Executing action 29: WAIT = {'ms': 87}
+2026-01-10 09:05:58,595 | INFO    | [UI] Executing action 30: WAIT = {'ms': 145}
+2026-01-10 09:05:58,741 | INFO    | [UI] Executing action 31: WAIT = {'ms': 64}
+2026-01-10 09:05:58,806 | INFO    | [UI] Executing action 32: CLICK = {'button': 'left', 'x': 893, 'y': 370, 'screen_coords': True}
+2026-01-10 09:05:58,859 | INFO    | [UI] Executing action 33: WAIT = {'ms': 68}
+2026-01-10 09:05:58,928 | INFO    | [UI] Executing action 34: WAIT = {'ms': 61}
+2026-01-10 09:05:58,990 | INFO    | [UI] Executing action 35: WHEEL = {'delta': -120, 'x': 901, 'y': 424, 'screen_coords': True}
+2026-01-10 09:05:59,041 | INFO    | [UI] Executing action 36: WHEEL = {'delta': -120, 'x': 901, 'y': 424, 'screen_coords': True}
+2026-01-10 09:05:59,093 | INFO    | [UI] Executing action 37: WAIT = {'ms': 127}
+2026-01-10 09:05:59,221 | INFO    | [UI] Executing action 38: WHEEL = {'delta': -120, 'x': 901, 'y': 424, 'screen_coords': True}
+2026-01-10 09:05:59,272 | INFO    | [UI] Executing action 39: WAIT = {'ms': 603}
+2026-01-10 09:05:59,876 | INFO    | [UI] Executing action 40: WHEEL = {'delta': 120, 'x': 901, 'y': 424, 'screen_coords': True}
+2026-01-10 09:05:59,928 | INFO    | [UI] Executing action 41: WAIT = {'ms': 95}
+2026-01-10 09:06:00,024 | INFO    | [UI] Executing action 42: WHEEL = {'delta': 120, 'x': 901, 'y': 424, 'screen_coords': True}
+2026-01-10 09:06:00,076 | INFO    | [UI] Executing action 43: WAIT = {'ms': 380}
+2026-01-10 09:06:00,457 | INFO    | [UI] Executing action 44: KEY_PRESS = {'key': 'Key.alt_l', 'repeat': 1}
+2026-01-10 09:06:00,458 | INFO    | [UI] Executing action 45: WAIT = {'ms': 72}
+2026-01-10 09:06:00,531 | INFO    | [UI] Executing action 46: KEY_PRESS = {'key': 'Key.tab', 'repeat': 1}
+2026-01-10 09:06:00,532 | INFO    | [UI] Executing action 47: WAIT = {'ms': 72}
+2026-01-10 09:06:00,606 | INFO    | [UI] Executing action 48: WAIT = {'ms': 112}
+2026-01-10 09:06:00,719 | INFO    | [UI] Executing action 49: WAIT = {'ms': 363}
+2026-01-10 09:06:01,084 | INFO    | [UI] Executing action 50: WAIT = {'ms': 64}
+2026-01-10 09:06:01,149 | INFO    | [UI] Executing action 51: WAIT = {'ms': 281}
+2026-01-10 09:06:01,432 | INFO    | [UI] Executing action 52: CLICK = {'button': 'left', 'x': 125, 'y': 99, 'screen_coords': True}
+2026-01-10 09:06:01,494 | INFO    | [UI] Executing action 53: WAIT = {'ms': 72}
+2026-01-10 09:06:01,567 | INFO    | [UI] Executing action 54: WAIT = {'ms': 56}
+2026-01-10 09:06:01,627 | INFO    | [UI] Executing action 55: WAIT = {'ms': 60}
+2026-01-10 09:06:01,689 | INFO    | [UI] Executing action 56: CLICK = {'button': 'left', 'x': 277, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:01,743 | INFO    | [UI] Executing action 57: WAIT = {'ms': 65}
+2026-01-10 09:06:01,810 | INFO    | [UI] Executing action 58: WAIT = {'ms': 304}
+2026-01-10 09:06:02,118 | INFO    | [UI] Executing action 59: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:02,211 | INFO    | [UI] Executing action 60: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:02,289 | INFO    | [UI] Executing action 61: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:02,395 | INFO    | [UI] Executing action 62: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:02,496 | INFO    | [UI] Executing action 63: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:02,558 | INFO    | [UI] Executing action 64: WAIT = {'ms': 306}
+2026-01-10 09:06:02,867 | INFO    | [UI] Executing action 65: WHEEL = {'delta': 120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:02,924 | INFO    | [UI] Executing action 66: WHEEL = {'delta': 120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:02,979 | INFO    | [UI] Executing action 67: WHEEL = {'delta': 120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:03,042 | INFO    | [UI] Executing action 68: WHEEL = {'delta': 120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:03,095 | INFO    | [UI] Executing action 69: WAIT = {'ms': 80}
+2026-01-10 09:06:03,179 | INFO    | [UI] Executing action 70: WHEEL = {'delta': 120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:03,231 | INFO    | [UI] Executing action 71: WAIT = {'ms': 90}
+2026-01-10 09:06:03,321 | INFO    | [UI] Executing action 72: WHEEL = {'delta': 120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:03,373 | INFO    | [UI] Executing action 73: WAIT = {'ms': 93}
+2026-01-10 09:06:03,467 | INFO    | [UI] Executing action 74: WHEEL = {'delta': 120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:03,522 | INFO    | [UI] Executing action 75: WAIT = {'ms': 364}
+2026-01-10 09:06:03,887 | INFO    | [UI] Executing action 76: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:03,976 | INFO    | [UI] Executing action 77: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:04,036 | INFO    | [UI] Executing action 78: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:04,119 | INFO    | [UI] Executing action 79: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:04,175 | INFO    | [UI] Executing action 80: WAIT = {'ms': 70}
+2026-01-10 09:06:04,246 | INFO    | [UI] Executing action 81: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:04,297 | INFO    | [UI] Executing action 82: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:04,351 | INFO    | [UI] Executing action 83: WAIT = {'ms': 67}
+2026-01-10 09:06:04,420 | INFO    | [UI] Executing action 84: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:04,471 | INFO    | [UI] Executing action 85: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:04,523 | INFO    | [UI] Executing action 86: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:04,575 | INFO    | [UI] Executing action 87: WAIT = {'ms': 240}
+2026-01-10 09:06:04,823 | INFO    | [UI] Executing action 88: WHEEL = {'delta': 120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:04,877 | INFO    | [UI] Executing action 89: WHEEL = {'delta': 120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:04,932 | INFO    | [UI] Executing action 90: WHEEL = {'delta': 120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:05,007 | INFO    | [UI] Executing action 91: WHEEL = {'delta': 120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:05,062 | INFO    | [UI] Executing action 92: WHEEL = {'delta': 120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:05,113 | INFO    | [UI] Executing action 93: WAIT = {'ms': 51}
+2026-01-10 09:06:05,166 | INFO    | [UI] Executing action 94: WHEEL = {'delta': 120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:05,222 | INFO    | [UI] Executing action 95: WAIT = {'ms': 55}
+2026-01-10 09:06:05,278 | INFO    | [UI] Executing action 96: WHEEL = {'delta': 120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:05,331 | INFO    | [UI] Executing action 97: WAIT = {'ms': 91}
+2026-01-10 09:06:05,425 | INFO    | [UI] Executing action 98: WHEEL = {'delta': 120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:05,477 | INFO    | [UI] Executing action 99: WAIT = {'ms': 224}
+2026-01-10 09:06:05,702 | INFO    | [UI] Executing action 100: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:05,754 | INFO    | [UI] Executing action 101: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:05,805 | INFO    | [UI] Executing action 102: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:05,857 | INFO    | [UI] Executing action 103: WAIT = {'ms': 109}
+2026-01-10 09:06:05,969 | INFO    | [UI] Executing action 104: WHEEL = {'delta': -120, 'x': 278, 'y': 430, 'screen_coords': False}
+2026-01-10 09:06:06,021 | INFO    | [UI] Executing action 105: WAIT = {'ms': 124}
+2026-01-10 09:06:06,146 | INFO    | [UI] Executing action 106: CLICK = {'button': 'right', 'x': 346, 'y': 435, 'screen_coords': False}
+2026-01-10 09:06:06,208 | INFO    | [UI] Executing action 107: WAIT = {'ms': 92}
+2026-01-10 09:06:06,304 | INFO    | [UI] Executing action 108: CLICK = {'button': 'left', 'x': 219, 'y': 467, 'screen_coords': False}
+2026-01-10 09:06:06,359 | INFO    | [UI] Executing action 109: WAIT = {'ms': 84}
+2026-01-10 09:06:06,445 | INFO    | [UI] Executing action 110: WAIT = {'ms': 87}
+2026-01-10 09:06:06,533 | INFO    | [UI] Executing action 111: CLICK = {'button': 'left', 'x': 302, 'y': 458, 'screen_coords': False}
+2026-01-10 09:06:06,588 | INFO    | [UI] Executing action 112: WAIT = {'ms': 93}
+2026-01-10 09:06:06,682 | INFO    | [UI] Executing action 113: WAIT = {'ms': 315}
+2026-01-10 09:06:06,999 | INFO    | [UI] Playback complete
+2026-01-10 09:06:07,005 | INFO    | [UI] Playback complete

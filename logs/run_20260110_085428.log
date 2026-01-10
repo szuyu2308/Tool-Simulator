@@ -1,0 +1,52 @@
+2026-01-10 08:54:28,175 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 08:54:28,340 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 08:54:28,446 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 08:54:28,446 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-10 08:54:28,446 | INFO    | [WORKER] 1: Scale factors = 1.074x, 1.036y
+2026-01-10 08:54:28,511 | INFO    | [CAPTURE] BetterCam not installed
+2026-01-10 08:54:28,733 | INFO    | [CAPTURE] DXCam initialized successfully
+2026-01-10 08:54:28,733 | INFO    | [CAPTURE] Active provider: DXCam
+2026-01-10 08:54:28,733 | INFO    | [WORKER] 1: Providers initialized (Capture: DXCam)
+2026-01-10 08:54:28,737 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 08:54:29,312 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 08:54:29,312 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 08:54:29,312 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 08:54:29,312 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 08:54:29,349 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 08:54:29,349 | INFO    | [UI] Global hotkeys registered
+2026-01-10 08:54:38,457 | INFO    | [RECORDER] Configured: target=657034, ignore_ui=329296
+2026-01-10 08:54:38,478 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 08:54:38,479 | INFO    | [UI] Recording started (V2 adapter), target hwnd: 657034
+2026-01-10 08:54:47,282 | INFO    | [RECORDER] Stopped. 4 events captured
+2026-01-10 08:54:47,283 | INFO    | [UI] Added 3 recorded actions
+2026-01-10 08:54:47,284 | INFO    | [UI] Recording stopped
+2026-01-10 08:54:52,810 | INFO    | [UI] Playback started
+2026-01-10 08:54:52,912 | INFO    | [UI] Playback complete
+2026-01-10 08:54:54,123 | INFO    | [UI] Playback started
+2026-01-10 08:54:54,228 | INFO    | [UI] Playback complete
+2026-01-10 08:55:05,465 | INFO    | [RECORDER] Configured: target=657034, ignore_ui=329296
+2026-01-10 08:55:05,483 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 08:55:05,483 | INFO    | [UI] Recording started (V2 adapter), target hwnd: 657034
+2026-01-10 08:55:12,086 | INFO    | [RECORDER] Stopped. 4 events captured
+2026-01-10 08:55:12,087 | INFO    | [UI] Added 5 recorded actions
+2026-01-10 08:55:12,089 | INFO    | [UI] Recording stopped
+2026-01-10 08:55:53,658 | INFO    | [UI] Capture target set: Screen (Full) (hwnd=None)
+2026-01-10 08:55:56,202 | INFO    | [RECORDER] Configured: target=657034, ignore_ui=329296
+2026-01-10 08:55:56,225 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 08:55:56,225 | INFO    | [UI] Recording started (V2 adapter), target hwnd: 657034
+2026-01-10 08:56:00,673 | INFO    | [RECORDER] Stopped. 4 events captured
+2026-01-10 08:56:00,675 | INFO    | [UI] Added 5 recorded actions
+2026-01-10 08:56:00,676 | INFO    | [UI] Recording stopped
+2026-01-10 08:56:02,655 | INFO    | [UI] Playback started
+2026-01-10 08:56:02,882 | INFO    | [UI] Playback complete
+2026-01-10 08:56:04,451 | INFO    | [UI] Playback started
+2026-01-10 08:56:04,679 | INFO    | [UI] Playback complete
+2026-01-10 08:56:04,911 | INFO    | [UI] Playback started
+2026-01-10 08:56:05,138 | INFO    | [UI] Playback complete
+2026-01-10 08:56:12,587 | INFO    | [UI] Refreshing workers...
+2026-01-10 08:56:12,685 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 08:56:12,895 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 08:56:12,897 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-10 08:56:12,897 | INFO    | [WORKER] 1: Scale factors = 1.074x, 1.036y
+2026-01-10 08:56:12,898 | INFO    | [WORKER] 1: Providers initialized (Capture: DXCam)
+2026-01-10 08:56:12,900 | INFO    | [UI] Refreshed: 1 worker(s) detected

@@ -1,0 +1,41 @@
+2026-01-10 10:48:08,985 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 10:48:09,179 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 10:48:09,643 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 10:48:09,643 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-10 10:48:09,643 | INFO    | [WORKER] 1: Scale factors = 1.000x, 1.000y
+2026-01-10 10:48:09,714 | INFO    | [CAPTURE] BetterCam not installed
+2026-01-10 10:48:09,996 | INFO    | [CAPTURE] DXCam initialized successfully
+2026-01-10 10:48:09,998 | INFO    | [CAPTURE] Active provider: DXCam
+2026-01-10 10:48:09,999 | INFO    | [WORKER] 1: Providers initialized (Capture: DXCam)
+2026-01-10 10:48:10,003 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 10:48:11,435 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 10:48:11,442 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 10:48:11,448 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 10:48:11,450 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 10:48:11,535 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 10:48:11,536 | INFO    | [UI] Global hotkeys registered
+2026-01-10 10:48:26,258 | INFO    | [UI] Drag captured: screen (483,249)→(906,484) 762ms
+2026-01-10 10:48:29,159 | INFO    | [UI] Added action: DRAG
+2026-01-10 10:48:33,849 | INFO    | [UI] Playback loop: 1 actions, target_hwnd=None
+2026-01-10 10:48:33,849 | INFO    | [UI] Executing action 0: DRAG = {'button': 'left', 'duration_ms': 762, 'x1': 483, 'y1': 249, 'x2': 906, 'y2': 484}
+2026-01-10 10:48:33,855 | INFO    | [UI] Playback started
+2026-01-10 10:48:34,759 | INFO    | [UI] Playback complete
+2026-01-10 10:48:34,761 | INFO    | [UI] Playback complete
+2026-01-10 10:48:53,624 | INFO    | [UI] Capture target set: Screen (Full) (hwnd=None)
+2026-01-10 10:49:06,203 | INFO    | [UI] Drag captured: screen (395,182)→(469,200) 1315ms
+2026-01-10 10:49:08,702 | INFO    | [UI] Added action: DRAG
+2026-01-10 10:49:11,900 | INFO    | [UI] Playback loop: 2 actions, target_hwnd=None
+2026-01-10 10:49:11,901 | INFO    | [UI] Executing action 0: DRAG = {'button': 'left', 'duration_ms': 762, 'x1': 483, 'y1': 249, 'x2': 906, 'y2': 484}
+2026-01-10 10:49:11,901 | INFO    | [UI] Playback started
+2026-01-10 10:49:12,796 | INFO    | [UI] Executing action 1: DRAG = {'button': 'left', 'duration_ms': 1315, 'x1': 395, 'y1': 182, 'x2': 469, 'y2': 200}
+2026-01-10 10:49:14,279 | INFO    | [UI] Playback complete
+2026-01-10 10:49:14,285 | INFO    | [UI] Playback complete
+2026-01-10 10:49:23,621 | INFO    | [UI] Updated action: DRAG
+2026-01-10 10:49:24,759 | INFO    | [UI] Playback loop: 2 actions, target_hwnd=None
+2026-01-10 10:49:24,760 | INFO    | [UI] Executing action 0: DRAG = {'button': 'left', 'duration_ms': 762, 'x1': 483, 'y1': 249, 'x2': 906, 'y2': 484}
+2026-01-10 10:49:24,760 | INFO    | [UI] Playback started
+2026-01-10 10:49:25,671 | INFO    | [UI] Executing action 1: DRAG = {'button': 'left', 'duration_ms': 1, 'x1': 395, 'y1': 182, 'x2': 469, 'y2': 200}
+2026-01-10 10:49:25,755 | INFO    | [UI] Playback complete
+2026-01-10 10:49:25,760 | INFO    | [UI] Playback complete
+2026-01-10 10:49:33,631 | INFO    | [UI] Deleted 1 action(s)
+2026-01-10 10:49:34,334 | INFO    | [UI] Deleted 1 action(s)

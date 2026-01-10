@@ -1,0 +1,16 @@
+2026-01-10 09:48:19,692 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 09:48:19,887 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 09:48:20,041 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 09:48:20,043 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-10 09:48:20,043 | INFO    | [WORKER] 1: Scale factors = 1.074x, 1.036y
+2026-01-10 09:48:20,099 | INFO    | [CAPTURE] BetterCam not installed
+2026-01-10 09:48:20,340 | INFO    | [CAPTURE] DXCam initialized successfully
+2026-01-10 09:48:20,341 | INFO    | [CAPTURE] Active provider: DXCam
+2026-01-10 09:48:20,341 | INFO    | [WORKER] 1: Providers initialized (Capture: DXCam)
+2026-01-10 09:48:20,346 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 09:48:20,947 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 09:48:20,947 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 09:48:20,948 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 09:48:20,948 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 09:48:20,997 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 09:48:20,999 | INFO    | [UI] Global hotkeys registered

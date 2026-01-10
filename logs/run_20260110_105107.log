@@ -1,0 +1,238 @@
+2026-01-10 10:51:07,443 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 10:51:07,609 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 10:51:07,900 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 10:51:07,900 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-10 10:51:07,900 | INFO    | [WORKER] 1: Scale factors = 1.000x, 1.000y
+2026-01-10 10:51:07,973 | INFO    | [CAPTURE] BetterCam not installed
+2026-01-10 10:51:08,221 | INFO    | [CAPTURE] DXCam initialized successfully
+2026-01-10 10:51:08,221 | INFO    | [CAPTURE] Active provider: DXCam
+2026-01-10 10:51:08,222 | INFO    | [WORKER] 1: Providers initialized (Capture: DXCam)
+2026-01-10 10:51:08,234 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 10:51:09,201 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 10:51:09,202 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 10:51:09,202 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 10:51:09,203 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 10:51:09,272 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 10:51:09,276 | INFO    | [UI] Global hotkeys registered
+2026-01-10 10:51:14,576 | INFO    | [UI] Capture target set: Screen (Full) (hwnd=None)
+2026-01-10 10:51:16,352 | INFO    | [RECORDER] Configured: target=None, ignore_ui={4786000}
+2026-01-10 10:51:16,366 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 10:51:16,369 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 10:51:16,462 | INFO    | [RECORDER] Added ignore hwnd: 1640320
+2026-01-10 10:51:17,842 | INFO    | [RECORDER] Scroll at (529, 310) dx=0 dy=-1
+2026-01-10 10:51:17,861 | INFO    | [RECORDER] Scroll at (529, 310) dx=0 dy=-1
+2026-01-10 10:51:17,893 | INFO    | [RECORDER] Scroll at (529, 310) dx=0 dy=-1
+2026-01-10 10:51:18,622 | INFO    | [RECORDER] Scroll at (529, 310) dx=0 dy=1
+2026-01-10 10:51:18,660 | INFO    | [RECORDER] Scroll at (529, 310) dx=0 dy=1
+2026-01-10 10:51:18,710 | INFO    | [RECORDER] Scroll at (529, 310) dx=0 dy=1
+2026-01-10 10:51:18,817 | INFO    | [RECORDER] Scroll at (529, 310) dx=0 dy=1
+2026-01-10 10:51:19,738 | INFO    | [RECORDER] Mouse down at (688, 333) button=Button.right
+2026-01-10 10:51:19,822 | INFO    | [RECORDER] Mouse up at (688, 333) button=Button.right
+2026-01-10 10:51:20,486 | INFO    | [RECORDER] Mouse down at (594, 320) button=Button.left
+2026-01-10 10:51:22,663 | INFO    | [RECORDER] Mouse up at (849, 427) button=Button.left
+2026-01-10 10:51:23,673 | INFO    | [RECORDER] Mouse down at (477, 282) button=Button.left
+2026-01-10 10:51:24,902 | INFO    | [RECORDER] Mouse up at (1204, 425) button=Button.left
+2026-01-10 10:51:26,642 | INFO    | [RECORDER] Mouse down at (349, 822) button=Button.left
+2026-01-10 10:51:26,671 | INFO    | [RECORDER] Stopped. 2052 events captured
+2026-01-10 10:51:26,726 | INFO    | [UI] Added 26 recorded actions
+2026-01-10 10:51:26,744 | INFO    | [UI] Recording stopped
+2026-01-10 10:51:30,443 | INFO    | [UI] Playback loop: 26 actions, target_hwnd=None
+2026-01-10 10:51:30,444 | INFO    | [UI] Executing action 0: WAIT = {'ms': 84}
+2026-01-10 10:51:30,448 | INFO    | [UI] Playback started
+2026-01-10 10:51:30,529 | INFO    | [UI] Executing action 1: WAIT = {'ms': 91}
+2026-01-10 10:51:30,621 | INFO    | [UI] Executing action 2: WAIT = {'ms': 446}
+2026-01-10 10:51:31,068 | INFO    | [UI] Executing action 3: WHEEL = {'delta': -120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:51:31,119 | INFO    | [UI] Executing action 4: WHEEL = {'delta': -120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:51:31,170 | INFO    | [UI] Executing action 5: WHEEL = {'delta': -120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:51:31,222 | INFO    | [UI] Executing action 6: WAIT = {'ms': 730}
+2026-01-10 10:51:31,953 | INFO    | [UI] Executing action 7: WHEEL = {'delta': 120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:51:32,004 | INFO    | [UI] Executing action 8: WHEEL = {'delta': 120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:51:32,055 | INFO    | [UI] Executing action 9: WAIT = {'ms': 51}
+2026-01-10 10:51:32,107 | INFO    | [UI] Executing action 10: WHEEL = {'delta': 120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:51:32,159 | INFO    | [UI] Executing action 11: WAIT = {'ms': 106}
+2026-01-10 10:51:32,266 | INFO    | [UI] Executing action 12: WHEEL = {'delta': 120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:51:32,318 | INFO    | [UI] Executing action 13: WAIT = {'ms': 617}
+2026-01-10 10:51:32,936 | INFO    | [UI] Executing action 14: WAIT = {'ms': 80}
+2026-01-10 10:51:33,017 | INFO    | [UI] Executing action 15: CLICK = {'button': 'right', 'x': 688, 'y': 333, 'screen_coords': True}
+2026-01-10 10:51:33,070 | INFO    | [UI] Executing action 16: WAIT = {'ms': 491}
+2026-01-10 10:51:33,562 | INFO    | [UI] Executing action 17: WAIT = {'ms': 70}
+2026-01-10 10:51:33,634 | INFO    | [UI] Executing action 18: DRAG = {'button': 'left', 'x1': 594, 'y1': 320, 'x2': 849, 'y2': 427, 'duration_ms': 2169, 'screen_coords': True}
+2026-01-10 10:51:36,047 | INFO    | [UI] Executing action 19: WAIT = {'ms': 260}
+2026-01-10 10:51:36,049 | INFO    | [UI] Moved 1 action(s) to position 9
+2026-01-10 10:51:36,314 | INFO    | [UI] Executing action 20: WAIT = {'ms': 60}
+2026-01-10 10:51:36,375 | INFO    | [UI] Executing action 21: DRAG = {'button': 'left', 'x1': 477, 'y1': 282, 'x2': 1204, 'y2': 425, 'duration_ms': 1227, 'screen_coords': True}
+2026-01-10 10:51:37,778 | INFO    | [UI] Executing action 22: WAIT = {'ms': 151}
+2026-01-10 10:51:37,931 | INFO    | [UI] Executing action 23: WAIT = {'ms': 472}
+2026-01-10 10:51:38,404 | INFO    | [UI] Executing action 24: WAIT = {'ms': 404}
+2026-01-10 10:51:38,809 | INFO    | [UI] Executing action 25: CLICK = {'button': 'left', 'x': 349, 'y': 822, 'screen_coords': True}
+2026-01-10 10:51:38,890 | INFO    | [UI] Playback complete
+2026-01-10 10:51:38,908 | INFO    | [UI] Playback complete
+2026-01-10 10:51:45,632 | INFO    | [UI] Playback loop: 26 actions, target_hwnd=None
+2026-01-10 10:51:45,633 | INFO    | [UI] Executing action 0: WAIT = {'ms': 84}
+2026-01-10 10:51:45,633 | INFO    | [UI] Playback started
+2026-01-10 10:51:45,718 | INFO    | [UI] Executing action 1: WAIT = {'ms': 91}
+2026-01-10 10:51:45,828 | INFO    | [UI] Executing action 2: WAIT = {'ms': 446}
+2026-01-10 10:51:46,275 | INFO    | [UI] Executing action 3: WHEEL = {'delta': -120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:51:46,329 | INFO    | [UI] Executing action 4: WHEEL = {'delta': -120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:51:46,387 | INFO    | [UI] Executing action 5: WAIT = {'ms': 730}
+2026-01-10 10:51:47,119 | INFO    | [UI] Executing action 6: WHEEL = {'delta': 120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:51:47,171 | INFO    | [UI] Executing action 7: WHEEL = {'delta': 120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:51:47,222 | INFO    | [UI] Executing action 8: WHEEL = {'delta': -120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:51:47,273 | INFO    | [UI] Executing action 9: WAIT = {'ms': 51}
+2026-01-10 10:51:47,325 | INFO    | [UI] Executing action 10: WHEEL = {'delta': 120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:51:47,377 | INFO    | [UI] Executing action 11: WAIT = {'ms': 106}
+2026-01-10 10:51:47,483 | INFO    | [UI] Executing action 12: WHEEL = {'delta': 120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:51:47,534 | INFO    | [UI] Executing action 13: WAIT = {'ms': 617}
+2026-01-10 10:51:48,152 | INFO    | [UI] Executing action 14: WAIT = {'ms': 80}
+2026-01-10 10:51:48,233 | INFO    | [UI] Executing action 15: CLICK = {'button': 'right', 'x': 688, 'y': 333, 'screen_coords': True}
+2026-01-10 10:51:48,299 | INFO    | [UI] Executing action 16: WAIT = {'ms': 491}
+2026-01-10 10:51:48,799 | INFO    | [UI] Executing action 17: WAIT = {'ms': 70}
+2026-01-10 10:51:48,871 | INFO    | [UI] Executing action 18: DRAG = {'button': 'left', 'x1': 594, 'y1': 320, 'x2': 849, 'y2': 427, 'duration_ms': 2169, 'screen_coords': True}
+2026-01-10 10:51:51,291 | INFO    | [UI] Executing action 19: WAIT = {'ms': 260}
+2026-01-10 10:51:51,553 | INFO    | [UI] Executing action 20: WAIT = {'ms': 60}
+2026-01-10 10:51:51,614 | INFO    | [UI] Executing action 21: DRAG = {'button': 'left', 'x1': 477, 'y1': 282, 'x2': 1204, 'y2': 425, 'duration_ms': 1227, 'screen_coords': True}
+2026-01-10 10:51:53,007 | INFO    | [UI] Executing action 22: WAIT = {'ms': 151}
+2026-01-10 10:51:53,160 | INFO    | [UI] Executing action 23: WAIT = {'ms': 472}
+2026-01-10 10:51:53,633 | INFO    | [UI] Executing action 24: WAIT = {'ms': 404}
+2026-01-10 10:51:54,038 | INFO    | [UI] Executing action 25: CLICK = {'button': 'left', 'x': 349, 'y': 822, 'screen_coords': True}
+2026-01-10 10:51:54,084 | INFO    | [UI] Playback complete
+2026-01-10 10:51:54,085 | INFO    | [UI] Playback complete
+2026-01-10 10:52:02,616 | INFO    | [RECORDER] Configured: target=None, ignore_ui={4786000}
+2026-01-10 10:52:02,634 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 10:52:02,635 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 10:52:02,663 | INFO    | [RECORDER] Added ignore hwnd: 3278584
+2026-01-10 10:52:03,246 | INFO    | [RECORDER] Mouse down at (483, 337) button=Button.left
+2026-01-10 10:52:03,534 | INFO    | [RECORDER] Mouse up at (982, 515) button=Button.left
+2026-01-10 10:52:03,982 | INFO    | [RECORDER] Mouse down at (494, 305) button=Button.left
+2026-01-10 10:52:04,074 | INFO    | [RECORDER] Mouse up at (494, 305) button=Button.left
+2026-01-10 10:52:04,514 | INFO    | [RECORDER] Mouse down at (461, 329) button=Button.left
+2026-01-10 10:52:04,830 | INFO    | [RECORDER] Mouse up at (989, 526) button=Button.left
+2026-01-10 10:52:05,150 | INFO    | [RECORDER] Mouse down at (691, 349) button=Button.left
+2026-01-10 10:52:05,221 | INFO    | [RECORDER] Mouse up at (691, 349) button=Button.left
+2026-01-10 10:52:05,650 | INFO    | [RECORDER] Mouse down at (472, 308) button=Button.left
+2026-01-10 10:52:06,037 | INFO    | [RECORDER] Mouse up at (928, 540) button=Button.left
+2026-01-10 10:52:06,790 | INFO    | [RECORDER] Mouse down at (362, 813) button=Button.left
+2026-01-10 10:52:06,821 | INFO    | [RECORDER] Stopped. 2325 events captured
+2026-01-10 10:52:06,883 | INFO    | [UI] Added 12 recorded actions
+2026-01-10 10:52:06,902 | INFO    | [UI] Recording stopped
+2026-01-10 10:52:08,823 | INFO    | [UI] Playback loop: 38 actions, target_hwnd=None
+2026-01-10 10:52:08,823 | INFO    | [UI] Executing action 0: WAIT = {'ms': 84}
+2026-01-10 10:52:08,824 | INFO    | [UI] Playback started
+2026-01-10 10:52:08,909 | INFO    | [UI] Executing action 1: WAIT = {'ms': 91}
+2026-01-10 10:52:09,001 | INFO    | [UI] Executing action 2: WAIT = {'ms': 446}
+2026-01-10 10:52:09,448 | INFO    | [UI] Executing action 3: WHEEL = {'delta': -120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:52:09,500 | INFO    | [UI] Executing action 4: WHEEL = {'delta': -120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:52:09,552 | INFO    | [UI] Executing action 5: WAIT = {'ms': 730}
+2026-01-10 10:52:10,282 | INFO    | [UI] Executing action 6: WHEEL = {'delta': 120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:52:10,334 | INFO    | [UI] Executing action 7: WHEEL = {'delta': 120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:52:10,385 | INFO    | [UI] Executing action 8: WHEEL = {'delta': -120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:52:10,437 | INFO    | [UI] Executing action 9: WAIT = {'ms': 51}
+2026-01-10 10:52:10,489 | INFO    | [UI] Executing action 10: WHEEL = {'delta': 120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:52:10,541 | INFO    | [UI] Executing action 11: WAIT = {'ms': 106}
+2026-01-10 10:52:10,648 | INFO    | [UI] Executing action 12: WHEEL = {'delta': 120, 'x': 529, 'y': 310, 'screen_coords': True}
+2026-01-10 10:52:10,700 | INFO    | [UI] Executing action 13: WAIT = {'ms': 617}
+2026-01-10 10:52:11,317 | INFO    | [UI] Executing action 14: WAIT = {'ms': 80}
+2026-01-10 10:52:11,399 | INFO    | [UI] Executing action 15: CLICK = {'button': 'right', 'x': 688, 'y': 333, 'screen_coords': True}
+2026-01-10 10:52:11,462 | INFO    | [UI] Executing action 16: WAIT = {'ms': 491}
+2026-01-10 10:52:11,961 | INFO    | [UI] Executing action 17: WAIT = {'ms': 70}
+2026-01-10 10:52:12,033 | INFO    | [UI] Executing action 18: DRAG = {'button': 'left', 'x1': 594, 'y1': 320, 'x2': 849, 'y2': 427, 'duration_ms': 2169, 'screen_coords': True}
+2026-01-10 10:52:14,449 | INFO    | [UI] Executing action 19: WAIT = {'ms': 260}
+2026-01-10 10:52:14,711 | INFO    | [UI] Executing action 20: WAIT = {'ms': 60}
+2026-01-10 10:52:14,772 | INFO    | [UI] Executing action 21: DRAG = {'button': 'left', 'x1': 477, 'y1': 282, 'x2': 1204, 'y2': 425, 'duration_ms': 1227, 'screen_coords': True}
+2026-01-10 10:52:16,175 | INFO    | [UI] Executing action 22: WAIT = {'ms': 151}
+2026-01-10 10:52:16,328 | INFO    | [UI] Executing action 23: WAIT = {'ms': 472}
+2026-01-10 10:52:16,801 | INFO    | [UI] Executing action 24: WAIT = {'ms': 404}
+2026-01-10 10:52:17,206 | INFO    | [UI] Executing action 25: CLICK = {'button': 'left', 'x': 349, 'y': 822, 'screen_coords': True}
+2026-01-10 10:52:17,249 | INFO    | [UI] Executing action 26: DRAG = {'button': 'left', 'x1': 483, 'y1': 337, 'x2': 982, 'y2': 515, 'duration_ms': 288, 'screen_coords': True}
+2026-01-10 10:52:17,617 | INFO    | [UI] Executing action 27: WAIT = {'ms': 59}
+2026-01-10 10:52:17,680 | INFO    | [UI] Executing action 28: CLICK = {'button': 'left', 'x': 494, 'y': 305, 'screen_coords': True}
+2026-01-10 10:52:17,729 | INFO    | [UI] Executing action 29: WAIT = {'ms': 153}
+2026-01-10 10:52:17,889 | INFO    | [UI] Executing action 30: DRAG = {'button': 'left', 'x1': 461, 'y1': 329, 'x2': 989, 'y2': 526, 'duration_ms': 319, 'screen_coords': True}
+2026-01-10 10:52:18,840 | INFO    | [UI] Executing action 31: WAIT = {'ms': 51}
+2026-01-10 10:52:18,937 | INFO    | [UI] Executing action 32: CLICK = {'button': 'left', 'x': 691, 'y': 349, 'screen_coords': True}
+2026-01-10 10:52:19,008 | INFO    | [UI] Executing action 33: WAIT = {'ms': 111}
+2026-01-10 10:52:19,137 | INFO    | [UI] Executing action 34: WAIT = {'ms': 79}
+2026-01-10 10:52:19,239 | INFO    | [UI] Executing action 35: DRAG = {'button': 'left', 'x1': 472, 'y1': 308, 'x2': 928, 'y2': 540, 'duration_ms': 388, 'screen_coords': True}
+2026-01-10 10:52:19,755 | INFO    | [UI] Executing action 36: WAIT = {'ms': 103}
+2026-01-10 10:52:19,869 | INFO    | [UI] Executing action 37: CLICK = {'button': 'left', 'x': 362, 'y': 813, 'screen_coords': True}
+2026-01-10 10:52:19,918 | INFO    | [UI] Playback complete
+2026-01-10 10:52:19,920 | INFO    | [UI] Playback complete
+2026-01-10 10:52:37,268 | INFO    | [UI] Deleted 38 action(s)
+2026-01-10 10:52:39,725 | INFO    | [RECORDER] Configured: target=None, ignore_ui={4786000}
+2026-01-10 10:52:39,737 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 10:52:39,738 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 10:52:39,755 | INFO    | [RECORDER] Added ignore hwnd: 6555172
+2026-01-10 10:52:40,226 | INFO    | [RECORDER] Mouse down at (424, 269) button=Button.left
+2026-01-10 10:52:40,486 | INFO    | [RECORDER] Mouse up at (822, 479) button=Button.left
+2026-01-10 10:52:41,090 | INFO    | [RECORDER] Mouse down at (486, 233) button=Button.left
+2026-01-10 10:52:41,166 | INFO    | [RECORDER] Mouse up at (486, 233) button=Button.left
+2026-01-10 10:52:41,706 | INFO    | [RECORDER] Mouse down at (442, 227) button=Button.left
+2026-01-10 10:52:42,000 | INFO    | [RECORDER] Mouse up at (882, 470) button=Button.left
+2026-01-10 10:52:42,474 | INFO    | [RECORDER] Mouse down at (563, 293) button=Button.left
+2026-01-10 10:52:42,550 | INFO    | [RECORDER] Mouse up at (563, 293) button=Button.left
+2026-01-10 10:52:44,278 | INFO    | [RECORDER] Mouse down at (331, 818) button=Button.left
+2026-01-10 10:52:44,305 | INFO    | [RECORDER] Stopped. 1847 events captured
+2026-01-10 10:52:44,354 | INFO    | [UI] Added 16 recorded actions
+2026-01-10 10:52:44,364 | INFO    | [UI] Recording stopped
+2026-01-10 10:52:45,824 | INFO    | [UI] Playback loop: 16 actions, target_hwnd=None
+2026-01-10 10:52:45,824 | INFO    | [UI] Executing action 0: WAIT = {'ms': 55}
+2026-01-10 10:52:45,824 | INFO    | [UI] Playback started
+2026-01-10 10:52:45,881 | INFO    | [UI] Executing action 1: WAIT = {'ms': 52}
+2026-01-10 10:52:45,936 | INFO    | [UI] Executing action 2: DRAG = {'button': 'left', 'x1': 424, 'y1': 269, 'x2': 822, 'y2': 479, 'duration_ms': 265, 'screen_coords': True}
+2026-01-10 10:52:46,356 | INFO    | [UI] Executing action 3: WAIT = {'ms': 54}
+2026-01-10 10:52:46,415 | INFO    | [UI] Executing action 4: CLICK = {'button': 'left', 'x': 486, 'y': 233, 'screen_coords': True}
+2026-01-10 10:52:46,468 | INFO    | [UI] Executing action 5: WAIT = {'ms': 173}
+2026-01-10 10:52:46,644 | INFO    | [UI] Executing action 6: WAIT = {'ms': 63}
+2026-01-10 10:52:46,708 | INFO    | [UI] Executing action 7: WAIT = {'ms': 114}
+2026-01-10 10:52:46,823 | INFO    | [UI] Executing action 8: DRAG = {'button': 'left', 'x1': 442, 'y1': 227, 'x2': 882, 'y2': 470, 'duration_ms': 294, 'screen_coords': True}
+2026-01-10 10:52:47,202 | INFO    | [UI] Executing action 9: WAIT = {'ms': 71}
+2026-01-10 10:52:47,275 | INFO    | [UI] Executing action 10: CLICK = {'button': 'left', 'x': 563, 'y': 293, 'screen_coords': True}
+2026-01-10 10:52:47,316 | INFO    | [UI] Executing action 11: WAIT = {'ms': 170}
+2026-01-10 10:52:47,489 | INFO    | [UI] Executing action 12: WAIT = {'ms': 54}
+2026-01-10 10:52:47,543 | INFO    | [UI] Executing action 13: WAIT = {'ms': 492}
+2026-01-10 10:52:48,036 | INFO    | [UI] Executing action 14: WAIT = {'ms': 366}
+2026-01-10 10:52:48,404 | INFO    | [UI] Executing action 15: CLICK = {'button': 'left', 'x': 331, 'y': 818, 'screen_coords': True}
+2026-01-10 10:52:48,453 | INFO    | [UI] Playback complete
+2026-01-10 10:52:48,455 | INFO    | [UI] Playback complete
+2026-01-10 10:52:53,310 | INFO    | [UI] Deleted 16 action(s)
+2026-01-10 10:52:56,447 | INFO    | [RECORDER] Configured: target=None, ignore_ui={4786000}
+2026-01-10 10:52:56,543 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 10:52:56,544 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 10:52:56,595 | INFO    | [RECORDER] Added ignore hwnd: 2689068
+2026-01-10 10:52:57,218 | INFO    | [RECORDER] Mouse down at (481, 333) button=Button.left
+2026-01-10 10:52:57,762 | INFO    | [RECORDER] Mouse up at (846, 348) button=Button.left
+2026-01-10 10:52:58,574 | INFO    | [RECORDER] Mouse down at (468, 324) button=Button.left
+2026-01-10 10:52:58,641 | INFO    | [RECORDER] Mouse up at (468, 324) button=Button.left
+2026-01-10 10:52:59,382 | INFO    | [RECORDER] Mouse down at (446, 327) button=Button.left
+2026-01-10 10:52:59,830 | INFO    | [RECORDER] Mouse up at (933, 346) button=Button.left
+2026-01-10 10:53:00,213 | INFO    | [RECORDER] Mouse down at (930, 431) button=Button.left
+2026-01-10 10:53:00,314 | INFO    | [RECORDER] Mouse up at (930, 431) button=Button.left
+2026-01-10 10:53:02,135 | INFO    | [RECORDER] Mouse down at (337, 829) button=Button.left
+2026-01-10 10:53:02,171 | INFO    | [RECORDER] Stopped. 1649 events captured
+2026-01-10 10:53:02,228 | INFO    | [UI] Added 20 recorded actions
+2026-01-10 10:53:02,242 | INFO    | [UI] Recording stopped
+2026-01-10 10:53:03,974 | INFO    | [UI] Playback loop: 20 actions, target_hwnd=None
+2026-01-10 10:53:03,976 | INFO    | [UI] Playback started
+2026-01-10 10:53:03,976 | INFO    | [UI] Executing action 0: WAIT = {'ms': 260}
+2026-01-10 10:53:04,238 | INFO    | [UI] Executing action 1: DRAG = {'button': 'left', 'x1': 481, 'y1': 333, 'x2': 846, 'y2': 348, 'duration_ms': 544, 'screen_coords': True}
+2026-01-10 10:53:05,158 | INFO    | [UI] Executing action 2: WAIT = {'ms': 94}
+2026-01-10 10:53:05,254 | INFO    | [UI] Executing action 3: WAIT = {'ms': 97}
+2026-01-10 10:53:05,352 | INFO    | [UI] Executing action 4: WAIT = {'ms': 53}
+2026-01-10 10:53:05,407 | INFO    | [UI] Executing action 5: WAIT = {'ms': 65}
+2026-01-10 10:53:05,485 | INFO    | [UI] Executing action 6: WAIT = {'ms': 61}
+2026-01-10 10:53:05,548 | INFO    | [UI] Executing action 7: WAIT = {'ms': 52}
+2026-01-10 10:53:05,601 | INFO    | [UI] Executing action 8: CLICK = {'button': 'left', 'x': 468, 'y': 324, 'screen_coords': True}
+2026-01-10 10:53:05,653 | INFO    | [UI] Executing action 9: WAIT = {'ms': 187}
+2026-01-10 10:53:05,842 | INFO    | [UI] Executing action 10: WAIT = {'ms': 75}
+2026-01-10 10:53:05,918 | INFO    | [UI] Executing action 11: WAIT = {'ms': 278}
+2026-01-10 10:53:06,197 | INFO    | [UI] Executing action 12: DRAG = {'button': 'left', 'x1': 446, 'y1': 327, 'x2': 933, 'y2': 346, 'duration_ms': 449, 'screen_coords': True}
+2026-01-10 10:53:06,736 | INFO    | [UI] Executing action 13: WAIT = {'ms': 178}
+2026-01-10 10:53:06,917 | INFO    | [UI] Executing action 14: CLICK = {'button': 'left', 'x': 930, 'y': 431, 'screen_coords': True}
+2026-01-10 10:53:06,961 | INFO    | [UI] Executing action 15: WAIT = {'ms': 121}
+2026-01-10 10:53:07,089 | INFO    | [UI] Executing action 16: WAIT = {'ms': 323}
+2026-01-10 10:53:07,414 | INFO    | [UI] Executing action 17: WAIT = {'ms': 528}
+2026-01-10 10:53:07,942 | INFO    | [UI] Executing action 18: WAIT = {'ms': 195}
+2026-01-10 10:53:08,139 | INFO    | [UI] Executing action 19: CLICK = {'button': 'left', 'x': 337, 'y': 829, 'screen_coords': True}
+2026-01-10 10:53:08,186 | INFO    | [UI] Playback complete
+2026-01-10 10:53:08,189 | INFO    | [UI] Playback complete
+2026-01-10 10:53:25,795 | INFO    | [UI] Deleted 20 action(s)

@@ -1,0 +1,31 @@
+2026-01-10 10:34:38,200 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 10:34:38,411 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 10:34:38,571 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 10:34:38,574 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-10 10:34:38,577 | INFO    | [WORKER] 1: Scale factors = 1.000x, 1.000y
+2026-01-10 10:34:38,623 | INFO    | [CAPTURE] BetterCam not installed
+2026-01-10 10:34:38,844 | INFO    | [CAPTURE] DXCam initialized successfully
+2026-01-10 10:34:38,844 | INFO    | [CAPTURE] Active provider: DXCam
+2026-01-10 10:34:38,844 | INFO    | [WORKER] 1: Providers initialized (Capture: DXCam)
+2026-01-10 10:34:38,846 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 10:34:39,452 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 10:34:39,452 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 10:34:39,452 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 10:34:39,452 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 10:34:39,491 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 10:34:39,492 | INFO    | [UI] Global hotkeys registered
+2026-01-10 10:34:41,227 | INFO    | [RECORDER] Configured: target=None, ignore_ui={1509418}
+2026-01-10 10:34:41,246 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 10:34:41,246 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 10:34:41,358 | INFO    | [RECORDER] Added ignore hwnd: 3606546
+2026-01-10 10:34:42,025 | INFO    | [RECORDER] Scroll at (604, 403) dx=0 dy=-1
+2026-01-10 10:34:42,148 | INFO    | [RECORDER] Scroll at (604, 403) dx=0 dy=-1
+2026-01-10 10:34:42,510 | INFO    | [RECORDER] Scroll at (604, 403) dx=0 dy=1
+2026-01-10 10:34:42,548 | INFO    | [RECORDER] Scroll at (604, 403) dx=0 dy=1
+2026-01-10 10:34:42,632 | INFO    | [RECORDER] Scroll at (604, 403) dx=0 dy=1
+2026-01-10 10:34:43,293 | INFO    | [RECORDER] Mouse down at (308, 768) button=Button.left
+2026-01-10 10:34:43,745 | INFO    | [RECORDER] Mouse up at (291, 777) button=Button.left
+2026-01-10 10:34:44,145 | INFO    | [RECORDER] Mouse down at (344, 812) button=Button.left
+2026-01-10 10:34:44,157 | INFO    | [RECORDER] Stopped. 1015 events captured
+2026-01-10 10:34:44,213 | INFO    | [UI] Added 16 recorded actions
+2026-01-10 10:34:44,243 | INFO    | [UI] Recording stopped

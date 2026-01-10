@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, ttk, simpledialog
 import json
 import os
 import uuid
@@ -72,7 +72,7 @@ class ActionType(Enum):
     CLICK = "CLICK"
     WAIT = "WAIT"
     KEY_PRESS = "KEY_PRESS"
-    HOTKEY = "HOTKEY"
+    COMBOKEY = "COMBOKEY"  # Renamed from HOTKEY for clarity
     WHEEL = "WHEEL"
     DRAG = "DRAG"
     TEXT = "TEXT"
@@ -82,7 +82,7 @@ class ActionType(Enum):
     WAIT_TIME = "WAIT_TIME"
     WAIT_PIXEL_COLOR = "WAIT_PIXEL_COLOR"
     WAIT_SCREEN_CHANGE = "WAIT_SCREEN_CHANGE"
-    WAIT_HOTKEY = "WAIT_HOTKEY"
+    WAIT_COMBOKEY = "WAIT_COMBOKEY"  # Renamed from WAIT_HOTKEY
     WAIT_FILE = "WAIT_FILE"
     
     # Image Actions (V2 - spec B2)
@@ -94,6 +94,7 @@ class ActionType(Enum):
     GOTO = "GOTO"
     REPEAT = "REPEAT"
     EMBED_MACRO = "EMBED_MACRO"
+    GROUP = "GROUP"  # Group multiple actions together
     
     # Misc
     COMMENT = "COMMENT"
@@ -137,6 +138,9 @@ class Action:
         if self.action == "CLICK":
             btn = v.get("button", "left")
             x, y = v.get("x", 0), v.get("y", 0)
+            hold_ms = v.get("hold_ms", 0)
+            if btn in ("hold_left", "hold_right"):
+                return f"{btn} {hold_ms}ms ({x}, {y})"
             return f"{btn} ({x}, {y})"
         elif self.action == "WAIT":
             ms = v.get("ms", 0)
@@ -145,7 +149,7 @@ class Action:
             key = v.get("key", "")
             repeat = v.get("repeat", 1)
             return f"{key}" + (f" x{repeat}" if repeat > 1 else "")
-        elif self.action == "HOTKEY":
+        elif self.action == "COMBOKEY":
             keys = v.get("keys", [])
             return "+".join(keys)
         elif self.action == "WHEEL":
@@ -164,7 +168,9 @@ class Action:
         elif self.action == "DRAG":
             x1, y1 = v.get("x1", 0), v.get("y1", 0)
             x2, y2 = v.get("x2", 0), v.get("y2", 0)
-            return f"({x1},{y1})→({x2},{y2})"
+            duration = v.get("duration_ms", 500)
+            btn = v.get("button", "left")[0].upper()  # L or R
+            return f"{btn}:({x1},{y1})→({x2},{y2}) {duration}ms"
         elif self.action == "TEXT":
             text = v.get("text", "")
             return f'"{text[:20]}...' if len(text) > 20 else f'"{text}"'
@@ -183,7 +189,7 @@ class Action:
         elif self.action == "WAIT_SCREEN_CHANGE":
             region = v.get("region", (0, 0, 0, 0))
             return f"region {region}"
-        elif self.action == "WAIT_HOTKEY":
+        elif self.action == "WAIT_COMBOKEY":
             combo = v.get("key_combo", "")
             return f"key: {combo}"
         elif self.action == "WAIT_FILE":
@@ -206,6 +212,10 @@ class Action:
         elif self.action == "EMBED_MACRO":
             name = v.get("macro_name", "")
             return name[:20]
+        elif self.action == "GROUP":
+            name = v.get("name", "Group")
+            actions = v.get("actions", [])
+            return f"📦 {name} [{len(actions)}]"
         elif self.action == "COMMENT":
             text = v.get("text", "")
             return text[:30]
@@ -241,12 +251,31 @@ class MainUI:
         self._is_recording = False
         self._is_playing = False
         self._is_paused = False
+        self._recording_paused = False  # Separate pause state for recording
         self._recorder: Optional['MacroRecorder'] = None
         self._player_thread: Optional[threading.Thread] = None
         self._playback_stop_event = threading.Event()
         self._playback_pause_event = threading.Event()
         self._current_action_index = 0
         self._target_hwnd: Optional[int] = None  # Target window for recording
+        
+        # Recording toolbar
+        self._recording_toolbar: Optional[tk.Toplevel] = None
+        
+        # Playback toolbar
+        self._playback_toolbar: Optional[tk.Toplevel] = None
+        
+        # Hotkey settings
+        self._hotkey_settings = self._load_hotkey_settings()
+        
+        # Capture target state (for XY/Region capture)
+        self._capture_target_hwnd: Optional[int] = None  # None = screen coords (default)
+        self._capture_target_name: str = "Screen (Full)"
+        
+        # Worker-specific actions storage
+        self._worker_actions: Dict[int, List[Action]] = {}  # worker_id -> custom actions
+        self._worker_playback_threads: Dict[int, threading.Thread] = {}  # worker_id -> thread
+        self._worker_stop_events: Dict[int, threading.Event] = {}  # worker_id -> stop event
         
         # Global hotkey manager
         self._hotkey_manager: Optional['GlobalHotkeyManager'] = None
@@ -263,6 +292,9 @@ class MainUI:
         self._build_ui()
         self._load_macros()
         self._auto_refresh_status()
+        
+        # Register global hotkeys on startup
+        self._register_global_hotkeys()
 
     # ================= UI =================
 
@@ -294,15 +326,33 @@ class MainUI:
         )
         self.btn_pause.pack(side="left", padx=4)
 
-        # Stop button
+        # Stop button (Esc to stop recording)
         self.btn_stop = tk.Button(
-            top_btn_frame, text="⏹ Stop", command=self._stop_all,
-            bg="#9E9E9E", fg="white", font=("Arial", 9, "bold"), width=10
+            top_btn_frame, text="⏹ Stop (Esc)", command=self._stop_all,
+            bg="#9E9E9E", fg="white", font=("Arial", 9, "bold"), width=12
         )
         self.btn_stop.pack(side="left", padx=4)
         
         # Separator
         ttk.Separator(top_btn_frame, orient="vertical").pack(side="left", fill="y", padx=8)
+        
+        # Target Window button (for capture)
+        self._target_btn_text = tk.StringVar(value="🎯 Screen")
+        self.btn_target = tk.Button(
+            top_btn_frame, textvariable=self._target_btn_text, command=self._select_capture_target,
+            bg="#673AB7", fg="white", font=("Arial", 9, "bold"), width=14
+        )
+        self.btn_target.pack(side="left", padx=4)
+        
+        # Separator
+        ttk.Separator(top_btn_frame, orient="vertical").pack(side="left", fill="y", padx=8)
+        
+        # Settings button
+        self.btn_settings = tk.Button(
+            top_btn_frame, text="⚙ Settings", command=self._open_settings_dialog,
+            bg="#607D8B", fg="white", font=("Arial", 9), width=10
+        )
+        self.btn_settings.pack(side="left", padx=4)
         
         # Status label
         self._status_var = tk.StringVar(value="Ready")
@@ -312,13 +362,8 @@ class MainUI:
         )
         self._status_label.pack(side="left", padx=10)
         
-        # Hotkey hint (right side)
-        hotkey_hint = tk.Label(
-            top_btn_frame, 
-            text="Hotkeys: Ctrl+Shift+R (Record) | Ctrl+Shift+P (Play) | Ctrl+Shift+Space (Pause) | Ctrl+Shift+S (Stop)",
-            font=("Arial", 8), fg="#888"
-        )
-        hotkey_hint.pack(side="right", padx=4)
+        # Update button text with hotkeys
+        self._update_button_hotkey_text()
 
         # Container frame for vertical layout
         container = tk.Frame(root)
@@ -394,8 +439,9 @@ class MainUI:
         action_tree_frame.pack(fill="both", expand=True, padx=8, pady=(0, 6))
 
         # Create Treeview for actions with NEW columns
+        # selectmode="extended" allows Ctrl+A, Shift+Click, Ctrl+Click multi-select
         action_columns = ("#", "Action", "Value", "Label", "Comment")
-        self.action_tree = ttk.Treeview(action_tree_frame, columns=action_columns, height=10, show="headings")
+        self.action_tree = ttk.Treeview(action_tree_frame, columns=action_columns, height=10, show="headings", selectmode="extended")
 
         # Define column headings and widths
         self.action_tree.column("#0", width=0, stretch=tk.NO)
@@ -423,6 +469,18 @@ class MainUI:
         self.action_tree.bind("<Double-1>", self._on_action_double_click)
         # Bind click for context menu
         self.action_tree.bind("<Button-3>", self._on_action_right_click)
+        # Bind Ctrl+A to select all
+        self.action_tree.bind("<Control-a>", self._select_all_actions)
+        # Bind Delete key to delete selected
+        self.action_tree.bind("<Delete>", self._delete_selected_actions)
+        # Bind Backspace as alternative delete
+        self.action_tree.bind("<BackSpace>", self._delete_selected_actions)
+        
+        # Drag and Drop support
+        self._drag_data = {"items": [], "start_y": 0}
+        self.action_tree.bind("<ButtonPress-1>", self._on_drag_start)
+        self.action_tree.bind("<B1-Motion>", self._on_drag_motion)
+        self.action_tree.bind("<ButtonRelease-1>", self._on_drag_end)
 
         # Store action IDs for reference
         self.action_tree_items = {}
@@ -469,6 +527,15 @@ class MainUI:
         menu.add_command(label="⏹ Stop", command=lambda: self._stop_worker(worker_id))
         menu.add_separator()
         menu.add_command(label="🔄 Restart", command=lambda: self._restart_worker(worker_id))
+        menu.add_separator()
+        
+        # Edit custom actions
+        has_custom = worker_id in self._worker_actions and len(self._worker_actions[worker_id]) > 0
+        edit_label = f"✏️ Edit Actions ({len(self._worker_actions.get(worker_id, []))} custom)" if has_custom else "✏️ Edit Actions"
+        menu.add_command(label=edit_label, command=lambda: self._edit_worker_actions(worker_id))
+        
+        if has_custom:
+            menu.add_command(label="🗑️ Clear Custom Actions", command=lambda: self._clear_worker_actions(worker_id))
         
         # Display menu at cursor position
         try:
@@ -537,6 +604,124 @@ class MainUI:
                 return w
         return None
 
+    def _edit_worker_actions(self, worker_id: int):
+        """Open dialog to edit custom actions for a specific worker"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title(f"Edit Actions - Worker {worker_id}")
+        dialog.geometry("600x500")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Frame for action list
+        list_frame = ttk.LabelFrame(dialog, text=f"Custom Actions for Worker {worker_id}")
+        list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        
+        # Treeview for actions
+        columns = ("index", "type", "target", "value")
+        tree = ttk.Treeview(list_frame, columns=columns, show="headings", height=15)
+        tree.heading("index", text="#")
+        tree.heading("type", text="Type")
+        tree.heading("target", text="Target")
+        tree.heading("value", text="Value")
+        tree.column("index", width=40)
+        tree.column("type", width=100)
+        tree.column("target", width=200)
+        tree.column("value", width=200)
+        
+        scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Populate with current custom actions
+        def refresh_tree():
+            tree.delete(*tree.get_children())
+            actions = self._worker_actions.get(worker_id, [])
+            for i, action in enumerate(actions):
+                target = getattr(action, 'target', getattr(action, 'image', ''))
+                value = getattr(action, 'value', getattr(action, 'timeout', ''))
+                tree.insert("", tk.END, values=(i+1, action.type, target, value))
+        
+        refresh_tree()
+        
+        # Buttons frame
+        btn_frame = ttk.Frame(dialog)
+        btn_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        def copy_from_global():
+            """Copy global action list to this worker"""
+            if messagebox.askyesno("Confirm", "Sao chép danh sách actions chung sang Worker này?"):
+                self._worker_actions[worker_id] = list(self.actions)  # Copy list
+                refresh_tree()
+                messagebox.showinfo("Done", f"Đã sao chép {len(self.actions)} actions")
+        
+        def add_from_file():
+            """Load actions from a JSON file"""
+            file_path = filedialog.askopenfilename(
+                title="Select Macro File",
+                filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+            )
+            if file_path:
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    
+                    # Parse actions from file
+                    loaded_actions = []
+                    action_data = data.get('actions', data) if isinstance(data, dict) else data
+                    if isinstance(action_data, list):
+                        for item in action_data:
+                            if isinstance(item, dict):
+                                action = Action.from_dict(item)
+                                loaded_actions.append(action)
+                    
+                    if loaded_actions:
+                        if worker_id not in self._worker_actions:
+                            self._worker_actions[worker_id] = []
+                        self._worker_actions[worker_id].extend(loaded_actions)
+                        refresh_tree()
+                        messagebox.showinfo("Done", f"Đã thêm {len(loaded_actions)} actions từ file")
+                except Exception as e:
+                    messagebox.showerror("Error", f"Lỗi đọc file: {e}")
+        
+        def clear_actions():
+            """Clear all custom actions for this worker"""
+            if messagebox.askyesno("Confirm", "Xóa tất cả custom actions của Worker này?"):
+                self._worker_actions[worker_id] = []
+                refresh_tree()
+        
+        def remove_selected():
+            """Remove selected action"""
+            selection = tree.selection()
+            if selection:
+                indices = [int(tree.item(item)["values"][0]) - 1 for item in selection]
+                indices.sort(reverse=True)  # Remove from end first
+                actions = self._worker_actions.get(worker_id, [])
+                for idx in indices:
+                    if 0 <= idx < len(actions):
+                        del actions[idx]
+                refresh_tree()
+        
+        ttk.Button(btn_frame, text="📋 Copy từ Global", command=copy_from_global).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="📁 Load từ File", command=add_from_file).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="🗑️ Xóa Selected", command=remove_selected).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="❌ Clear All", command=clear_actions).pack(side=tk.LEFT, padx=2)
+        
+        # Info label
+        info_label = ttk.Label(dialog, text="Worker có custom actions sẽ chạy actions riêng thay vì global list", 
+                               foreground="gray")
+        info_label.pack(pady=5)
+        
+        # Close button
+        ttk.Button(dialog, text="Close", command=dialog.destroy).pack(pady=10)
+    
+    def _clear_worker_actions(self, worker_id: int):
+        """Clear custom actions for a specific worker"""
+        if messagebox.askyesno("Confirm", f"Xóa custom actions của Worker {worker_id}?"):
+            if worker_id in self._worker_actions:
+                del self._worker_actions[worker_id]
+            log(f"[UI] Cleared custom actions for Worker {worker_id}")
+
     # ================= RECORD/PLAY/PAUSE/STOP (per spec 1.1, 2, 3) =================
     
     def _setup_global_hotkeys(self):
@@ -575,8 +760,9 @@ class MainUI:
         
         # Get target window (first worker or let user select)
         target_hwnd = self._get_target_window()
-        if not target_hwnd:
+        if target_hwnd == -1:  # Cancelled
             return
+        # target_hwnd = None means Full Screen mode
         
         self._target_hwnd = target_hwnd
         
@@ -588,7 +774,8 @@ class MainUI:
                 self._recorder.configure(target_hwnd=target_hwnd, ignore_ui_hwnd=ui_hwnd)
                 self._recorder.start()
                 self._is_recording = True
-                log(f"[UI] Recording started (V2 adapter), target hwnd: {target_hwnd}")
+                mode_str = "Full Screen" if target_hwnd is None else f"target hwnd: {target_hwnd}"
+                log(f"[UI] Recording started (V2 adapter), {mode_str}")
             except ImportError as e:
                 log(f"[UI] pynput not installed: {e}")
                 messagebox.showerror("Error", "Cannot start recording.\n\npynput library not installed.\n\nPlease run:\n  pip install pynput")
@@ -617,6 +804,228 @@ class MainUI:
         self._update_ui_state()
         self._status_var.set("🔴 Recording...")
         self.btn_record.config(text="⏺ Stop Rec", bg="#B71C1C")
+        
+        # Show floating recording toolbar
+        self._show_recording_toolbar()
+    
+    def _show_recording_toolbar(self):
+        """Show floating toolbar with Pause/Stop buttons during recording"""
+        if self._recording_toolbar is not None:
+            return
+        
+        toolbar = tk.Toplevel(self.root)
+        toolbar.title("🔴 Recording")
+        toolbar.attributes("-topmost", True)  # Always on top
+        toolbar.resizable(False, False)
+        toolbar.overrideredirect(True)  # No title bar - we implement custom drag
+        
+        # Load saved position or use default (center of screen)
+        saved_pos = self._load_toolbar_position()
+        if saved_pos:
+            toolbar.geometry(f"200x90+{saved_pos[0]}+{saved_pos[1]}")
+        else:
+            # Default: center of screen
+            screen_w = toolbar.winfo_screenwidth()
+            screen_h = toolbar.winfo_screenheight()
+            x = (screen_w - 200) // 2
+            y = (screen_h - 90) // 2
+            toolbar.geometry(f"200x90+{x}+{y}")
+        
+        # Main frame with border for visual feedback
+        main_frame = tk.Frame(toolbar, bg="#222222", highlightbackground="#f44336", highlightthickness=2)
+        main_frame.pack(fill="both", expand=True)
+        
+        # Drag handle area (top part)
+        drag_frame = tk.Frame(main_frame, bg="#444444", cursor="fleur")
+        drag_frame.pack(fill="x", padx=2, pady=(2, 0))
+        
+        drag_label = tk.Label(drag_frame, text="⠿ 🔴 Recording - Drag to move", 
+                              bg="#444444", fg="white", font=("Arial", 8))
+        drag_label.pack(fill="x", pady=2)
+        
+        # Implement drag functionality
+        self._toolbar_drag_data = {"x": 0, "y": 0}
+        
+        def start_drag(event):
+            self._toolbar_drag_data["x"] = event.x
+            self._toolbar_drag_data["y"] = event.y
+        
+        def do_drag(event):
+            x = toolbar.winfo_x() + event.x - self._toolbar_drag_data["x"]
+            y = toolbar.winfo_y() + event.y - self._toolbar_drag_data["y"]
+            toolbar.geometry(f"+{x}+{y}")
+        
+        # Bind drag to drag frame and label
+        drag_frame.bind("<ButtonPress-1>", start_drag)
+        drag_frame.bind("<B1-Motion>", do_drag)
+        drag_label.bind("<ButtonPress-1>", start_drag)
+        drag_label.bind("<B1-Motion>", do_drag)
+        
+        # Frame with buttons
+        btn_frame = tk.Frame(main_frame, bg="#333333")
+        btn_frame.pack(fill="both", expand=True, padx=2, pady=2)
+        
+        # Pause/Resume button - use bind to stop BEFORE pynput gets the click
+        self._toolbar_pause_btn = tk.Button(
+            btn_frame, text="⏸ Pause",
+            bg="#FF9800", fg="white", font=("Arial", 10, "bold"), width=8
+        )
+        self._toolbar_pause_btn.pack(side="left", padx=5, pady=5)
+        # Bind ButtonPress to pause BEFORE the click is recorded
+        self._toolbar_pause_btn.bind("<ButtonPress-1>", self._on_pause_button_press)
+        
+        # Stop button - use bind to stop BEFORE pynput gets the click
+        stop_btn = tk.Button(
+            btn_frame, text="⏹ Stop",
+            bg="#f44336", fg="white", font=("Arial", 10, "bold"), width=8
+        )
+        stop_btn.pack(side="left", padx=5, pady=5)
+        # Bind ButtonPress to stop BEFORE the click is recorded
+        stop_btn.bind("<ButtonPress-1>", self._on_stop_button_press)
+        
+        # Bind Esc key to stop recording (on toolbar)
+        toolbar.bind("<Escape>", lambda e: self._stop_recording())
+        
+        self._recording_toolbar = toolbar
+        
+        # Add toolbar hwnd to ignore list so clicks on it are not recorded
+        if self._recorder and hasattr(self._recorder, 'add_ignore_hwnd'):
+            toolbar.update_idletasks()  # Ensure hwnd is available
+            toolbar_hwnd = toolbar.winfo_id()
+            self._recorder.add_ignore_hwnd(toolbar_hwnd)
+        
+        # Hide main window while recording
+        self.root.withdraw()
+        
+        # Also bind Esc to main window during recording
+        self.root.bind("<Escape>", self._on_escape_key)
+    
+    def _load_toolbar_position(self):
+        """Load saved toolbar position from config"""
+        config_path = "data/toolbar_position.json"
+        try:
+            if os.path.exists(config_path):
+                with open(config_path, "r") as f:
+                    data = json.load(f)
+                    return (data.get("x", None), data.get("y", None))
+        except:
+            pass
+        return None
+    
+    def _save_toolbar_position(self):
+        """Save toolbar position to config"""
+        if self._recording_toolbar is None:
+            return
+        try:
+            # Get current position
+            geo = self._recording_toolbar.geometry()
+            # Parse "180x50+X+Y" format
+            parts = geo.split("+")
+            if len(parts) >= 3:
+                x = int(parts[1])
+                y = int(parts[2])
+                
+                config_path = "data/toolbar_position.json"
+                os.makedirs("data", exist_ok=True)
+                with open(config_path, "w") as f:
+                    json.dump({"x": x, "y": y}, f)
+        except Exception as e:
+            log(f"[UI] Failed to save toolbar position: {e}")
+    
+    def _hide_recording_toolbar(self):
+        """Hide the recording toolbar and restore main window"""
+        if self._recording_toolbar is not None:
+            # Save position before destroying
+            self._save_toolbar_position()
+            self._recording_toolbar.destroy()
+            self._recording_toolbar = None
+        # Unbind Esc from main window
+        self.root.unbind("<Escape>")
+        # Restore main window
+        self.root.deiconify()
+        self.root.lift()  # Bring to front
+    
+    def _toggle_recording_pause(self):
+        """Toggle pause state during recording"""
+        if not self._is_recording:
+            return
+        
+        self._recording_paused = not self._recording_paused
+        
+        if self._recording_paused:
+            # Pause recording
+            if hasattr(self._recorder, 'pause'):
+                self._recorder.pause()
+            self._toolbar_pause_btn.config(text="▶ Resume", bg="#4CAF50")
+            self._status_var.set("⏸ Recording Paused")
+            log("[UI] Recording paused")
+        else:
+            # Resume recording
+            if hasattr(self._recorder, 'resume'):
+                self._recorder.resume()
+            self._toolbar_pause_btn.config(text="⏸ Pause", bg="#FF9800")
+            self._status_var.set("🔴 Recording...")
+            log("[UI] Recording resumed")
+    
+    def _on_pause_button_press(self, event=None):
+        """Handle Pause button press - IMMEDIATELY pause/stop listeners BEFORE pynput gets click"""
+        if not self._is_recording:
+            return
+        # Stop listeners FIRST to prevent recording this click
+        if self._recorder:
+            if self._recording_paused:
+                # Will resume - but pause first to block this click
+                pass  # Already paused, resume will happen after
+            else:
+                # Pause immediately
+                if hasattr(self._recorder, 'pause'):
+                    self._recorder.pause()
+        # Schedule actual toggle after event processing
+        self.root.after(50, self._toggle_recording_pause_after_click)
+    
+    def _toggle_recording_pause_after_click(self):
+        """Toggle pause after the button click event is processed"""
+        if not self._is_recording:
+            return
+        if self._recording_paused:
+            # Was paused, now resume
+            if hasattr(self._recorder, 'resume'):
+                self._recorder.resume()
+            self._recording_paused = False
+            self._toolbar_pause_btn.config(text="⏸ Pause", bg="#FF9800")
+            self._status_var.set("🔴 Recording...")
+            log("[UI] Recording resumed")
+        else:
+            # Was recording, now paused (already paused in button press handler)
+            self._recording_paused = True
+            self._toolbar_pause_btn.config(text="▶ Resume", bg="#4CAF50")
+            self._status_var.set("⏸ Recording Paused")
+            log("[UI] Recording paused")
+    
+    def _on_stop_button_press(self, event=None):
+        """Handle Stop button press - IMMEDIATELY stop listeners BEFORE pynput gets click"""
+        if not self._is_recording:
+            return
+        # Stop listeners FIRST to prevent recording this click
+        if self._recorder:
+            # Stop the listeners immediately
+            if hasattr(self._recorder, '_mouse_listener') and self._recorder._mouse_listener:
+                try:
+                    self._recorder._mouse_listener.stop()
+                except:
+                    pass
+            if hasattr(self._recorder, '_keyboard_listener') and self._recorder._keyboard_listener:
+                try:
+                    self._recorder._keyboard_listener.stop()
+                except:
+                    pass
+        # Schedule actual stop processing after event completes
+        self.root.after(10, self._stop_recording)
+    
+    def _on_escape_key(self, event=None):
+        """Handle Esc key press - stop recording if active"""
+        if self._is_recording:
+            self._stop_recording()
     
     def _stop_recording(self):
         """Stop recording and convert to action block - V2 compatible"""
@@ -639,18 +1048,17 @@ class MainUI:
                     recorded_actions = self._convert_events_to_actions(self._recorded_events)
         
         self._is_recording = False
+        self._recording_paused = False
         
-        # Create action block if we got actions
+        # Hide recording toolbar
+        self._hide_recording_toolbar()
+        
+        # Add each action individually (NOT as block) - để dễ chỉnh sửa
         if recorded_actions:
-            # Create ONE block command per spec 2.3
-            block_action = Action(
-                action="RECORDED_BLOCK",
-                value={"actions": [a.to_dict() for a in recorded_actions]},
-                comment=f"Recorded {len(recorded_actions)} actions"
-            )
-            self.actions.append(block_action)
+            for action in recorded_actions:
+                self.actions.append(action)
             self._refresh_action_list()
-            log(f"[UI] Created recorded block with {len(recorded_actions)} actions")
+            log(f"[UI] Added {len(recorded_actions)} recorded actions")
         
         # Update UI
         self._update_ui_state()
@@ -659,48 +1067,200 @@ class MainUI:
         log("[UI] Recording stopped")
     
     def _convert_recorded_events_to_actions(self, events: List['RecordedEvent']) -> List[Action]:
-        """Convert V2 RecordedEvent objects to Action objects"""
+        """
+        Convert V2 RecordedEvent objects to Action objects
+        Detects DRAG when: MOUSE_DOWN → (MOUSE_MOVE)+ → MOUSE_UP with distance > threshold
+        Detects Hold when: MOUSE_DOWN → MOUSE_UP with duration > 200ms but distance < threshold
+        """
         actions = []
         last_ts = None
         
-        for event in events:
-            # Insert wait delays between events
-            if last_ts is not None:
-                delta_ms = event.ts_ms - last_ts
-                if delta_ms > 50:  # Ignore tiny delays
-                    actions.append(Action(
-                        action="WAIT",
-                        value={"ms": delta_ms}
-                    ))
-            last_ts = event.ts_ms
+        # Drag detection state
+        pending_mouse_down = None  # Store MOUSE_DOWN waiting to see if it's a drag
+        drag_threshold = 30  # Min pixels moved to consider it a drag
+        
+        i = 0
+        while i < len(events):
+            event = events[i]
+            
+            # Determine coordinates
+            def get_coords(ev):
+                x = ev.x_screen or 0
+                y = ev.y_screen or 0
+                use_screen = True
+                if ev.x_client is not None and hasattr(ev, 'hwnd') and ev.hwnd:
+                    x = ev.x_client
+                    y = ev.y_client or 0
+                    use_screen = False
+                return x, y, use_screen
+            
+            x, y, use_screen = get_coords(event)
             
             # Convert based on event kind
             if event.kind == RecordedEventKind.MOUSE_DOWN:
-                actions.append(Action(
-                    action="CLICK",
-                    value={
-                        "button": event.button or "left",
-                        "x": event.client_x,
-                        "y": event.client_y
-                    }
-                ))
+                # Insert wait delay before mouse down
+                if last_ts is not None and pending_mouse_down is None:
+                    delta_ms = event.ts_ms - last_ts
+                    if delta_ms > 50:
+                        actions.append(Action(
+                            action="WAIT",
+                            value={"ms": delta_ms}
+                        ))
+                
+                # Start potential drag - store and wait for UP
+                pending_mouse_down = {
+                    "event": event,
+                    "x": x,
+                    "y": y,
+                    "use_screen": use_screen,
+                    "ts": event.ts_ms
+                }
+                last_ts = event.ts_ms
+                i += 1
+                continue
+            
+            elif event.kind == RecordedEventKind.MOUSE_UP:
+                if pending_mouse_down is not None:
+                    # Check if this is a drag
+                    start_x = pending_mouse_down["x"]
+                    start_y = pending_mouse_down["y"]
+                    end_x, end_y = x, y
+                    
+                    distance = ((end_x - start_x)**2 + (end_y - start_y)**2) ** 0.5
+                    duration_ms = event.ts_ms - pending_mouse_down["ts"]
+                    
+                    if distance > drag_threshold:
+                        # This is a DRAG
+                        actions.append(Action(
+                            action="DRAG",
+                            value={
+                                "button": pending_mouse_down["event"].button or "left",
+                                "x1": start_x,
+                                "y1": start_y,
+                                "x2": end_x,
+                                "y2": end_y,
+                                "duration_ms": max(100, duration_ms),
+                                "screen_coords": pending_mouse_down["use_screen"]
+                            }
+                        ))
+                    else:
+                        # This is a regular CLICK (or hold if duration is long)
+                        btn = pending_mouse_down["event"].button or "left"
+                        if duration_ms > 200:
+                            # Long press - use hold_left/hold_right
+                            hold_btn = f"hold_{btn}" if btn in ("left", "right") else btn
+                            actions.append(Action(
+                                action="CLICK",
+                                value={
+                                    "button": hold_btn,
+                                    "x": start_x,
+                                    "y": start_y,
+                                    "hold_ms": duration_ms,
+                                    "screen_coords": pending_mouse_down["use_screen"]
+                                }
+                            ))
+                        else:
+                            # Normal click
+                            actions.append(Action(
+                                action="CLICK",
+                                value={
+                                    "button": btn,
+                                    "x": start_x,
+                                    "y": start_y,
+                                    "screen_coords": pending_mouse_down["use_screen"]
+                                }
+                            ))
+                    
+                    last_ts = event.ts_ms
+                    pending_mouse_down = None
+                # Ignore standalone MOUSE_UP
+                i += 1
+                continue
+            
+            elif event.kind == RecordedEventKind.MOUSE_MOVE:
+                # Skip mouse moves (used for drag detection but not recorded as actions)
+                i += 1
+                continue
+            
             elif event.kind == RecordedEventKind.WHEEL:
+                # If there's a pending click, finalize it first
+                if pending_mouse_down is not None:
+                    actions.append(Action(
+                        action="CLICK",
+                        value={
+                            "button": pending_mouse_down["event"].button or "left",
+                            "x": pending_mouse_down["x"],
+                            "y": pending_mouse_down["y"],
+                            "screen_coords": pending_mouse_down["use_screen"]
+                        }
+                    ))
+                    pending_mouse_down = None
+                
+                # Insert wait delay
+                if last_ts is not None:
+                    delta_ms = event.ts_ms - last_ts
+                    if delta_ms > 50:
+                        actions.append(Action(
+                            action="WAIT",
+                            value={"ms": delta_ms}
+                        ))
+                
                 actions.append(Action(
                     action="WHEEL",
                     value={
-                        "delta": event.scroll_dy or 0,
-                        "x": event.client_x,
-                        "y": event.client_y
+                        "delta": event.wheel_delta or 0,
+                        "x": x,
+                        "y": y,
+                        "screen_coords": use_screen
                     }
                 ))
+                last_ts = event.ts_ms
+            
             elif event.kind == RecordedEventKind.KEY_DOWN:
+                # If there's a pending click, finalize it first
+                if pending_mouse_down is not None:
+                    actions.append(Action(
+                        action="CLICK",
+                        value={
+                            "button": pending_mouse_down["event"].button or "left",
+                            "x": pending_mouse_down["x"],
+                            "y": pending_mouse_down["y"],
+                            "screen_coords": pending_mouse_down["use_screen"]
+                        }
+                    ))
+                    pending_mouse_down = None
+                
+                # Insert wait delay
+                if last_ts is not None:
+                    delta_ms = event.ts_ms - last_ts
+                    if delta_ms > 50:
+                        actions.append(Action(
+                            action="WAIT",
+                            value={"ms": delta_ms}
+                        ))
+                
                 actions.append(Action(
                     action="KEY_PRESS",
                     value={
-                        "key": event.key_name or event.key_char or "",
+                        "key": event.key or "",
                         "repeat": 1
                     }
                 ))
+                last_ts = event.ts_ms
+            
+            i += 1
+        
+        # Handle any remaining pending mouse down
+        if pending_mouse_down is not None:
+            actions.append(Action(
+                action="CLICK",
+                value={
+                    "button": pending_mouse_down["event"].button or "left",
+                    "x": pending_mouse_down["x"],
+                    "y": pending_mouse_down["y"],
+                    "screen_coords": pending_mouse_down["use_screen"]
+                }
+            ))
         
         return actions
     
@@ -756,28 +1316,76 @@ class MainUI:
         return actions
     
     def _get_target_window(self) -> Optional[int]:
-        """Get target window hwnd for recording"""
-        # If workers available, use first one
+        """Get target window hwnd for recording. Returns None for Full Screen mode."""
+        # If workers available, ask user to choose
         if self.workers:
-            for w in self.workers:
-                if w.hwnd:
-                    return w.hwnd
+            # Build choice dialog
+            choices = ["Full Screen (record all clicks)"]
+            for i, w in enumerate(self.workers):
+                worker_name = getattr(w, 'name', None) or f"Worker {w.id}"
+                choices.append(f"{worker_name} ({w.hwnd})")
+            
+            # Simple dialog
+            dialog = tk.Toplevel(self.root)
+            dialog.title("Recording Target")
+            dialog.geometry("300x200")
+            dialog.transient(self.root)
+            dialog.grab_set()
+            
+            tk.Label(dialog, text="Select recording target:").pack(pady=10)
+            
+            selected = tk.StringVar(value=choices[0])
+            for c in choices:
+                tk.Radiobutton(dialog, text=c, variable=selected, value=c).pack(anchor='w', padx=20)
+            
+            result = [None]  # Use list to allow modification in nested function
+            
+            def on_ok():
+                choice = selected.get()
+                if choice == choices[0]:
+                    result[0] = 0  # Full Screen - special marker
+                else:
+                    # Extract hwnd from choice
+                    for w in self.workers:
+                        if str(w.hwnd) in choice:
+                            result[0] = w.hwnd
+                            break
+                dialog.destroy()
+            
+            def on_cancel():
+                dialog.destroy()
+            
+            btn_frame = tk.Frame(dialog)
+            btn_frame.pack(pady=10)
+            tk.Button(btn_frame, text="OK", command=on_ok, width=10).pack(side='left', padx=5)
+            tk.Button(btn_frame, text="Cancel", command=on_cancel, width=10).pack(side='left', padx=5)
+            
+            self.root.wait_window(dialog)
+            
+            if result[0] == 0:
+                return None  # Full Screen mode
+            return result[0]
         
-        # Otherwise, ask user to select
-        result = messagebox.askquestion(
-            "Select Target Window",
-            "No worker selected. Click OK then click on the target window within 3 seconds."
+        # No workers - ask user to select window or Full Screen
+        result = messagebox.askyesnocancel(
+            "Recording Target",
+            "No worker selected.\n\n"
+            "Click YES for Full Screen recording (records all mouse events)\n"
+            "Click NO to select a specific window (3 second delay)"
         )
-        if result == 'yes':
-            self.root.iconify()
-            time.sleep(3)
-            hwnd = WindowUtils.get_foreground_window()
-            self.root.deiconify()
-            if hwnd:
-                return hwnd
         
-        messagebox.showwarning("Warning", "No target window selected")
-        return None
+        if result is None:  # Cancel
+            return -1  # Cancel marker
+        
+        if result:  # Yes = Full Screen
+            return None
+        
+        # No = Select window
+        self.root.iconify()
+        time.sleep(3)
+        hwnd = WindowUtils.get_foreground_window()
+        self.root.deiconify()
+        return hwnd if hwnd else -1
     
     def _toggle_play(self):
         """Toggle playback on/off"""
@@ -787,12 +1395,12 @@ class MainUI:
             self._start_playback()
     
     def _start_playback(self):
-        """Start playing actions on selected workers (per spec 3.1)"""
+        """Start playing actions on all ready workers (multi-worker support)"""
         if self._is_recording:
             messagebox.showwarning("Warning", "Cannot play while recording")
             return
         
-        if not self.actions:
+        if not self.actions and not self._worker_actions:
             messagebox.showwarning("Warning", "No actions to play")
             return
         
@@ -802,14 +1410,107 @@ class MainUI:
         self._playback_pause_event.clear()
         self._current_action_index = 0
         
-        # Start playback in thread
-        self._player_thread = threading.Thread(target=self._playback_loop, daemon=True)
-        self._player_thread.start()
+        # Clear previous worker threads
+        self._worker_playback_threads.clear()
+        self._worker_stop_events.clear()
+        
+        # Get ready workers with valid hwnd
+        ready_workers = [w for w in self.workers if w.hwnd and hasattr(w, 'status') and w.status == 'Ready']
+        
+        if ready_workers:
+            # Multi-worker playback - each worker runs in its own thread
+            for worker in ready_workers:
+                stop_event = threading.Event()
+                self._worker_stop_events[worker.id] = stop_event
+                
+                # Check if worker has custom actions
+                worker_actions = self._worker_actions.get(worker.id, None)
+                if worker_actions:
+                    # Use worker-specific actions
+                    actions_to_play = worker_actions
+                    log(f"[UI] Worker {worker.id}: Using custom actions ({len(actions_to_play)} actions)")
+                else:
+                    # Use global action list
+                    actions_to_play = self.actions
+                    log(f"[UI] Worker {worker.id}: Using global actions ({len(actions_to_play)} actions)")
+                
+                thread = threading.Thread(
+                    target=self._worker_playback_loop,
+                    args=(worker, actions_to_play, stop_event),
+                    daemon=True
+                )
+                self._worker_playback_threads[worker.id] = thread
+                thread.start()
+            
+            log(f"[UI] Started playback on {len(ready_workers)} workers")
+        else:
+            # No ready workers - use single-thread playback (screen mode)
+            self._player_thread = threading.Thread(target=self._playback_loop, daemon=True)
+            self._player_thread.start()
+            log("[UI] Playback started (Screen mode - no workers)")
+        
+        # Show playback toolbar
+        self._show_playback_toolbar()
         
         # Update UI
         self._update_ui_state()
-        self._status_var.set("▶ Playing...")
-        log("[UI] Playback started")
+        self._status_var.set(f"▶ Playing on {len(ready_workers)} workers..." if ready_workers else "▶ Playing...")
+    
+    def _worker_playback_loop(self, worker, actions: List[Action], stop_event: threading.Event):
+        """Playback loop for a specific worker - runs in its own thread"""
+        import ctypes
+        from ctypes import wintypes
+        
+        target_hwnd = worker.hwnd
+        worker_id = worker.id
+        action_index = 0
+        
+        log(f"[Worker {worker_id}] Starting playback: {len(actions)} actions, hwnd={target_hwnd}")
+        
+        while action_index < len(actions):
+            # Check stop
+            if stop_event.is_set() or self._playback_stop_event.is_set():
+                log(f"[Worker {worker_id}] Playback stopped")
+                break
+            
+            # Check pause
+            while self._playback_pause_event.is_set():
+                if stop_event.is_set() or self._playback_stop_event.is_set():
+                    break
+                time.sleep(0.1)
+            
+            action = actions[action_index]
+            
+            # Skip disabled actions
+            if not action.enabled:
+                action_index += 1
+                continue
+            
+            # Execute action
+            try:
+                self._execute_action(action, target_hwnd)
+            except Exception as e:
+                log(f"[Worker {worker_id}] Action error: {e}")
+            
+            action_index += 1
+        
+        # Release modifiers
+        self._release_all_modifiers()
+        log(f"[Worker {worker_id}] Playback complete")
+        
+        # Check if all workers are done
+        self._check_all_workers_complete()
+    
+    def _check_all_workers_complete(self):
+        """Check if all worker threads have completed"""
+        all_done = True
+        for worker_id, thread in self._worker_playback_threads.items():
+            if thread.is_alive():
+                all_done = False
+                break
+        
+        if all_done and self._is_playing:
+            self.root.after(0, self._on_playback_complete)
     
     def _playback_loop(self):
         """Main playback loop running in thread"""
@@ -820,9 +1521,12 @@ class MainUI:
         target_worker = self.workers[0] if self.workers else None
         target_hwnd = target_worker.hwnd if target_worker else None
         
+        log(f"[UI] Playback loop: {len(self.actions)} actions, target_hwnd={target_hwnd}")
+        
         while self._current_action_index < len(self.actions):
             # Check stop
             if self._playback_stop_event.is_set():
+                log("[UI] Playback stopped by user")
                 break
             
             # Check pause (per spec 3.2)
@@ -832,6 +1536,7 @@ class MainUI:
                 time.sleep(0.1)
             
             action = self.actions[self._current_action_index]
+            log(f"[UI] Executing action {self._current_action_index}: {action.action} = {action.value}")
             
             # Skip disabled actions
             if not action.enabled:
@@ -843,13 +1548,82 @@ class MainUI:
                 self._execute_action(action, target_hwnd)
             except Exception as e:
                 log(f"[UI] Action error: {e}")
+                import traceback
+                log(f"[UI] Traceback: {traceback.format_exc()}")
                 # Per spec 3.4 - skip on error
             
             self._current_action_index += 1
         
-        # Done
+        # Done - release any held modifiers
+        self._release_all_modifiers()
         self._is_playing = False
+        log("[UI] Playback complete")
         self.root.after(0, self._on_playback_complete)
+    
+    def _send_key(self, key: str, repeat: int = 1):
+        """Send keyboard key using Win32 API - handles modifiers properly"""
+        import ctypes
+        
+        # Virtual key codes
+        VK_MAP = {
+            # Modifiers
+            'alt': 0x12, 'alt_l': 0x12, 'alt_r': 0x12,
+            'ctrl': 0x11, 'ctrl_l': 0x11, 'ctrl_r': 0x11,
+            'shift': 0x10, 'shift_l': 0x10, 'shift_r': 0x10,
+            'win': 0x5B,
+            # Navigation
+            'tab': 0x09, 'enter': 0x0D, 'space': 0x20,
+            'backspace': 0x08, 'delete': 0x2E, 'escape': 0x1B,
+            'home': 0x24, 'end': 0x23,
+            'page_up': 0x21, 'page_down': 0x22,
+            'up': 0x26, 'down': 0x28, 'left': 0x25, 'right': 0x27,
+            'insert': 0x2D,
+            # Function keys
+            'f1': 0x70, 'f2': 0x71, 'f3': 0x72, 'f4': 0x73,
+            'f5': 0x74, 'f6': 0x75, 'f7': 0x76, 'f8': 0x77,
+            'f9': 0x78, 'f10': 0x79, 'f11': 0x7A, 'f12': 0x7B,
+            # Lock keys
+            'caps_lock': 0x14, 'num_lock': 0x90, 'scroll_lock': 0x91,
+        }
+        
+        MODIFIER_KEYS = {'alt', 'alt_l', 'alt_r', 'ctrl', 'ctrl_l', 'ctrl_r', 'shift', 'shift_l', 'shift_r', 'win'}
+        
+        # Clean up key name
+        key_clean = key.lower().replace('key.', '').strip()
+        
+        # Get VK code
+        if key_clean in VK_MAP:
+            vk = VK_MAP[key_clean]
+        elif len(key_clean) == 1:
+            # Single character - get VK from ord
+            vk = ctypes.windll.user32.VkKeyScanW(ord(key_clean)) & 0xFF
+        else:
+            log(f"[UI] Unknown key: {key}")
+            return
+        
+        is_modifier = key_clean in MODIFIER_KEYS
+        
+        # Send key press
+        for _ in range(repeat):
+            ctypes.windll.user32.keybd_event(vk, 0, 0, 0)  # Key down
+            time.sleep(0.02)
+            # For modifiers, KEEP PRESSED until next action (allows combos like Alt+Tab)
+            # Will be released at end of playback or when non-modifier key is pressed
+            if not is_modifier:
+                ctypes.windll.user32.keybd_event(vk, 0, 2, 0)  # Key up
+                time.sleep(0.02)
+                # Release any held modifiers after the key
+                self._release_all_modifiers()
+    
+    def _release_all_modifiers(self):
+        """Release all modifier keys"""
+        import ctypes
+        VK_ALT = 0x12
+        VK_CTRL = 0x11
+        VK_SHIFT = 0x10
+        ctypes.windll.user32.keybd_event(VK_ALT, 0, 2, 0)
+        ctypes.windll.user32.keybd_event(VK_CTRL, 0, 2, 0)
+        ctypes.windll.user32.keybd_event(VK_SHIFT, 0, 2, 0)
     
     def _execute_action(self, action: Action, target_hwnd: Optional[int]):
         """Execute a single action using SendInput (per spec 6.2)"""
@@ -864,18 +1638,21 @@ class MainUI:
         elif action.action == "CLICK":
             x, y = v.get("x", 0), v.get("y", 0)
             btn = v.get("button", "left")
+            hold_ms = v.get("hold_ms", 0)
+            screen_coords = v.get("screen_coords", False)
             
-            # Convert client coords to screen if we have target window
-            if target_hwnd:
+            # Convert client coords to screen if we have target window AND not already screen coords
+            if target_hwnd and not screen_coords:
                 pt = wintypes.POINT(x, y)
                 ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt))
                 x, y = pt.x, pt.y
+            # Nếu screen_coords=True thì x,y đã là screen coords, dùng trực tiếp
             
             # Move cursor
             ctypes.windll.user32.SetCursorPos(x, y)
             time.sleep(0.02)
             
-            # Click
+            # Click based on button type
             if btn == "left":
                 ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)  # LEFTDOWN
                 time.sleep(0.02)
@@ -884,26 +1661,43 @@ class MainUI:
                 ctypes.windll.user32.mouse_event(0x0008, 0, 0, 0, 0)  # RIGHTDOWN
                 time.sleep(0.02)
                 ctypes.windll.user32.mouse_event(0x0010, 0, 0, 0, 0)  # RIGHTUP
+            elif btn == "middle":
+                ctypes.windll.user32.mouse_event(0x0020, 0, 0, 0, 0)  # MIDDLEDOWN
+                time.sleep(0.02)
+                ctypes.windll.user32.mouse_event(0x0040, 0, 0, 0, 0)  # MIDDLEUP
+            elif btn == "double":
+                # Double click left
+                ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)  # LEFTDOWN
+                time.sleep(0.02)
+                ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)  # LEFTUP
+                time.sleep(0.05)
+                ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)  # LEFTDOWN
+                time.sleep(0.02)
+                ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)  # LEFTUP
+            elif btn == "hold_left":
+                # Hold left button for specified duration
+                ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)  # LEFTDOWN
+                time.sleep(hold_ms / 1000.0 if hold_ms > 0 else 0.5)
+                ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)  # LEFTUP
+            elif btn == "hold_right":
+                # Hold right button for specified duration
+                ctypes.windll.user32.mouse_event(0x0008, 0, 0, 0, 0)  # RIGHTDOWN
+                time.sleep(hold_ms / 1000.0 if hold_ms > 0 else 0.5)
+                ctypes.windll.user32.mouse_event(0x0010, 0, 0, 0, 0)  # RIGHTUP
         
         elif action.action == "KEY_PRESS":
             key = v.get("key", "")
             repeat = v.get("repeat", 1)
             
-            # Use input.py if available
-            try:
-                from core.input import InputController
-                ic = InputController()
-                for _ in range(repeat):
-                    ic.key_press(key)
-                    time.sleep(0.05)
-            except:
-                pass
+            # Direct keyboard simulation using ctypes
+            self._send_key(key, repeat)
         
         elif action.action == "WHEEL":
             direction = v.get("direction", "up")
             amount = v.get("amount", 1)
             speed = v.get("speed", 50)  # ms delay giữa các tick
             x, y = v.get("x", 0), v.get("y", 0)
+            screen_coords = v.get("screen_coords", False)
             
             # Backward compat: nếu có delta cũ thì dùng delta
             if "delta" in v:
@@ -911,10 +1705,14 @@ class MainUI:
             else:
                 delta = 120 if direction == "up" else -120
             
-            if target_hwnd:
+            # Move cursor to position
+            if target_hwnd and not screen_coords:
                 pt = wintypes.POINT(x, y)
                 ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt))
                 ctypes.windll.user32.SetCursorPos(pt.x, pt.y)
+            else:
+                # Screen coords - dùng trực tiếp
+                ctypes.windll.user32.SetCursorPos(x, y)
             
             # Scroll nhiều lần với delay
             for _ in range(amount):
@@ -924,9 +1722,61 @@ class MainUI:
                 if speed > 0:
                     time.sleep(speed / 1000.0)
         
+        elif action.action == "COMBOKEY":
+            keys = v.get("keys", [])
+            order = v.get("order", "simultaneous")
+            
+            # Key name mapping to VK codes
+            vk_map = {
+                'ctrl': 0x11, 'alt': 0x12, 'shift': 0x10, 'win': 0x5B,
+                'enter': 0x0D, 'esc': 0x1B, 'tab': 0x09, 'space': 0x20,
+                'backspace': 0x08, 'delete': 0x2E, 'insert': 0x2D,
+                'home': 0x24, 'end': 0x23, 'pageup': 0x21, 'pagedown': 0x22,
+                'left': 0x25, 'up': 0x26, 'right': 0x27, 'down': 0x28,
+                'f1': 0x70, 'f2': 0x71, 'f3': 0x72, 'f4': 0x73,
+                'f5': 0x74, 'f6': 0x75, 'f7': 0x76, 'f8': 0x77,
+                'f9': 0x78, 'f10': 0x79, 'f11': 0x7A, 'f12': 0x7B,
+                'capslock': 0x14, 'numlock': 0x90, 'scrolllock': 0x91,
+            }
+            
+            def get_vk(key_name):
+                k = key_name.lower()
+                if k in vk_map:
+                    return vk_map[k]
+                if len(k) == 1:
+                    return ord(k.upper())
+                return 0
+            
+            vks = [get_vk(k) for k in keys if get_vk(k) != 0]
+            
+            if order == "simultaneous":
+                # Press all keys down, then release all
+                for vk in vks:
+                    ctypes.windll.user32.keybd_event(vk, 0, 0, 0)  # DOWN
+                    time.sleep(0.02)
+                time.sleep(0.05)
+                for vk in reversed(vks):
+                    ctypes.windll.user32.keybd_event(vk, 0, 2, 0)  # UP
+                    time.sleep(0.02)
+            else:  # sequence
+                for vk in vks:
+                    ctypes.windll.user32.keybd_event(vk, 0, 0, 0)  # DOWN
+                    time.sleep(0.02)
+                    ctypes.windll.user32.keybd_event(vk, 0, 2, 0)  # UP
+                    time.sleep(0.05)
+        
         elif action.action == "RECORDED_BLOCK":
             # Execute nested actions
             nested_actions = [Action.from_dict(a) for a in v.get("actions", [])]
+            for nested in nested_actions:
+                if self._playback_stop_event.is_set():
+                    break
+                self._execute_action(nested, target_hwnd)
+        
+        elif action.action == "GROUP":
+            # Execute grouped actions
+            nested_actions = [Action.from_dict(a) for a in v.get("actions", [])]
+            log(f"[Playback] Executing GROUP '{v.get('name', '')}' with {len(nested_actions)} actions")
             for nested in nested_actions:
                 if self._playback_stop_event.is_set():
                     break
@@ -965,7 +1815,7 @@ class MainUI:
             )
             wait.wait(self._playback_stop_event)
         
-        elif action.action == "WAIT_HOTKEY":
+        elif action.action == "WAIT_COMBOKEY":
             from core.wait_actions import WaitHotkey
             wait = WaitHotkey(
                 key_combo=v.get("key_combo", "F5"),
@@ -1020,6 +1870,8 @@ class MainUI:
         elif action.action == "DRAG":
             x1, y1 = v.get("x1", 0), v.get("y1", 0)
             x2, y2 = v.get("x2", 0), v.get("y2", 0)
+            button = v.get("button", "left")
+            duration_ms = v.get("duration_ms", 500)
             
             # Convert to screen coords
             if target_hwnd:
@@ -1030,19 +1882,46 @@ class MainUI:
                 x1, y1 = pt1.x, pt1.y
                 x2, y2 = pt2.x, pt2.y
             
-            # Move to start, press, drag, release
+            # Mouse button flags
+            if button == "right":
+                down_flag, up_flag = 0x0008, 0x0010  # RIGHTDOWN, RIGHTUP
+            else:
+                down_flag, up_flag = 0x0002, 0x0004  # LEFTDOWN, LEFTUP
+            
+            # Move to start position
             ctypes.windll.user32.SetCursorPos(x1, y1)
-            time.sleep(0.01)
-            ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)  # LEFTDOWN
-            time.sleep(0.05)
+            time.sleep(0.02)
+            
+            # Press mouse button
+            ctypes.windll.user32.mouse_event(down_flag, 0, 0, 0, 0)
+            time.sleep(0.02)
+            
+            # Smooth interpolation from start to end
+            steps = max(10, duration_ms // 20)  # At least 10 steps
+            step_delay = duration_ms / steps / 1000.0
+            
+            for i in range(1, steps + 1):
+                t = i / steps
+                curr_x = int(x1 + t * (x2 - x1))
+                curr_y = int(y1 + t * (y2 - y1))
+                ctypes.windll.user32.SetCursorPos(curr_x, curr_y)
+                time.sleep(step_delay)
+            
+            # Ensure final position
             ctypes.windll.user32.SetCursorPos(x2, y2)
-            time.sleep(0.05)
-            ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)  # LEFTUP
+            time.sleep(0.02)
+            
+            # Release mouse button
+            ctypes.windll.user32.mouse_event(up_flag, 0, 0, 0, 0)
     
     def _on_playback_complete(self):
         """Called when playback completes"""
         self._is_playing = False
         self._current_action_index = 0
+        
+        # Hide playback toolbar
+        self._hide_playback_toolbar()
+        
         self._update_ui_state()
         self._status_var.set("Ready")
         log("[UI] Playback complete")
@@ -1057,20 +1936,35 @@ class MainUI:
             self._is_paused = False
             self._status_var.set("▶ Playing...")
             self.btn_pause.config(text="⏸ Pause")
+            self._update_playback_toolbar_pause_button()
             log("[UI] Playback resumed")
         else:
             self._playback_pause_event.set()
             self._is_paused = True
             self._status_var.set("⏸ Paused")
             self.btn_pause.config(text="▶ Resume")
+            self._update_playback_toolbar_pause_button()
             log("[UI] Playback paused")
     
     def _stop_playback(self):
-        """Stop playback (per spec 3.3)"""
+        """Stop playback on all workers"""
+        # Signal all threads to stop
         self._playback_stop_event.set()
+        
+        # Stop all worker threads
+        for worker_id, stop_event in self._worker_stop_events.items():
+            stop_event.set()
+        
         self._is_playing = False
         self._is_paused = False
         self._current_action_index = 0
+        
+        # Clear worker threads
+        self._worker_playback_threads.clear()
+        self._worker_stop_events.clear()
+        
+        # Hide playback toolbar
+        self._hide_playback_toolbar()
         
         self._update_ui_state()
         self._status_var.set("Ready")
@@ -1122,21 +2016,49 @@ class MainUI:
             self._open_add_action_dialog(edit_index=idx)
     
     def _on_action_right_click(self, event):
-        """Handle right-click on action row"""
+        """Handle right-click on action row - supports multi-select"""
         item = self.action_tree.identify_row(event.y)
         if item:
-            self.action_tree.selection_set(item)
-            values = self.action_tree.item(item, "values")
-            idx = int(values[0]) - 1
+            # If clicked item not in selection, set it as only selection
+            # Otherwise keep multi-selection
+            if item not in self.action_tree.selection():
+                self.action_tree.selection_set(item)
+            
+            selection = self.action_tree.selection()
+            count = len(selection)
             
             menu = tk.Menu(self.root, tearoff=0)
-            menu.add_command(label="✏ Edit", command=lambda: self._open_add_action_dialog(edit_index=idx))
-            menu.add_command(label="✓/✗ Toggle Enable", command=lambda: self._toggle_action_enabled(idx))
+            
+            if count == 1:
+                # Single item - show full menu
+                values = self.action_tree.item(item, "values")
+                idx = int(values[0]) - 1
+                menu.add_command(label="✏ Edit", command=lambda: self._open_add_action_dialog(edit_index=idx))
+                menu.add_command(label="✓/✗ Toggle Enable", command=lambda: self._toggle_action_enabled(idx))
+                menu.add_separator()
+                menu.add_command(label="🗑 Delete", command=lambda: self._delete_action_at(idx))
+                menu.add_separator()
+                menu.add_command(label="⬆ Move Up", command=lambda: self._move_action(idx, -1))
+                menu.add_command(label="⬇ Move Down", command=lambda: self._move_action(idx, 1))
+            else:
+                # Multiple items - show bulk actions
+                menu.add_command(label=f"🗑 Delete {count} selected", command=self._delete_selected_actions)
+                menu.add_separator()
+                menu.add_command(label="📦 Group Selected", command=self._group_selected_actions)
+                menu.add_separator()
+                menu.add_command(label="✓ Enable All Selected", command=self._enable_selected_actions)
+                menu.add_command(label="✗ Disable All Selected", command=self._disable_selected_actions)
+            
+            # Check if selection is a GROUP to show Ungroup option
+            if count == 1:
+                values = self.action_tree.item(item, "values")
+                idx = int(values[0]) - 1
+                if 0 <= idx < len(self.actions) and self.actions[idx].action == "GROUP":
+                    menu.add_separator()
+                    menu.add_command(label="📤 Ungroup", command=lambda: self._ungroup_action(idx))
+            
             menu.add_separator()
-            menu.add_command(label="🗑 Delete", command=lambda: self._delete_action_at(idx))
-            menu.add_separator()
-            menu.add_command(label="⬆ Move Up", command=lambda: self._move_action(idx, -1))
-            menu.add_command(label="⬇ Move Down", command=lambda: self._move_action(idx, 1))
+            menu.add_command(label="✓ Select All (Ctrl+A)", command=self._select_all_actions)
             
             menu.tk_popup(event.x_root, event.y_root)
     
@@ -1146,15 +2068,66 @@ class MainUI:
             self.actions[idx].enabled = not self.actions[idx].enabled
             self._refresh_action_list()
     
-    def _remove_action(self):
-        """Remove selected action"""
+    def _select_all_actions(self, event=None):
+        """Select all actions (Ctrl+A)"""
+        for item in self.action_tree.get_children():
+            self.action_tree.selection_add(item)
+        return "break"  # Prevent default behavior
+    
+    def _delete_selected_actions(self, event=None):
+        """Delete all selected actions (Delete key)"""
         selection = self.action_tree.selection()
         if not selection:
             return
         
-        values = self.action_tree.item(selection[0], "values")
-        idx = int(values[0]) - 1
-        self._delete_action_at(idx)
+        # Get indices of selected items (reverse order to delete from end)
+        indices = []
+        for item in selection:
+            values = self.action_tree.item(item, "values")
+            idx = int(values[0]) - 1
+            indices.append(idx)
+        
+        # Sort in reverse to delete from end first
+        indices.sort(reverse=True)
+        
+        count = len(indices)
+        if count == 1:
+            msg = f"Delete action #{indices[0] + 1}?"
+        else:
+            msg = f"Delete {count} selected actions?"
+        
+        if messagebox.askyesno("Delete", msg):
+            for idx in indices:
+                if 0 <= idx < len(self.actions):
+                    self.actions.pop(idx)
+            self._refresh_action_list()
+            log(f"[UI] Deleted {count} action(s)")
+        
+        return "break"
+    
+    def _enable_selected_actions(self):
+        """Enable all selected actions"""
+        selection = self.action_tree.selection()
+        for item in selection:
+            values = self.action_tree.item(item, "values")
+            idx = int(values[0]) - 1
+            if 0 <= idx < len(self.actions):
+                self.actions[idx].enabled = True
+        self._refresh_action_list()
+    
+    def _disable_selected_actions(self):
+        """Disable all selected actions"""
+        selection = self.action_tree.selection()
+        for item in selection:
+            values = self.action_tree.item(item, "values")
+            idx = int(values[0]) - 1
+            if 0 <= idx < len(self.actions):
+                self.actions[idx].enabled = False
+        self._refresh_action_list()
+    
+    def _remove_action(self):
+        """Remove selected action(s) - supports multi-select"""
+        self._delete_selected_actions()
     
     def _delete_action_at(self, idx: int):
         """Delete action at specific index"""
@@ -1188,6 +2161,170 @@ class MainUI:
         values = self.action_tree.item(selection[0], "values")
         idx = int(values[0]) - 1
         self._move_action(idx, 1)
+    
+    # ================= DRAG AND DROP =================
+    
+    def _on_drag_start(self, event):
+        """Start drag operation"""
+        item = self.action_tree.identify_row(event.y)
+        if not item:
+            self._drag_data = {"items": [], "start_y": 0}
+            return
+        
+        selection = self.action_tree.selection()
+        if item not in selection:
+            # Clicking on non-selected item - select only that item
+            self.action_tree.selection_set(item)
+            selection = (item,)
+        
+        # Store drag data
+        self._drag_data = {
+            "items": list(selection),
+            "start_y": event.y,
+            "dragging": False
+        }
+    
+    def _on_drag_motion(self, event):
+        """Handle drag motion"""
+        if not self._drag_data.get("items"):
+            return
+        
+        # Start dragging after moving 5 pixels
+        if not self._drag_data.get("dragging"):
+            if abs(event.y - self._drag_data["start_y"]) > 5:
+                self._drag_data["dragging"] = True
+                self.action_tree.config(cursor="hand2")
+        
+        if self._drag_data.get("dragging"):
+            # Visual feedback - highlight drop target
+            target_item = self.action_tree.identify_row(event.y)
+            if target_item and target_item not in self._drag_data["items"]:
+                # Clear previous selection visually and show drop indicator
+                for item in self.action_tree.get_children():
+                    self.action_tree.item(item, tags=())
+                self.action_tree.item(target_item, tags=("drop_target",))
+                self.action_tree.tag_configure("drop_target", background="#e3f2fd")
+    
+    def _on_drag_end(self, event):
+        """End drag operation and move items"""
+        if not self._drag_data.get("dragging") or not self._drag_data.get("items"):
+            self._drag_data = {"items": [], "start_y": 0}
+            return
+        
+        self.action_tree.config(cursor="")
+        
+        # Clear drop target highlight
+        for item in self.action_tree.get_children():
+            self.action_tree.item(item, tags=())
+        
+        target_item = self.action_tree.identify_row(event.y)
+        if not target_item or target_item in self._drag_data["items"]:
+            self._drag_data = {"items": [], "start_y": 0}
+            return
+        
+        # Get indices
+        source_indices = []
+        for item in self._drag_data["items"]:
+            values = self.action_tree.item(item, "values")
+            source_indices.append(int(values[0]) - 1)
+        
+        target_values = self.action_tree.item(target_item, "values")
+        target_idx = int(target_values[0]) - 1
+        
+        # Sort source indices
+        source_indices.sort()
+        
+        # Extract actions to move
+        actions_to_move = [self.actions[i] for i in source_indices]
+        
+        # Remove from original positions (reverse order)
+        for i in reversed(source_indices):
+            self.actions.pop(i)
+        
+        # Adjust target index after removals
+        removed_before_target = sum(1 for i in source_indices if i < target_idx)
+        new_target_idx = target_idx - removed_before_target
+        
+        # Insert at new position
+        for i, action in enumerate(actions_to_move):
+            self.actions.insert(new_target_idx + i + 1, action)
+        
+        self._drag_data = {"items": [], "start_y": 0}
+        self._refresh_action_list()
+        log(f"[UI] Moved {len(actions_to_move)} action(s) to position {new_target_idx + 2}")
+    
+    # ================= GROUP/UNGROUP =================
+    
+    def _group_selected_actions(self):
+        """Group selected actions into a GROUP action"""
+        selection = self.action_tree.selection()
+        if len(selection) < 2:
+            messagebox.showwarning("Group", "Please select at least 2 actions to group")
+            return
+        
+        # Get indices of selected items
+        indices = []
+        for item in selection:
+            values = self.action_tree.item(item, "values")
+            indices.append(int(values[0]) - 1)
+        
+        indices.sort()
+        
+        # Check if contiguous
+        if indices != list(range(indices[0], indices[-1] + 1)):
+            messagebox.showwarning("Group", "Selected actions must be contiguous (next to each other)")
+            return
+        
+        # Prompt for group name
+        group_name = simpledialog.askstring("Group Name", "Enter group name:", initialvalue="Group")
+        if not group_name:
+            return
+        
+        # Extract actions to group
+        actions_to_group = [self.actions[i].to_dict() for i in indices]
+        
+        # Create GROUP action
+        group_action = Action(
+            action="GROUP",
+            value={"name": group_name, "actions": actions_to_group},
+            label=group_name,
+            comment=f"{len(actions_to_group)} actions"
+        )
+        
+        # Remove original actions (reverse order)
+        for i in reversed(indices):
+            self.actions.pop(i)
+        
+        # Insert group at first position
+        self.actions.insert(indices[0], group_action)
+        
+        self._refresh_action_list()
+        log(f"[UI] Grouped {len(actions_to_group)} actions into '{group_name}'")
+    
+    def _ungroup_action(self, idx: int):
+        """Ungroup a GROUP action back to individual actions"""
+        if idx < 0 or idx >= len(self.actions):
+            return
+        
+        action = self.actions[idx]
+        if action.action != "GROUP":
+            return
+        
+        # Get grouped actions
+        grouped_actions = action.value.get("actions", [])
+        if not grouped_actions:
+            return
+        
+        # Remove the GROUP action
+        self.actions.pop(idx)
+        
+        # Insert individual actions
+        for i, action_dict in enumerate(grouped_actions):
+            new_action = Action.from_dict(action_dict)
+            self.actions.insert(idx + i, new_action)
+        
+        self._refresh_action_list()
+        log(f"[UI] Ungrouped {len(grouped_actions)} actions")
     
     def _save_actions(self):
         """Save actions to JSON file (per spec 4.2)"""
@@ -1261,16 +2398,16 @@ class MainUI:
         # V2 expanded type options with categories
         type_options = [
             # Basic
-            "CLICK", "WAIT", "KEY_PRESS", "HOTKEY", "WHEEL", "DRAG", "TEXT",
+            "CLICK", "WAIT", "KEY_PRESS", "COMBOKEY", "WHEEL", "DRAG", "TEXT",
             # Wait Actions (V2)
             "---Wait Actions---",
-            "WAIT_TIME", "WAIT_PIXEL_COLOR", "WAIT_SCREEN_CHANGE", "WAIT_HOTKEY", "WAIT_FILE",
+            "WAIT_TIME", "WAIT_PIXEL_COLOR", "WAIT_SCREEN_CHANGE", "WAIT_COMBOKEY", "WAIT_FILE",
             # Image Actions (V2)
             "---Image Actions---",
             "FIND_IMAGE", "CAPTURE_IMAGE",
             # Flow Control (V2)
             "---Flow Control---",
-            "LABEL", "GOTO", "REPEAT", "EMBED_MACRO",
+            "LABEL", "GOTO", "REPEAT", "EMBED_MACRO", "GROUP",
             # Misc
             "---Misc---",
             "COMMENT", "SET_VARIABLE"
@@ -1309,8 +2446,8 @@ class MainUI:
                 self._render_wait_action_config(config_frame, config_widgets, value)
             elif action_type == "KEY_PRESS":
                 self._render_keypress_action_config(config_frame, config_widgets, value)
-            elif action_type == "HOTKEY":
-                self._render_hotkey_action_config(config_frame, config_widgets, value)
+            elif action_type == "COMBOKEY":
+                self._render_combokey_action_config(config_frame, config_widgets, value)
             elif action_type == "WHEEL":
                 self._render_wheel_action_config(config_frame, config_widgets, value)
             elif action_type == "DRAG":
@@ -1324,8 +2461,8 @@ class MainUI:
                 self._render_wait_pixel_color_config(config_frame, config_widgets, value, dialog)
             elif action_type == "WAIT_SCREEN_CHANGE":
                 self._render_wait_screen_change_config(config_frame, config_widgets, value, dialog)
-            elif action_type == "WAIT_HOTKEY":
-                self._render_wait_hotkey_config(config_frame, config_widgets, value)
+            elif action_type == "WAIT_COMBOKEY":
+                self._render_wait_combokey_config(config_frame, config_widgets, value)
             elif action_type == "WAIT_FILE":
                 self._render_wait_file_config(config_frame, config_widgets, value)
             # V2 Image Actions
@@ -1342,6 +2479,8 @@ class MainUI:
                 self._render_repeat_config(config_frame, config_widgets, value)
             elif action_type == "EMBED_MACRO":
                 self._render_embed_macro_config(config_frame, config_widgets, value)
+            elif action_type == "GROUP":
+                self._render_group_config(config_frame, config_widgets, value)
             # Misc
             elif action_type == "COMMENT":
                 self._render_comment_config(config_frame, config_widgets, value)
@@ -1408,14 +2547,25 @@ class MainUI:
     
     def _render_click_action_config(self, parent, widgets, value, dialog=None):
         """Render Click action config (per spec 5.2) - V2 with improved capture"""
-        # Button
+        # Button type
         btn_frame = tk.Frame(parent)
         btn_frame.pack(fill="x", padx=10, pady=5)
         tk.Label(btn_frame, text="Button:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
         btn_var = tk.StringVar(value=value.get("button", "left"))
-        ttk.Combobox(btn_frame, textvariable=btn_var, values=["left", "right", "middle", "double"], 
-                    state="readonly", width=10).pack(side="left")
+        btn_combo = ttk.Combobox(btn_frame, textvariable=btn_var, 
+                    values=["left", "right", "middle", "double", "hold_left", "hold_right"], 
+                    state="readonly", width=12)
+        btn_combo.pack(side="left")
         widgets["button"] = btn_var
+        
+        # Hold duration frame (only shown for hold_left/hold_right)
+        hold_frame = tk.Frame(parent)
+        hold_frame.pack(fill="x", padx=10, pady=5)
+        tk.Label(hold_frame, text="Hold (ms):", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        hold_var = tk.IntVar(value=value.get("hold_ms", 500))
+        hold_entry = tk.Entry(hold_frame, textvariable=hold_var, width=8)
+        hold_entry.pack(side="left", padx=2)
+        widgets["hold_ms"] = hold_var
         
         # Position
         pos_frame = tk.Frame(parent)
@@ -1432,8 +2582,27 @@ class MainUI:
         tk.Entry(pos_frame, textvariable=y_var, width=8).pack(side="left", padx=2)
         widgets["y"] = y_var
         
-        tk.Button(pos_frame, text="📍 Capture", command=lambda: self._capture_position(x_var, y_var), 
-                 bg="#2196F3", fg="white", font=("Arial", 8)).pack(side="left", padx=10)
+        # Capture button - captures position, and for hold types also measures hold duration
+        capture_btn = tk.Button(pos_frame, text="📍 Capture", 
+                               command=lambda: self._capture_click_with_hold(x_var, y_var, hold_var, btn_var),
+                               bg="#2196F3", fg="white", font=("Arial", 8))
+        capture_btn.pack(side="left", padx=10)
+        
+        # Status label for capture feedback
+        status_label = tk.Label(parent, text="", fg="blue", font=("Arial", 8))
+        status_label.pack(anchor="w", padx=10)
+        widgets["_status_label"] = status_label
+        
+        # Hint text
+        def update_hint(*args):
+            btn = btn_var.get()
+            if btn in ("hold_left", "hold_right"):
+                status_label.config(text="💡 Capture: Click vị trí rồi GIỮ chuột - thời gian giữ sẽ được đo", fg="blue")
+            else:
+                status_label.config(text="💡 Capture: Click vị trí cần thao tác", fg="gray")
+        
+        btn_var.trace_add("write", update_hint)
+        update_hint()  # Initial update
     
     def _render_wait_action_config(self, parent, widgets, value):
         """Render Wait action config (per spec 5.2)"""
@@ -1447,12 +2616,76 @@ class MainUI:
         tk.Label(parent, text="(1000ms = 1 second)", fg="gray", font=("Arial", 8)).pack(anchor="w", padx=10)
     
     def _render_keypress_action_config(self, parent, widgets, value):
-        """Render Key Press action config (per spec 5.2)"""
+        """Render Key Press action config - bấm nút để capture phím"""
         key_frame = tk.Frame(parent)
         key_frame.pack(fill="x", padx=10, pady=5)
         tk.Label(key_frame, text="Key:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        
         key_var = tk.StringVar(value=value.get("key", ""))
-        tk.Entry(key_frame, textvariable=key_var, width=20).pack(side="left")
+        key_entry = tk.Entry(key_frame, textvariable=key_var, width=15, state="readonly")
+        key_entry.pack(side="left", padx=(0, 5))
+        
+        # Status label
+        status_label = tk.Label(key_frame, text="", fg="blue", font=("Arial", 8))
+        status_label.pack(side="left", padx=(5, 0))
+        
+        capture_active = [False]  # Use list to allow modification in nested function
+        
+        def start_capture():
+            """Bắt đầu capture phím"""
+            if capture_active[0]:
+                return
+            
+            capture_active[0] = True
+            status_label.config(text="⌨ Nhấn phím bất kỳ...", fg="red")
+            capture_btn.config(text="...", state="disabled")
+            
+            # Bind keyboard capture
+            def on_key_press(event):
+                # Map keysym to key name
+                keysym = event.keysym.lower()
+                
+                # Map special keys
+                key_map = {
+                    'return': 'enter',
+                    'escape': 'esc',
+                    'control_l': 'ctrl', 'control_r': 'ctrl',
+                    'alt_l': 'alt', 'alt_r': 'alt',
+                    'shift_l': 'shift', 'shift_r': 'shift',
+                    'super_l': 'win', 'super_r': 'win',
+                    'caps_lock': 'caps_lock',
+                    'prior': 'page_up',
+                    'next': 'page_down',
+                    'kp_0': 'num0', 'kp_1': 'num1', 'kp_2': 'num2', 'kp_3': 'num3',
+                    'kp_4': 'num4', 'kp_5': 'num5', 'kp_6': 'num6', 'kp_7': 'num7',
+                    'kp_8': 'num8', 'kp_9': 'num9',
+                    'kp_add': 'num_add', 'kp_subtract': 'num_subtract',
+                    'kp_multiply': 'num_multiply', 'kp_divide': 'num_divide',
+                    'kp_decimal': 'num_decimal', 'kp_enter': 'num_enter',
+                }
+                
+                key_name = key_map.get(keysym, keysym)
+                
+                # Set value
+                key_var.set(key_name)
+                
+                # Stop capture
+                capture_active[0] = False
+                status_label.config(text=f"✓ {key_name}", fg="green")
+                capture_btn.config(text="🎯 Capture", state="normal")
+                
+                # Unbind
+                parent.winfo_toplevel().unbind('<Key>')
+                
+                return "break"  # Prevent event propagation
+            
+            # Bind to dialog
+            parent.winfo_toplevel().bind('<Key>', on_key_press)
+        
+        capture_btn = tk.Button(key_frame, text="🎯 Capture", command=start_capture,
+                               bg="#2196F3", fg="white", font=("Arial", 8, "bold"))
+        capture_btn.pack(side="left")
+        
         widgets["key"] = key_var
         
         repeat_frame = tk.Frame(parent)
@@ -1462,16 +2695,134 @@ class MainUI:
         tk.Spinbox(repeat_frame, from_=1, to=100, textvariable=repeat_var, width=8).pack(side="left")
         widgets["repeat"] = repeat_var
         
-        tk.Label(parent, text="Examples: a, Enter, Escape, Tab, Space", fg="gray", font=("Arial", 8)).pack(anchor="w", padx=10)
+        tk.Label(parent, text="Click 'Capture' then press any key", fg="gray", font=("Arial", 8)).pack(anchor="w", padx=10)
     
-    def _render_hotkey_action_config(self, parent, widgets, value):
-        """Render Hotkey action config (per spec 5.2)"""
+    def _render_combokey_action_config(self, parent, widgets, value):
+        """Render ComboKey action config - capture tổ hợp phím với pynput (chặn Alt+Tab)"""
         keys_frame = tk.Frame(parent)
         keys_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(keys_frame, text="Keys:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        tk.Label(keys_frame, text="Combo:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        
         keys = value.get("keys", [])
         keys_var = tk.StringVar(value="+".join(keys) if keys else "")
-        tk.Entry(keys_frame, textvariable=keys_var, width=25).pack(side="left")
+        keys_entry = tk.Entry(keys_frame, textvariable=keys_var, width=18, state="readonly")
+        keys_entry.pack(side="left", padx=(0, 5))
+        
+        # Status label
+        status_label = tk.Label(keys_frame, text="", fg="blue", font=("Arial", 8))
+        status_label.pack(side="left", padx=(5, 0))
+        
+        capture_active = [False]
+        captured_keys = [set()]  # Track currently pressed keys
+        listener_ref = [None]  # Store listener reference
+        stop_capture = [False]  # Flag to stop
+        
+        def start_capture():
+            """Bắt đầu capture combo key với pynput suppress"""
+            if capture_active[0]:
+                return
+            
+            capture_active[0] = True
+            stop_capture[0] = False
+            captured_keys[0] = set()
+            status_label.config(text="⌨ Nhấn tổ hợp phím...", fg="red")
+            capture_btn.config(text="...", state="disabled")
+            
+            from pynput import keyboard
+            
+            # Map pynput keys to display names
+            def get_key_name(key):
+                key_map = {
+                    keyboard.Key.ctrl_l: 'Ctrl', keyboard.Key.ctrl_r: 'Ctrl',
+                    keyboard.Key.alt_l: 'Alt', keyboard.Key.alt_r: 'Alt',
+                    keyboard.Key.alt_gr: 'Alt',
+                    keyboard.Key.shift_l: 'Shift', keyboard.Key.shift_r: 'Shift',
+                    keyboard.Key.cmd: 'Win', keyboard.Key.cmd_l: 'Win', keyboard.Key.cmd_r: 'Win',
+                    keyboard.Key.enter: 'Enter', keyboard.Key.esc: 'Esc',
+                    keyboard.Key.tab: 'Tab', keyboard.Key.space: 'Space',
+                    keyboard.Key.backspace: 'Backspace', keyboard.Key.delete: 'Delete',
+                    keyboard.Key.insert: 'Insert',
+                    keyboard.Key.home: 'Home', keyboard.Key.end: 'End',
+                    keyboard.Key.page_up: 'PageUp', keyboard.Key.page_down: 'PageDown',
+                    keyboard.Key.left: 'Left', keyboard.Key.right: 'Right',
+                    keyboard.Key.up: 'Up', keyboard.Key.down: 'Down',
+                    keyboard.Key.caps_lock: 'CapsLock',
+                    keyboard.Key.f1: 'F1', keyboard.Key.f2: 'F2', keyboard.Key.f3: 'F3',
+                    keyboard.Key.f4: 'F4', keyboard.Key.f5: 'F5', keyboard.Key.f6: 'F6',
+                    keyboard.Key.f7: 'F7', keyboard.Key.f8: 'F8', keyboard.Key.f9: 'F9',
+                    keyboard.Key.f10: 'F10', keyboard.Key.f11: 'F11', keyboard.Key.f12: 'F12',
+                }
+                if key in key_map:
+                    return key_map[key]
+                if hasattr(key, 'char') and key.char:
+                    return key.char.upper()
+                if hasattr(key, 'vk'):
+                    vk = key.vk
+                    if 65 <= vk <= 90:  # A-Z
+                        return chr(vk)
+                    if 48 <= vk <= 57:  # 0-9
+                        return chr(vk)
+                return str(key).replace('Key.', '').capitalize()
+            
+            def on_press(key):
+                if stop_capture[0]:
+                    return False  # Stop listener
+                
+                key_name = get_key_name(key)
+                captured_keys[0].add(key_name)
+                
+                # Update display in main thread
+                def update_ui():
+                    if not capture_active[0]:
+                        return
+                    current = "+".join(sorted(captured_keys[0], key=lambda x: (
+                        0 if x == 'Ctrl' else
+                        1 if x == 'Alt' else
+                        2 if x == 'Shift' else
+                        3 if x == 'Win' else 4, x
+                    )))
+                    status_label.config(text=f"⌨ {current}...", fg="orange")
+                parent.after(0, update_ui)
+                
+                # Don't return False here! That stops the listener
+                # suppress=True already blocks the key from system
+            
+            def on_release(key):
+                if stop_capture[0]:
+                    return False
+                
+                # Finish capture on any key release
+                if captured_keys[0]:
+                    ordered = sorted(captured_keys[0], key=lambda x: (
+                        0 if x == 'Ctrl' else
+                        1 if x == 'Alt' else
+                        2 if x == 'Shift' else
+                        3 if x == 'Win' else 4, x
+                    ))
+                    result = "+".join(ordered)
+                    
+                    def finish_capture():
+                        keys_var.set(result)
+                        status_label.config(text=f"✓ {result}", fg="green")
+                        capture_active[0] = False
+                        capture_btn.config(text="🎯 Capture", state="normal")
+                    
+                    parent.after(0, finish_capture)
+                    stop_capture[0] = True
+                    return False  # Stop listener ONLY after capture complete
+            
+            # Start listener with suppress=True to block Alt+Tab etc
+            listener_ref[0] = keyboard.Listener(
+                on_press=on_press,
+                on_release=on_release,
+                suppress=True  # Block keys from reaching system!
+            )
+            listener_ref[0].start()
+        
+        capture_btn = tk.Button(keys_frame, text="🎯 Capture", command=start_capture,
+                               bg="#2196F3", fg="white", font=("Arial", 8, "bold"))
+        capture_btn.pack(side="left")
+        
         widgets["keys"] = keys_var
         
         order_frame = tk.Frame(parent)
@@ -1482,7 +2833,7 @@ class MainUI:
                     state="readonly", width=12).pack(side="left")
         widgets["order"] = order_var
         
-        tk.Label(parent, text="Examples: Ctrl+C, Ctrl+Shift+A", fg="gray", font=("Arial", 8)).pack(anchor="w", padx=10)
+        tk.Label(parent, text="Click 'Capture' then press key combo (Alt+Tab supported!)", fg="gray", font=("Arial", 8)).pack(anchor="w", padx=10)
     
     def _render_wheel_action_config(self, parent, widgets, value):
         """Render Wheel action config (per spec B3 - V2 improved)"""
@@ -1554,7 +2905,8 @@ class MainUI:
             return {
                 "button": widgets["button"].get(),
                 "x": widgets["x"].get(),
-                "y": widgets["y"].get()
+                "y": widgets["y"].get(),
+                "hold_ms": widgets["hold_ms"].get()
             }
         elif action_type == "WAIT":
             return {"ms": widgets["ms"].get()}
@@ -1563,7 +2915,7 @@ class MainUI:
                 "key": widgets["key"].get(),
                 "repeat": widgets["repeat"].get()
             }
-        elif action_type == "HOTKEY":
+        elif action_type == "COMBOKEY":
             keys_str = widgets["keys"].get()
             return {
                 "keys": [k.strip() for k in keys_str.split("+") if k.strip()],
@@ -1579,6 +2931,8 @@ class MainUI:
             }
         elif action_type == "DRAG":
             return {
+                "button": widgets["button"].get(),
+                "duration_ms": widgets["duration_ms"].get(),
                 "x1": widgets["x1"].get(),
                 "y1": widgets["y1"].get(),
                 "x2": widgets["x2"].get(),
@@ -1610,7 +2964,7 @@ class MainUI:
                 "threshold": widgets["threshold"].get(),
                 "timeout_ms": widgets["timeout_ms"].get()
             }
-        elif action_type == "WAIT_HOTKEY":
+        elif action_type == "WAIT_COMBOKEY":
             return {
                 "key_combo": widgets["key_combo"].get(),
                 "timeout_ms": widgets["timeout_ms"].get()
@@ -1647,6 +3001,11 @@ class MainUI:
             }
         elif action_type == "EMBED_MACRO":
             return {"macro_name": widgets["macro_name"].get()}
+        elif action_type == "GROUP":
+            return {
+                "name": widgets["name"].get(),
+                "actions": widgets.get("_actions", [])  # Preserved from original
+            }
         # Misc
         elif action_type == "COMMENT":
             return {"text": widgets["text"].get("1.0", tk.END).strip()}
@@ -1774,8 +3133,8 @@ class MainUI:
         tk.Entry(timeout_frame, textvariable=timeout_var, width=10).pack(side="left")
         widgets["timeout_ms"] = timeout_var
     
-    def _render_wait_hotkey_config(self, parent, widgets, value):
-        """Render WAIT_HOTKEY config (spec B1-4)"""
+    def _render_wait_combokey_config(self, parent, widgets, value):
+        """Render WAIT_COMBOKEY config (spec B1-4)"""
         key_frame = tk.Frame(parent)
         key_frame.pack(fill="x", padx=10, pady=5)
         tk.Label(key_frame, text="Key combo:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
@@ -1985,6 +3344,42 @@ class MainUI:
         tk.Label(parent, text="Execute another macro file inline", 
                 fg="gray", font=("Arial", 8)).pack(anchor="w", padx=10)
     
+    def _render_group_config(self, parent, widgets, value):
+        """Render GROUP config - shows grouped actions"""
+        name_frame = tk.Frame(parent)
+        name_frame.pack(fill="x", padx=10, pady=5)
+        tk.Label(name_frame, text="Group name:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        name_var = tk.StringVar(value=value.get("name", "Group"))
+        tk.Entry(name_frame, textvariable=name_var, width=25).pack(side="left")
+        widgets["name"] = name_var
+        
+        # Show grouped actions (read-only list)
+        actions = value.get("actions", [])
+        widgets["_actions"] = actions  # Preserve for saving
+        
+        list_frame = tk.LabelFrame(parent, text=f"Grouped Actions ({len(actions)})")
+        list_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        
+        # Listbox to show actions
+        listbox_frame = tk.Frame(list_frame)
+        listbox_frame.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        scrollbar = tk.Scrollbar(listbox_frame)
+        scrollbar.pack(side="right", fill="y")
+        
+        listbox = tk.Listbox(listbox_frame, height=6, font=("Consolas", 9),
+                            yscrollcommand=scrollbar.set)
+        listbox.pack(side="left", fill="both", expand=True)
+        scrollbar.config(command=listbox.yview)
+        
+        for i, act_dict in enumerate(actions, 1):
+            act_type = act_dict.get("action", "?")
+            # Brief summary
+            listbox.insert(tk.END, f"{i}. {act_type}")
+        
+        tk.Label(parent, text="To edit grouped actions, use Ungroup first", 
+                fg="gray", font=("Arial", 8)).pack(anchor="w", padx=10)
+    
     def _render_comment_config(self, parent, widgets, value):
         """Render COMMENT config"""
         text_frame = tk.Frame(parent)
@@ -2019,6 +3414,23 @@ class MainUI:
     
     def _render_drag_action_config(self, parent, widgets, value, dialog=None):
         """Render Drag action config - V2 with capture support"""
+        # Button type (left/right)
+        btn_frame = tk.Frame(parent)
+        btn_frame.pack(fill="x", padx=10, pady=5)
+        tk.Label(btn_frame, text="Button:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        btn_var = tk.StringVar(value=value.get("button", "left"))
+        btn_dropdown = ttk.Combobox(btn_frame, textvariable=btn_var, 
+                                    values=["left", "right"], state="readonly", width=8)
+        btn_dropdown.pack(side="left", padx=2)
+        widgets["button"] = btn_var
+        
+        # Duration
+        tk.Label(btn_frame, text="Duration (ms):").pack(side="left", padx=(10, 2))
+        duration_var = tk.IntVar(value=value.get("duration_ms", 500))
+        tk.Entry(btn_frame, textvariable=duration_var, width=6).pack(side="left", padx=2)
+        widgets["duration_ms"] = duration_var
+        
+        # Start position
         start_frame = tk.Frame(parent)
         start_frame.pack(fill="x", padx=10, pady=5)
         tk.Label(start_frame, text="Start:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
@@ -2031,6 +3443,7 @@ class MainUI:
         widgets["x1"] = x1_var
         widgets["y1"] = y1_var
         
+        # End position
         end_frame = tk.Frame(parent)
         end_frame.pack(fill="x", padx=10, pady=5)
         tk.Label(end_frame, text="End:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
@@ -2042,6 +3455,16 @@ class MainUI:
         tk.Entry(end_frame, textvariable=y2_var, width=6).pack(side="left", padx=2)
         widgets["x2"] = x2_var
         widgets["y2"] = y2_var
+        
+        # Capture button
+        capture_frame = tk.Frame(parent)
+        capture_frame.pack(fill="x", padx=10, pady=5)
+        capture_btn = tk.Button(capture_frame, text="📍 Capture Drag", 
+                               command=lambda: self._capture_drag_path(x1_var, y1_var, x2_var, y2_var, duration_var),
+                               bg="#2196F3", fg="white", font=("Arial", 9))
+        capture_btn.pack(side="left")
+        tk.Label(capture_frame, text="(Giữ chuột và kéo để capture hành trình)", 
+                fg="#666666", font=("Arial", 8)).pack(side="left", padx=10)
 
     def _load_macros(self):
         if not os.path.exists(MACRO_STORE):
@@ -2857,131 +4280,541 @@ class MainUI:
         
         return config
     
-    def _capture_position(self, x_var, y_var):
-        """Minimize app and capture mouse position on click"""
+    def _select_capture_target(self, callback=None):
+        """
+        Dialog UI để chọn Target Window cho capture
+        - Screen (Full): lấy screen coords (mặc định)
+        - Window Focus: chọn app bất kỳ bằng cách click vào
+        - Worker/Emulator: lấy client coords trong emulator đó
+        """
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Select Target")
+        dialog.geometry("400x350")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        dialog.resizable(False, False)
+        
+        # Center on parent
+        dialog.geometry(f"+{self.root.winfo_x() + 100}+{self.root.winfo_y() + 100}")
+        
+        # Current selection
+        current_hwnd = getattr(self, '_capture_target_hwnd', None)
+        current_name = getattr(self, '_capture_target_name', 'Screen (Full)')
+        
+        # Title
+        tk.Label(dialog, text="🎯 Select Capture Target", font=("Arial", 12, "bold")).pack(pady=10)
+        
+        # Current selection display
+        current_frame = tk.Frame(dialog)
+        current_frame.pack(fill="x", padx=15, pady=5)
+        tk.Label(current_frame, text="Current:", font=("Arial", 9)).pack(side="left")
+        current_label = tk.Label(current_frame, text=current_name, font=("Arial", 9, "bold"), fg="blue")
+        current_label.pack(side="left", padx=5)
+        
+        # Listbox frame
+        list_frame = ttk.LabelFrame(dialog, text="Available Targets")
+        list_frame.pack(fill="both", expand=True, padx=15, pady=5)
+        
+        # Listbox with scrollbar
+        listbox = tk.Listbox(list_frame, font=("Arial", 10), selectmode=tk.SINGLE, height=8)
+        scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=listbox.yview)
+        listbox.configure(yscrollcommand=scrollbar.set)
+        listbox.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        scrollbar.pack(side="right", fill="y", pady=5)
+        
+        # Store target info: [(name, hwnd, display_text), ...]
+        targets = []
+        
+        # Add Screen option
+        targets.append(("Screen (Full)", None, "📺 Screen (Full)"))
+        
+        # Add workers
+        for w in self.workers:
+            if w.hwnd:
+                status = "✅" if hasattr(w, 'status') and w.status == 'Ready' else "⏳"
+                display = f"{status} Worker {w.id} - {w.res_width}x{w.res_height}"
+                targets.append((f"Worker {w.id}", w.hwnd, display))
+        
+        # Add other LDPlayer windows
+        try:
+            from initialize_workers import detect_ldplayer_windows
+            ldplayer_wins = detect_ldplayer_windows()
+            existing_hwnds = {w.hwnd for w in self.workers if w.hwnd}
+            
+            for win in ldplayer_wins:
+                if win['hwnd'] not in existing_hwnds:
+                    display = f"🎮 {win['title'][:25]} ({win['width']}x{win['height']})"
+                    targets.append((win['title'][:20], win['hwnd'], display))
+        except:
+            pass
+        
+        # Add picked window if not in list
+        if current_hwnd is not None:
+            if not any(t[1] == current_hwnd for t in targets):
+                display = f"🎯 {current_name}"
+                targets.append((current_name, current_hwnd, display))
+        
+        # Populate listbox
+        selected_index = 0
+        for i, (name, hwnd, display) in enumerate(targets):
+            listbox.insert(tk.END, display)
+            if hwnd == current_hwnd:
+                selected_index = i
+        
+        listbox.selection_set(selected_index)
+        listbox.see(selected_index)
+        
+        def on_select(event=None):
+            selection = listbox.curselection()
+            if selection:
+                idx = selection[0]
+                name, hwnd, display = targets[idx]
+                current_label.config(text=name)
+        
+        listbox.bind("<<ListboxSelect>>", on_select)
+        
+        # Button frame
+        btn_frame = tk.Frame(dialog)
+        btn_frame.pack(fill="x", padx=15, pady=10)
+        
+        def pick_window_focus():
+            dialog.destroy()
+            self._pick_window_by_focus(callback)
+        
+        def confirm_selection():
+            selection = listbox.curselection()
+            if selection:
+                idx = selection[0]
+                name, hwnd, display = targets[idx]
+                self._capture_target_name = name
+                self._capture_target_hwnd = hwnd
+                if hwnd is None:
+                    self._target_btn_text.set("🎯 Screen")
+                else:
+                    short_name = name[:12] + "..." if len(name) > 12 else name
+                    self._target_btn_text.set(f"🎯 {short_name}")
+                log(f"[UI] Capture target set: {name} (hwnd={hwnd})")
+            dialog.destroy()
+            if callback:
+                callback()
+        
+        # Window Focus button
+        tk.Button(btn_frame, text="🎯 Window Focus", command=pick_window_focus,
+                 bg="#2196F3", fg="white", font=("Arial", 10)).pack(side="left", padx=5)
+        
+        # OK button
+        tk.Button(btn_frame, text="✓ OK", command=confirm_selection,
+                 bg="#4CAF50", fg="white", font=("Arial", 10), width=8).pack(side="right", padx=5)
+        
+        # Cancel button
+        tk.Button(btn_frame, text="Cancel", command=dialog.destroy,
+                 bg="#9E9E9E", fg="white", font=("Arial", 10), width=8).pack(side="right", padx=5)
+        
+        # Double-click to confirm
+        def on_double_click(event):
+            confirm_selection()
+        listbox.bind("<Double-1>", on_double_click)
+    
+    def _pick_window_by_focus(self, callback=None):
+        """Pick any window by clicking on it - instant detection"""
+        import ctypes
+        user32 = ctypes.windll.user32
+        
+        # Show instruction dialog
+        info_dialog = tk.Toplevel(self.root)
+        info_dialog.title("Window Focus Picker")
+        info_dialog.geometry("350x100")
+        info_dialog.transient(self.root)
+        info_dialog.attributes("-topmost", True)
+        
+        tk.Label(info_dialog, text="🎯 Window Focus Picker", 
+                font=("Arial", 11, "bold")).pack(pady=10)
+        tk.Label(info_dialog, text="Click vào cửa sổ bạn muốn chọn...",
+                font=("Arial", 10)).pack()
+        
+        status_label = tk.Label(info_dialog, text="Đang chờ...", font=("Arial", 9), fg="blue")
+        status_label.pack(pady=5)
+        
+        cancelled = [False]
+        initial_hwnd = [user32.GetForegroundWindow()]
+        
+        def check_focus_change():
+            if cancelled[0]:
+                return
+            
+            current_hwnd = user32.GetForegroundWindow()
+            dialog_hwnd = info_dialog.winfo_id()
+            root_hwnd = self.root.winfo_id()
+            
+            # Check if focus changed to a different window (not our dialogs)
+            if current_hwnd and current_hwnd != initial_hwnd[0] and current_hwnd != dialog_hwnd and current_hwnd != root_hwnd:
+                # Get window title
+                length = user32.GetWindowTextLengthW(current_hwnd)
+                buff = ctypes.create_unicode_buffer(length + 1)
+                user32.GetWindowTextW(current_hwnd, buff, length + 1)
+                title = buff.value[:25] if buff.value else "Unknown"
+                
+                self._capture_target_hwnd = current_hwnd
+                self._capture_target_name = title
+                short_name = title[:12] + "..." if len(title) > 12 else title
+                self._target_btn_text.set(f"🎯 {short_name}")
+                log(f"[UI] Window picked: {title} (hwnd={current_hwnd})")
+                
+                info_dialog.destroy()
+                # Restore and bring window to front
+                self.root.deiconify()
+                self.root.lift()
+                self.root.focus_force()
+                
+                # Reopen target selection dialog to show the picked window
+                self.root.after(150, lambda: self._select_capture_target(callback))
+                return
+            
+            # Continue checking every 50ms
+            info_dialog.after(50, check_focus_change)
+        
+        def cancel():
+            cancelled[0] = True
+            info_dialog.destroy()
+            # Restore and bring window to front
+            self.root.deiconify()
+            self.root.lift()
+            self.root.focus_force()
+            # Reopen target selection dialog
+            self.root.after(150, lambda: self._select_capture_target(callback))
+        
+        tk.Button(info_dialog, text="Cancel", command=cancel).pack(pady=5)
+        
+        # Minimize main window
+        self.root.iconify()
+        
+        # Start checking focus changes
+        info_dialog.after(100, check_focus_change)
+        
+        # Restore main window after dialog closes
+        def on_close():
+            self.root.deiconify()
+        info_dialog.protocol("WM_DELETE_WINDOW", lambda: [cancel(), on_close()])
+        info_dialog.bind("<Destroy>", lambda e: on_close() if e.widget == info_dialog else None)
+    
+    def _get_capture_target_rect(self):
+        """
+        Lấy client rect của capture target
+        Returns: (x, y, w, h) hoặc None nếu là screen
+        """
+        import ctypes
+        user32 = ctypes.windll.user32
+        
+        if not self._capture_target_hwnd:
+            return None  # Screen mode
+        
+        if not user32.IsWindow(self._capture_target_hwnd):
+            log(f"[UI] Target window invalid, reset to screen")
+            self._capture_target_hwnd = None
+            self._capture_target_name = "Screen (Full)"
+            return None
+        
+        # Get client rect
+        class RECT(ctypes.Structure):
+            _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
+                       ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
+        
+        class POINT(ctypes.Structure):
+            _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+        
+        rect = RECT()
+        user32.GetClientRect(self._capture_target_hwnd, ctypes.byref(rect))
+        
+        # Convert client (0,0) to screen coords
+        pt = POINT(0, 0)
+        user32.ClientToScreen(self._capture_target_hwnd, ctypes.byref(pt))
+        
+        return (pt.x, pt.y, rect.right - rect.left, rect.bottom - rect.top)
+    
+    def _capture_click_with_hold(self, x_var, y_var, hold_var, btn_var):
+        """
+        Capture mouse position AND hold duration
+        - Click để capture vị trí
+        - Nếu là hold_left/hold_right: đo thời gian giữ chuột
+        """
         import ctypes
         
-        # Get first worker's client rect for coordinate conversion
-        worker = self.workers[0] if self.workers else None
-        if not worker:
-            messagebox.showwarning("Lỗi", "Không tìm thấy worker/LDPlayer nào")
-            return
+        user32 = ctypes.windll.user32
+        btn_type = btn_var.get()
+        is_hold_mode = btn_type in ("hold_left", "hold_right")
         
         # Minimize main window
         self.root.iconify()
         self.root.update()
         
-        # Wait for click
-        messagebox.showinfo("Capture", 
-                           f"Click vào vị trí trên LDPlayer ({worker.hwnd}).\n\n"
-                           "Nhấn OK rồi click vào vị trí cần capture.")
+        # Wait for left mouse button release (if pressed)
+        while user32.GetAsyncKeyState(0x01) & 0x8000:
+            pass
         
-        # Capture mouse position after short delay
-        import time
-        time.sleep(0.3)  # Small delay for user to position
+        # Wait for click down
+        while not (user32.GetAsyncKeyState(0x01) & 0x8000):
+            pass
         
-        # Get cursor position
+        # Get cursor position at click down
         class POINT(ctypes.Structure):
             _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
         
         pt = POINT()
-        ctypes.windll.user32.GetCursorPos(ctypes.byref(pt))
+        user32.GetCursorPos(ctypes.byref(pt))
+        screen_x, screen_y = pt.x, pt.y
         
-        # Convert screen coords to client coords
-        client_x = pt.x - worker.client_x
-        client_y = pt.y - worker.client_y
+        # Measure hold duration if in hold mode
+        hold_duration_ms = 0
+        if is_hold_mode:
+            import time
+            start_time = time.time()
+            # Wait for mouse button release
+            while user32.GetAsyncKeyState(0x01) & 0x8000:
+                pass
+            hold_duration_ms = int((time.time() - start_time) * 1000)
+            hold_duration_ms = max(50, hold_duration_ms)  # Minimum 50ms
+        
+        # Convert based on capture target
+        result_x, result_y = screen_x, screen_y
+        target_rect = self._get_capture_target_rect()
+        
+        if target_rect:
+            cx, cy, cw, ch = target_rect
+            result_x = screen_x - cx
+            result_y = screen_y - cy
+            log(f"[UI] Captured: ({result_x},{result_y}) in {self._capture_target_name}, hold={hold_duration_ms}ms")
+        else:
+            log(f"[UI] Captured: screen({screen_x},{screen_y}), hold={hold_duration_ms}ms")
         
         # Restore window
         self.root.deiconify()
+        self.root.update()
         
         # Update variables
-        x_var.set(max(0, client_x))
-        y_var.set(max(0, client_y))
+        x_var.set(max(0, result_x))
+        y_var.set(max(0, result_y))
         
-        log(f"[UI] Captured position: screen({pt.x}, {pt.y}) → client({client_x}, {client_y})")
+        # Update hold duration if captured
+        if is_hold_mode and hold_duration_ms > 0:
+            hold_var.set(hold_duration_ms)
     
-    def _capture_region(self, x1_var, y1_var, x2_var, y2_var):
-        """Capture region by two clicks"""
+    def _capture_drag_path(self, x1_var, y1_var, x2_var, y2_var, duration_var):
+        """
+        Capture drag path: giữ chuột và kéo để capture hành trình
+        - Start: vị trí nhấn chuột
+        - End: vị trí thả chuột
+        - Duration: thời gian từ lúc nhấn đến thả
+        """
         import ctypes
+        import time
         
-        worker = self.workers[0] if self.workers else None
-        if not worker:
-            messagebox.showwarning("Lỗi", "Không tìm thấy worker/LDPlayer nào")
-            return
+        user32 = ctypes.windll.user32
         
+        # Minimize main window
         self.root.iconify()
         self.root.update()
         
-        messagebox.showinfo("Capture Region", 
-                           "Click vào góc TRÊN-TRÁI của vùng cần capture.")
+        # Wait for any button release first
+        while user32.GetAsyncKeyState(0x01) & 0x8000:
+            pass
         
-        import time
-        time.sleep(0.3)
+        # Wait for mouse down (start of drag)
+        while not (user32.GetAsyncKeyState(0x01) & 0x8000):
+            pass
+        
+        # Get start position
+        class POINT(ctypes.Structure):
+            _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+        
+        pt = POINT()
+        user32.GetCursorPos(ctypes.byref(pt))
+        start_x, start_y = pt.x, pt.y
+        start_time = time.time()
+        
+        # Wait for mouse up (end of drag)
+        while user32.GetAsyncKeyState(0x01) & 0x8000:
+            pass
+        
+        # Get end position
+        user32.GetCursorPos(ctypes.byref(pt))
+        end_x, end_y = pt.x, pt.y
+        duration_ms = int((time.time() - start_time) * 1000)
+        duration_ms = max(100, duration_ms)  # Minimum 100ms
+        
+        # Convert based on capture target
+        target_rect = self._get_capture_target_rect()
+        
+        if target_rect:
+            cx, cy, cw, ch = target_rect
+            start_x = start_x - cx
+            start_y = start_y - cy
+            end_x = end_x - cx
+            end_y = end_y - cy
+            log(f"[UI] Drag captured: ({start_x},{start_y})→({end_x},{end_y}) {duration_ms}ms in {self._capture_target_name}")
+        else:
+            log(f"[UI] Drag captured: screen ({start_x},{start_y})→({end_x},{end_y}) {duration_ms}ms")
+        
+        # Restore window
+        self.root.deiconify()
+        self.root.update()
+        
+        # Update variables
+        x1_var.set(max(0, start_x))
+        y1_var.set(max(0, start_y))
+        x2_var.set(max(0, end_x))
+        y2_var.set(max(0, end_y))
+        duration_var.set(duration_ms)
+    
+    def _capture_position(self, x_var, y_var):
+        """
+        Capture mouse position on click - NO messagebox, silent capture
+        - Dùng _capture_target_hwnd để xác định target
+        - Nếu có target → client coords
+        - Nếu không → screen coords
+        """
+        import ctypes
+        
+        user32 = ctypes.windll.user32
+        
+        # Minimize main window immediately (no messagebox)
+        self.root.iconify()
+        self.root.update()
+        
+        # Wait for left mouse click
+        while user32.GetAsyncKeyState(0x01) & 0x8000:
+            pass
+        while not (user32.GetAsyncKeyState(0x01) & 0x8000):
+            pass
+        
+        # Get cursor position at click
+        class POINT(ctypes.Structure):
+            _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+        
+        pt = POINT()
+        user32.GetCursorPos(ctypes.byref(pt))
+        screen_x, screen_y = pt.x, pt.y
+        
+        # Convert based on capture target
+        result_x, result_y = screen_x, screen_y
+        target_rect = self._get_capture_target_rect()
+        
+        if target_rect:
+            cx, cy, cw, ch = target_rect
+            # Convert to client coords (relative to target window)
+            result_x = screen_x - cx
+            result_y = screen_y - cy
+            log(f"[UI] Captured: ({result_x},{result_y}) in {self._capture_target_name}")
+        else:
+            log(f"[UI] Captured: screen({screen_x},{screen_y})")
+        
+        # Restore window
+        self.root.deiconify()
+        self.root.update()
+        
+        # Update variables
+        x_var.set(max(0, result_x))
+        y_var.set(max(0, result_y))
+    
+    def _capture_region(self, x1_var, y1_var, x2_var, y2_var):
+        """
+        Capture region by two clicks - NO messagebox, silent capture
+        - Click 1: góc trên-trái
+        - Click 2: góc dưới-phải
+        """
+        import ctypes
+        
+        user32 = ctypes.windll.user32
+        
+        # Minimize app immediately
+        self.root.iconify()
+        self.root.update()
         
         class POINT(ctypes.Structure):
             _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
         
-        pt1 = POINT()
-        ctypes.windll.user32.GetCursorPos(ctypes.byref(pt1))
+        def wait_for_click():
+            """Wait for left mouse click and return position"""
+            # Wait until button released
+            while user32.GetAsyncKeyState(0x01) & 0x8000:
+                pass
+            # Wait for click
+            while not (user32.GetAsyncKeyState(0x01) & 0x8000):
+                pass
+            pt = POINT()
+            user32.GetCursorPos(ctypes.byref(pt))
+            return pt.x, pt.y
         
-        messagebox.showinfo("Capture Region", 
-                           "Giờ click vào góc DƯỚI-PHẢI của vùng.")
+        # First click
+        x1_screen, y1_screen = wait_for_click()
         
-        time.sleep(0.3)
+        # Small delay between clicks
+        import time
+        time.sleep(0.2)
         
-        pt2 = POINT()
-        ctypes.windll.user32.GetCursorPos(ctypes.byref(pt2))
+        # Second click
+        x2_screen, y2_screen = wait_for_click()
         
+        # Convert based on capture target
+        result_x1, result_y1 = x1_screen, y1_screen
+        result_x2, result_y2 = x2_screen, y2_screen
+        target_rect = self._get_capture_target_rect()
+        
+        if target_rect:
+            cx, cy, cw, ch = target_rect
+            # Convert to client coords
+            result_x1 = x1_screen - cx
+            result_y1 = y1_screen - cy
+            result_x2 = x2_screen - cx
+            result_y2 = y2_screen - cy
+            log(f"[UI] Captured region: ({result_x1},{result_y1})-({result_x2},{result_y2}) in {self._capture_target_name}")
+        else:
+            log(f"[UI] Captured region: screen({result_x1},{result_y1})-({result_x2},{result_y2})")
+        
+        # Restore window
         self.root.deiconify()
+        self.root.update()
         
-        # Convert to client coords
-        cx1 = max(0, pt1.x - worker.client_x)
-        cy1 = max(0, pt1.y - worker.client_y)
-        cx2 = max(0, pt2.x - worker.client_x)
-        cy2 = max(0, pt2.y - worker.client_y)
-        
-        x1_var.set(min(cx1, cx2))
-        y1_var.set(min(cy1, cy2))
-        x2_var.set(max(cx1, cx2))
-        y2_var.set(max(cy1, cy2))
-        
-        log(f"[UI] Captured region: ({cx1},{cy1}) - ({cx2},{cy2})")
+        # Normalize (ensure x1 < x2, y1 < y2)
+        x1_var.set(max(0, min(result_x1, result_x2)))
+        y1_var.set(max(0, min(result_y1, result_y2)))
+        x2_var.set(max(0, max(result_x1, result_x2)))
+        y2_var.set(max(0, max(result_y1, result_y2)))
     
     def _pick_color(self, r_var, g_var, b_var):
-        """Pick color from screen pixel"""
+        """Pick color from screen pixel - NO messagebox, silent capture"""
         import ctypes
         
-        worker = self.workers[0] if self.workers else None
-        if not worker:
-            messagebox.showwarning("Lỗi", "Không tìm thấy worker/LDPlayer nào")
-            return
+        user32 = ctypes.windll.user32
         
+        # Minimize app immediately
         self.root.iconify()
         self.root.update()
         
-        messagebox.showinfo("Pick Color", 
-                           "Click vào pixel trên LDPlayer để lấy màu.")
-        
-        import time
-        time.sleep(0.3)
+        # Wait for left mouse click
+        while user32.GetAsyncKeyState(0x01) & 0x8000:
+            pass
+        while not (user32.GetAsyncKeyState(0x01) & 0x8000):
+            pass
         
         class POINT(ctypes.Structure):
             _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
         
         pt = POINT()
-        ctypes.windll.user32.GetCursorPos(ctypes.byref(pt))
+        user32.GetCursorPos(ctypes.byref(pt))
         
         # Get pixel color at cursor position
-        hdc = ctypes.windll.user32.GetDC(0)
+        hdc = user32.GetDC(0)
         pixel = ctypes.windll.gdi32.GetPixel(hdc, pt.x, pt.y)
-        ctypes.windll.user32.ReleaseDC(0, hdc)
+        user32.ReleaseDC(0, hdc)
         
         # Extract RGB from pixel (COLORREF is BGR format)
         r = pixel & 0xFF
         g = (pixel >> 8) & 0xFF
         b = (pixel >> 16) & 0xFF
         
+        # Restore window
         self.root.deiconify()
+        self.root.update()
         
         r_var.set(r)
         g_var.set(g)
@@ -3345,15 +5178,433 @@ class MainUI:
             # Worker ID = worker's index (w.id), vì workers được tạo tuần tự
             # từ initialize_workers_from_ldplayer
             worker_id_text = f"Worker {w.id}"
+            
+            # Check if worker has custom actions
+            has_custom = w.id in self._worker_actions and len(self._worker_actions[w.id]) > 0
+            custom_count = len(self._worker_actions.get(w.id, []))
 
-            # Actions column shows clickable text
-            actions_text = "[▶ ⏸ ⏹]"
+            # Actions column shows clickable text + custom indicator
+            if has_custom:
+                actions_text = f"[▶ ⏸ ⏹] ✏️{custom_count}"
+            else:
+                actions_text = "[▶ ⏸ ⏹]"
 
             # Insert row with new column order: ID, Name, Worker, Status, Actions
             item_id = self.worker_tree.insert("", tk.END, values=(w.id, name, worker_id_text, status, actions_text))
             self.worker_tree_items[w.id] = item_id
 
         self.root.after(self.REFRESH_MS, self._auto_refresh_status)
+
+    # ================= HOTKEY SETTINGS =================
+    
+    def _load_hotkey_settings(self):
+        """Load hotkey settings from config file"""
+        config_path = "data/hotkey_settings.json"
+        default_settings = {
+            "record": "F9",
+            "play": "F10",
+            "pause": "F11",
+            "stop": "F12"
+        }
+        try:
+            if os.path.exists(config_path):
+                with open(config_path, "r") as f:
+                    settings = json.load(f)
+                    # Merge with defaults
+                    for key in default_settings:
+                        if key not in settings:
+                            settings[key] = default_settings[key]
+                    return settings
+        except Exception as e:
+            log(f"[UI] Failed to load hotkey settings: {e}")
+        return default_settings
+    
+    def _save_hotkey_settings(self):
+        """Save hotkey settings to config file"""
+        config_path = "data/hotkey_settings.json"
+        try:
+            os.makedirs("data", exist_ok=True)
+            with open(config_path, "w") as f:
+                json.dump(self._hotkey_settings, f, indent=2)
+            log("[UI] Hotkey settings saved")
+        except Exception as e:
+            log(f"[UI] Failed to save hotkey settings: {e}")
+    
+    def _update_button_hotkey_text(self):
+        """Update button text to show bound hotkeys"""
+        record_key = self._hotkey_settings.get("record", "")
+        play_key = self._hotkey_settings.get("play", "")
+        pause_key = self._hotkey_settings.get("pause", "")
+        stop_key = self._hotkey_settings.get("stop", "")
+        
+        # Update button text
+        self.btn_record.config(text=f"⏺ Record ({record_key})" if record_key else "⏺ Record", width=14)
+        self.btn_play.config(text=f"▶ Play ({play_key})" if play_key else "▶ Play", width=12)
+        self.btn_pause.config(text=f"⏸ Pause ({pause_key})" if pause_key else "⏸ Pause", width=13)
+        self.btn_stop.config(text=f"⏹ Stop ({stop_key})" if stop_key else "⏹ Stop", width=12)
+    
+    def _open_settings_dialog(self):
+        """Open settings dialog for hotkey binding"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("⚙ Settings - Hotkey Binding")
+        dialog.geometry("450x500")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        dialog.resizable(False, False)
+        
+        # Title
+        tk.Label(dialog, text="Hotkey Settings", font=("Arial", 12, "bold")).pack(pady=10)
+        tk.Label(dialog, text="Click button then press key to bind", 
+                font=("Arial", 9), fg="gray").pack()
+        
+        # Hotkey entries frame
+        hotkey_frame = tk.LabelFrame(dialog, text="Hotkeys", font=("Arial", 10))
+        hotkey_frame.pack(fill="x", padx=20, pady=15)
+        
+        hotkey_vars = {}
+        hotkey_buttons = {}
+        
+        hotkeys = [
+            ("record", "⏺ Record:", self._hotkey_settings.get("record", "")),
+            ("play", "▶ Play:", self._hotkey_settings.get("play", "")),
+            ("pause", "⏸ Pause:", self._hotkey_settings.get("pause", "")),
+            ("stop", "⏹ Stop:", self._hotkey_settings.get("stop", ""))
+        ]
+        
+        for key, label, current_value in hotkeys:
+            row = tk.Frame(hotkey_frame)
+            row.pack(fill="x", padx=10, pady=8)
+            
+            tk.Label(row, text=label, font=("Arial", 10), width=12, anchor="w").pack(side="left")
+            
+            var = tk.StringVar(value=current_value)
+            hotkey_vars[key] = var
+            
+            # Entry to show current hotkey
+            entry = tk.Entry(row, textvariable=var, width=15, font=("Arial", 10), 
+                           state="readonly", justify="center")
+            entry.pack(side="left", padx=5)
+            
+            # Bind button
+            def create_bind_callback(k, v, e):
+                def bind_hotkey():
+                    self._capture_hotkey(k, v, e, dialog, hotkey_vars)
+                return bind_hotkey
+            
+            btn = tk.Button(row, text="🎯 Bind", command=create_bind_callback(key, var, entry),
+                          bg="#2196F3", fg="white", font=("Arial", 8))
+            btn.pack(side="left", padx=5)
+            hotkey_buttons[key] = btn
+            
+            # Unbind button
+            def create_unbind_callback(v):
+                def unbind_hotkey():
+                    v.set("")
+                return unbind_hotkey
+            
+            tk.Button(row, text="🚫 Unbind", command=create_unbind_callback(var),
+                     bg="#FF5722", fg="white", font=("Arial", 8)).pack(side="left", padx=2)
+        
+        # Info
+        info_frame = tk.Frame(dialog)
+        info_frame.pack(fill="x", padx=20, pady=10)
+        tk.Label(info_frame, text="💡 Tip: Use F1-F12, or combinations like Ctrl+Shift+R",
+                font=("Arial", 8), fg="#666").pack()
+        
+        # Buttons
+        btn_frame = tk.Frame(dialog)
+        btn_frame.pack(fill="x", padx=20, pady=20)
+        
+        def save_and_close():
+            # Update settings
+            for key, var in hotkey_vars.items():
+                self._hotkey_settings[key] = var.get()
+            self._save_hotkey_settings()
+            self._update_button_hotkey_text()
+            self._register_global_hotkeys()
+            dialog.destroy()
+        
+        def reset_defaults():
+            hotkey_vars["record"].set("F9")
+            hotkey_vars["play"].set("F10")
+            hotkey_vars["pause"].set("F11")
+            hotkey_vars["stop"].set("F12")
+        
+        tk.Button(btn_frame, text="✓ Save", command=save_and_close,
+                 bg="#4CAF50", fg="white", font=("Arial", 10, "bold"), width=10).pack(side="left", padx=5)
+        tk.Button(btn_frame, text="Reset Defaults", command=reset_defaults,
+                 bg="#FF9800", fg="white", font=("Arial", 9), width=12).pack(side="left", padx=5)
+        tk.Button(btn_frame, text="Cancel", command=dialog.destroy,
+                 bg="#9E9E9E", fg="white", font=("Arial", 9), width=10).pack(side="left", padx=5)
+    
+    def _capture_hotkey(self, key_name, var, entry, parent_dialog, all_hotkey_vars=None):
+        """Capture a hotkey press"""
+        # IMPORTANT: Temporarily unregister global hotkeys to prevent them from triggering
+        self._unregister_global_hotkeys()
+        
+        capture_dialog = tk.Toplevel(parent_dialog)
+        capture_dialog.title(f"Bind Hotkey for {key_name.title()}")
+        capture_dialog.geometry("300x150")
+        capture_dialog.transient(parent_dialog)
+        capture_dialog.grab_set()
+        capture_dialog.resizable(False, False)
+        
+        # Center on parent
+        capture_dialog.geometry(f"+{parent_dialog.winfo_x() + 50}+{parent_dialog.winfo_y() + 100}")
+        
+        tk.Label(capture_dialog, text="Press any key or combination...", 
+                font=("Arial", 11)).pack(pady=15)
+        
+        status_label = tk.Label(capture_dialog, text="Waiting...", font=("Arial", 10), fg="blue")
+        status_label.pack()
+        
+        conflict_label = tk.Label(capture_dialog, text="", font=("Arial", 9), fg="orange")
+        conflict_label.pack()
+        
+        captured_key = [None]
+        modifier_state = {"ctrl": False, "alt": False, "shift": False}
+        
+        def on_key_press(event):
+            key = event.keysym
+            
+            # Track modifier keys
+            if key in ('Control_L', 'Control_R'):
+                modifier_state["ctrl"] = True
+                status_label.config(text="Ctrl + ... (press a key)")
+                return
+            if key in ('Alt_L', 'Alt_R'):
+                modifier_state["alt"] = True
+                status_label.config(text="Alt + ... (press a key)")
+                return
+            if key in ('Shift_L', 'Shift_R'):
+                modifier_state["shift"] = True
+                status_label.config(text="Shift + ... (press a key)")
+                return
+            
+            # Build key string from tracked modifiers
+            parts = []
+            if modifier_state["ctrl"]:
+                parts.append("Ctrl")
+            if modifier_state["alt"]:
+                parts.append("Alt")
+            if modifier_state["shift"]:
+                parts.append("Shift")
+            
+            # Format key name
+            if len(key) == 1:
+                parts.append(key.upper())
+            else:
+                parts.append(key)
+            
+            captured_key[0] = "+".join(parts)
+            status_label.config(text=f"Captured: {captured_key[0]}", fg="green")
+            
+            # Check for conflicts with other hotkeys
+            conflict_action = None
+            if all_hotkey_vars:
+                for action, hk_var in all_hotkey_vars.items():
+                    if action != key_name and hk_var.get().lower() == captured_key[0].lower():
+                        conflict_action = action
+                        break
+            
+            if conflict_action:
+                conflict_label.config(text=f"⚠️ Already bound to '{conflict_action.title()}'", fg="orange")
+            else:
+                conflict_label.config(text="")
+            
+            # Auto close after short delay
+            capture_dialog.after(500, lambda: finish_capture())
+        
+        def on_key_release(event):
+            key = event.keysym
+            if key in ('Control_L', 'Control_R'):
+                modifier_state["ctrl"] = False
+            if key in ('Alt_L', 'Alt_R'):
+                modifier_state["alt"] = False
+            if key in ('Shift_L', 'Shift_R'):
+                modifier_state["shift"] = False
+        
+        def finish_capture():
+            if captured_key[0]:
+                var.set(captured_key[0])
+            # Re-register global hotkeys when done
+            self._register_global_hotkeys()
+            capture_dialog.destroy()
+        
+        def cancel_capture():
+            # Re-register global hotkeys when cancelled
+            self._register_global_hotkeys()
+            capture_dialog.destroy()
+        
+        # Handle window close button (X)
+        capture_dialog.protocol("WM_DELETE_WINDOW", cancel_capture)
+        
+        capture_dialog.bind("<KeyPress>", on_key_press)
+        capture_dialog.bind("<KeyRelease>", on_key_release)
+        capture_dialog.focus_set()
+        
+        # Cancel button
+        tk.Button(capture_dialog, text="Cancel", command=cancel_capture,
+                 font=("Arial", 9)).pack(pady=10)
+    
+    def _unregister_global_hotkeys(self):
+        """Unregister all global hotkeys"""
+        try:
+            import keyboard
+            keyboard.unhook_all_hotkeys()
+            log("[UI] Global hotkeys unregistered")
+        except ImportError:
+            pass
+        except Exception as e:
+            log(f"[UI] Failed to unregister hotkeys: {e}")
+    
+    def _register_global_hotkeys(self):
+        """Register global hotkeys based on settings"""
+        # This uses keyboard library for global hotkeys
+        try:
+            import keyboard
+            
+            # Unregister all first
+            try:
+                keyboard.unhook_all_hotkeys()
+            except:
+                pass
+            
+            # Register new hotkeys
+            if self._hotkey_settings.get("record"):
+                keyboard.add_hotkey(self._hotkey_settings["record"].lower(), self._toggle_record)
+            if self._hotkey_settings.get("play"):
+                keyboard.add_hotkey(self._hotkey_settings["play"].lower(), self._toggle_play)
+            if self._hotkey_settings.get("pause"):
+                keyboard.add_hotkey(self._hotkey_settings["pause"].lower(), self._toggle_pause)
+            if self._hotkey_settings.get("stop"):
+                keyboard.add_hotkey(self._hotkey_settings["stop"].lower(), self._stop_all)
+            
+            log(f"[UI] Global hotkeys registered: {self._hotkey_settings}")
+        except ImportError:
+            log("[UI] keyboard library not installed, global hotkeys disabled")
+        except Exception as e:
+            log(f"[UI] Failed to register hotkeys: {e}")
+
+    # ================= PLAYBACK TOOLBAR =================
+    
+    def _show_playback_toolbar(self):
+        """Show floating toolbar during playback - similar to recording toolbar"""
+        if self._playback_toolbar is not None:
+            return
+        
+        toolbar = tk.Toplevel(self.root)
+        toolbar.title("▶ Playing")
+        toolbar.attributes("-topmost", True)
+        toolbar.resizable(False, False)
+        toolbar.overrideredirect(True)
+        
+        # Load saved position or use default
+        saved_pos = self._load_toolbar_position()
+        if saved_pos and saved_pos[0] is not None:
+            toolbar.geometry(f"+{saved_pos[0]}+{saved_pos[1]}")
+        else:
+            screen_w = toolbar.winfo_screenwidth()
+            screen_h = toolbar.winfo_screenheight()
+            x = (screen_w - 200) // 2
+            y = (screen_h - 80) // 2
+            toolbar.geometry(f"+{x}+{y}")
+        
+        # Main frame with border
+        main_frame = tk.Frame(toolbar, bg="#1B5E20", highlightbackground="#4CAF50", highlightthickness=2)
+        main_frame.pack(fill="both", expand=True)
+        
+        # Drag handle
+        drag_frame = tk.Frame(main_frame, bg="#2E7D32", cursor="fleur")
+        drag_frame.pack(fill="x", padx=2, pady=(2, 0))
+        
+        drag_label = tk.Label(drag_frame, text="⠿ ▶ Playing", 
+                              bg="#2E7D32", fg="white", font=("Arial", 8))
+        drag_label.pack(fill="x", pady=2)
+        
+        # Drag functionality
+        self._playback_toolbar_drag_data = {"x": 0, "y": 0}
+        
+        def start_drag(event):
+            self._playback_toolbar_drag_data["x"] = event.x
+            self._playback_toolbar_drag_data["y"] = event.y
+        
+        def do_drag(event):
+            x = toolbar.winfo_x() + event.x - self._playback_toolbar_drag_data["x"]
+            y = toolbar.winfo_y() + event.y - self._playback_toolbar_drag_data["y"]
+            toolbar.geometry(f"+{x}+{y}")
+        
+        drag_frame.bind("<ButtonPress-1>", start_drag)
+        drag_frame.bind("<B1-Motion>", do_drag)
+        drag_label.bind("<ButtonPress-1>", start_drag)
+        drag_label.bind("<B1-Motion>", do_drag)
+        
+        # Buttons frame
+        btn_frame = tk.Frame(main_frame, bg="#1B5E20")
+        btn_frame.pack(fill="x", padx=2, pady=2)
+        
+        # Pause/Resume button
+        pause_key = self._hotkey_settings.get("pause", "")
+        pause_text = f"⏸ ({pause_key})" if pause_key else "⏸ Pause"
+        self._playback_pause_btn = tk.Button(
+            btn_frame, text=pause_text,
+            bg="#FF9800", fg="white", font=("Arial", 9, "bold"),
+            command=self._toggle_pause
+        )
+        self._playback_pause_btn.pack(side="left", padx=3, pady=3)
+        
+        # Stop button
+        stop_key = self._hotkey_settings.get("stop", "")
+        stop_text = f"⏹ ({stop_key})" if stop_key else "⏹ Stop"
+        stop_btn = tk.Button(
+            btn_frame, text=stop_text,
+            bg="#f44336", fg="white", font=("Arial", 9, "bold"),
+            command=self._stop_playback
+        )
+        stop_btn.pack(side="left", padx=3, pady=3)
+        
+        # Bind Esc to stop
+        toolbar.bind("<Escape>", lambda e: self._stop_playback())
+        
+        self._playback_toolbar = toolbar
+        
+        # Hide main window
+        self.root.withdraw()
+    
+    def _hide_playback_toolbar(self):
+        """Hide playback toolbar and restore main window"""
+        if self._playback_toolbar is not None:
+            # Save position
+            try:
+                geo = self._playback_toolbar.geometry()
+                parts = geo.split("+")
+                if len(parts) >= 3:
+                    x, y = int(parts[1]), int(parts[2])
+                    config_path = "data/toolbar_position.json"
+                    os.makedirs("data", exist_ok=True)
+                    with open(config_path, "w") as f:
+                        json.dump({"x": x, "y": y}, f)
+            except:
+                pass
+            
+            self._playback_toolbar.destroy()
+            self._playback_toolbar = None
+        
+        self.root.deiconify()
+        self.root.lift()
+    
+    def _update_playback_toolbar_pause_button(self):
+        """Update pause button text on playback toolbar"""
+        if self._playback_toolbar is None or not hasattr(self, '_playback_pause_btn'):
+            return
+        
+        pause_key = self._hotkey_settings.get("pause", "")
+        if self._is_paused:
+            text = f"▶ ({pause_key})" if pause_key else "▶ Resume"
+            self._playback_pause_btn.config(text=text, bg="#4CAF50")
+        else:
+            text = f"⏸ ({pause_key})" if pause_key else "⏸ Pause"
+            self._playback_pause_btn.config(text=text, bg="#FF9800")
 
     # ================= LEGACY COMMAND METHODS (for backward compatibility) =================
     

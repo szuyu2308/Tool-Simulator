@@ -1,0 +1,75 @@
+2026-01-10 10:40:49,192 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 10:40:49,360 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 10:40:49,518 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 10:40:49,518 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-10 10:40:49,519 | INFO    | [WORKER] 1: Scale factors = 1.000x, 1.000y
+2026-01-10 10:40:49,605 | INFO    | [CAPTURE] BetterCam not installed
+2026-01-10 10:40:49,841 | INFO    | [CAPTURE] DXCam initialized successfully
+2026-01-10 10:40:49,841 | INFO    | [CAPTURE] Active provider: DXCam
+2026-01-10 10:40:49,842 | INFO    | [WORKER] 1: Providers initialized (Capture: DXCam)
+2026-01-10 10:40:49,845 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 10:40:50,893 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 10:40:50,893 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 10:40:50,894 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 10:40:50,894 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 10:40:50,954 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 10:40:50,954 | INFO    | [UI] Global hotkeys registered
+2026-01-10 10:41:00,596 | INFO    | [UI] Captured: screen(558,265), hold=951ms
+2026-01-10 10:41:27,628 | INFO    | [UI] Captured: screen(737,335), hold=1370ms
+2026-01-10 10:42:31,520 | INFO    | [UI] Captured: screen(550,264), hold=811ms
+2026-01-10 10:42:35,590 | INFO    | [UI] Added action: CLICK
+2026-01-10 10:42:38,105 | INFO    | [UI] Playback loop: 1 actions, target_hwnd=None
+2026-01-10 10:42:38,105 | INFO    | [UI] Executing action 0: CLICK = {'button': 'hold_left', 'x': 550, 'y': 264, 'hold_ms': 811}
+2026-01-10 10:42:38,110 | INFO    | [UI] Playback started
+2026-01-10 10:42:38,954 | INFO    | [UI] Playback complete
+2026-01-10 10:42:38,956 | INFO    | [UI] Playback complete
+2026-01-10 10:42:41,093 | INFO    | [UI] Capture target set: Screen (Full) (hwnd=None)
+2026-01-10 10:42:42,093 | INFO    | [UI] Playback loop: 1 actions, target_hwnd=None
+2026-01-10 10:42:42,093 | INFO    | [UI] Executing action 0: CLICK = {'button': 'hold_left', 'x': 550, 'y': 264, 'hold_ms': 811}
+2026-01-10 10:42:42,094 | INFO    | [UI] Playback started
+2026-01-10 10:42:42,950 | INFO    | [UI] Playback complete
+2026-01-10 10:42:42,951 | INFO    | [UI] Playback complete
+2026-01-10 10:42:45,581 | INFO    | [UI] Playback loop: 1 actions, target_hwnd=None
+2026-01-10 10:42:45,582 | INFO    | [UI] Executing action 0: CLICK = {'button': 'hold_left', 'x': 550, 'y': 264, 'hold_ms': 811}
+2026-01-10 10:42:45,582 | INFO    | [UI] Playback started
+2026-01-10 10:42:46,435 | INFO    | [UI] Playback complete
+2026-01-10 10:42:46,435 | INFO    | [UI] Playback stopped
+2026-01-10 10:42:46,436 | INFO    | [UI] Playback complete
+2026-01-10 10:42:49,137 | INFO    | [UI] Capture target set: Screen (Full) (hwnd=None)
+2026-01-10 10:42:57,883 | INFO    | [UI] Captured: screen(483,265), hold=431ms
+2026-01-10 10:43:01,399 | INFO    | [UI] Added action: CLICK
+2026-01-10 10:43:04,172 | INFO    | [UI] Deleted 1 action(s)
+2026-01-10 10:43:05,509 | INFO    | [UI] Playback loop: 1 actions, target_hwnd=None
+2026-01-10 10:43:05,509 | INFO    | [UI] Executing action 0: CLICK = {'button': 'hold_left', 'x': 483, 'y': 265, 'hold_ms': 431}
+2026-01-10 10:43:05,510 | INFO    | [UI] Playback started
+2026-01-10 10:43:05,983 | INFO    | [UI] Playback complete
+2026-01-10 10:43:05,987 | INFO    | [UI] Playback paused
+2026-01-10 10:43:05,988 | INFO    | [UI] Playback complete
+2026-01-10 10:43:07,525 | INFO    | [UI] Playback loop: 1 actions, target_hwnd=None
+2026-01-10 10:43:07,526 | INFO    | [UI] Executing action 0: CLICK = {'button': 'hold_left', 'x': 483, 'y': 265, 'hold_ms': 431}
+2026-01-10 10:43:07,526 | INFO    | [UI] Playback started
+2026-01-10 10:43:08,003 | INFO    | [UI] Playback complete
+2026-01-10 10:43:08,003 | INFO    | [UI] Playback paused
+2026-01-10 10:43:08,006 | INFO    | [UI] Playback complete
+2026-01-10 10:43:14,140 | INFO    | [UI] Playback loop: 1 actions, target_hwnd=None
+2026-01-10 10:43:14,141 | INFO    | [UI] Executing action 0: CLICK = {'button': 'hold_left', 'x': 483, 'y': 265, 'hold_ms': 431}
+2026-01-10 10:43:14,142 | INFO    | [UI] Playback started
+2026-01-10 10:43:14,598 | INFO    | [UI] Playback complete
+2026-01-10 10:43:14,600 | INFO    | [UI] Playback complete
+2026-01-10 10:43:18,040 | INFO    | [UI] Playback loop: 1 actions, target_hwnd=None
+2026-01-10 10:43:18,041 | INFO    | [UI] Executing action 0: CLICK = {'button': 'hold_left', 'x': 483, 'y': 265, 'hold_ms': 431}
+2026-01-10 10:43:18,041 | INFO    | [UI] Playback started
+2026-01-10 10:43:18,501 | INFO    | [UI] Playback complete
+2026-01-10 10:43:18,505 | INFO    | [UI] Playback complete
+2026-01-10 10:43:50,301 | INFO    | [UI] Captured: screen(435,239), hold=1307ms
+2026-01-10 10:43:56,571 | INFO    | [UI] Added action: CLICK
+2026-01-10 10:43:58,373 | INFO    | [UI] Playback loop: 1 actions, target_hwnd=None
+2026-01-10 10:43:58,374 | INFO    | [UI] Executing action 0: CLICK = {'button': 'hold_left', 'x': 435, 'y': 239, 'hold_ms': 1307}
+2026-01-10 10:43:58,375 | INFO    | [UI] Playback started
+2026-01-10 10:43:59,710 | INFO    | [UI] Playback complete
+2026-01-10 10:43:59,712 | INFO    | [UI] Playback complete
+2026-01-10 10:44:06,368 | INFO    | [UI] Playback loop: 1 actions, target_hwnd=None
+2026-01-10 10:44:06,368 | INFO    | [UI] Executing action 0: CLICK = {'button': 'hold_left', 'x': 435, 'y': 239, 'hold_ms': 1307}
+2026-01-10 10:44:06,369 | INFO    | [UI] Playback started
+2026-01-10 10:44:07,713 | INFO    | [UI] Playback complete
+2026-01-10 10:44:07,718 | INFO    | [UI] Playback complete

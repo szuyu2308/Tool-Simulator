@@ -1,0 +1,130 @@
+2026-01-10 09:29:13,698 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 09:29:13,877 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 09:29:14,005 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 09:29:14,005 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-10 09:29:14,007 | INFO    | [WORKER] 1: Scale factors = 1.074x, 1.036y
+2026-01-10 09:29:14,048 | INFO    | [CAPTURE] BetterCam not installed
+2026-01-10 09:29:14,289 | INFO    | [CAPTURE] DXCam initialized successfully
+2026-01-10 09:29:14,289 | INFO    | [CAPTURE] Active provider: DXCam
+2026-01-10 09:29:14,289 | INFO    | [WORKER] 1: Providers initialized (Capture: DXCam)
+2026-01-10 09:29:14,291 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 09:29:14,948 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 09:29:14,949 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 09:29:14,949 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 09:29:14,949 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 09:29:14,993 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 09:29:14,994 | INFO    | [UI] Global hotkeys registered
+2026-01-10 09:29:17,947 | INFO    | [RECORDER] Configured: target=None, ignore_ui=2229752
+2026-01-10 09:29:17,986 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 09:29:17,987 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 09:29:18,642 | INFO    | [RECORDER] Mouse down at (988, 310) button=Button.left
+2026-01-10 09:29:18,726 | INFO    | [RECORDER] Mouse up at (988, 310) button=Button.left
+2026-01-10 09:29:19,371 | INFO    | [RECORDER] Mouse down at (1071, 389) button=Button.left
+2026-01-10 09:29:19,462 | INFO    | [RECORDER] Mouse up at (1071, 389) button=Button.left
+2026-01-10 09:29:19,730 | INFO    | [RECORDER] Mouse down at (1051, 323) button=Button.left
+2026-01-10 09:29:19,822 | INFO    | [RECORDER] Mouse up at (1051, 323) button=Button.left
+2026-01-10 09:29:20,278 | INFO    | [RECORDER] Mouse down at (1046, 325) button=Button.right
+2026-01-10 09:29:20,382 | INFO    | [RECORDER] Mouse up at (1046, 322) button=Button.right
+2026-01-10 09:29:20,810 | INFO    | [RECORDER] Mouse down at (998, 332) button=Button.left
+2026-01-10 09:29:20,874 | INFO    | [RECORDER] Mouse up at (998, 332) button=Button.left
+2026-01-10 09:29:21,919 | INFO    | [RECORDER] Mouse down at (1780, 69) button=Button.left
+2026-01-10 09:29:21,994 | INFO    | [RECORDER] Mouse up at (1780, 69) button=Button.left
+2026-01-10 09:29:21,995 | INFO    | [RECORDER] Paused
+2026-01-10 09:29:22,001 | INFO    | [UI] Recording paused
+2026-01-10 09:29:22,355 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=-1
+2026-01-10 09:29:22,407 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=-1
+2026-01-10 09:29:22,562 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=-1
+2026-01-10 09:29:22,740 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=1
+2026-01-10 09:29:22,784 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=1
+2026-01-10 09:29:22,853 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=1
+2026-01-10 09:29:23,052 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=-1
+2026-01-10 09:29:23,104 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=-1
+2026-01-10 09:29:23,148 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=-1
+2026-01-10 09:29:23,242 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=1
+2026-01-10 09:29:23,273 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=1
+2026-01-10 09:29:23,319 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=1
+2026-01-10 09:29:23,386 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=-1
+2026-01-10 09:29:23,402 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=-1
+2026-01-10 09:29:23,414 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=-1
+2026-01-10 09:29:23,438 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=-1
+2026-01-10 09:29:23,530 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=1
+2026-01-10 09:29:23,546 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=1
+2026-01-10 09:29:23,559 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=1
+2026-01-10 09:29:23,581 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=1
+2026-01-10 09:29:23,655 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=-1
+2026-01-10 09:29:23,672 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=-1
+2026-01-10 09:29:23,688 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=-1
+2026-01-10 09:29:23,787 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=1
+2026-01-10 09:29:23,801 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=1
+2026-01-10 09:29:23,824 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=1
+2026-01-10 09:29:23,902 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=-1
+2026-01-10 09:29:23,918 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=-1
+2026-01-10 09:29:23,932 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=-1
+2026-01-10 09:29:24,031 | INFO    | [RECORDER] Scroll at (1072, 315) dx=0 dy=1
+2026-01-10 09:29:24,174 | INFO    | [RECORDER] Mouse down at (1072, 315) button=Button.right
+2026-01-10 09:29:24,262 | INFO    | [RECORDER] Mouse up at (1072, 315) button=Button.right
+2026-01-10 09:29:24,446 | INFO    | [RECORDER] Mouse down at (1072, 315) button=Button.left
+2026-01-10 09:29:24,530 | INFO    | [RECORDER] Mouse up at (1072, 315) button=Button.left
+2026-01-10 09:29:24,810 | INFO    | [RECORDER] Mouse down at (1025, 309) button=Button.right
+2026-01-10 09:29:24,890 | INFO    | [RECORDER] Mouse up at (1025, 309) button=Button.right
+2026-01-10 09:29:24,930 | INFO    | [RECORDER] Mouse down at (1025, 309) button=Button.left
+2026-01-10 09:29:25,010 | INFO    | [RECORDER] Mouse up at (1025, 309) button=Button.left
+2026-01-10 09:29:25,068 | INFO    | [RECORDER] Mouse down at (1025, 309) button=Button.right
+2026-01-10 09:29:25,154 | INFO    | [RECORDER] Mouse down at (1025, 309) button=Button.left
+2026-01-10 09:29:25,154 | INFO    | [RECORDER] Mouse up at (1025, 309) button=Button.right
+2026-01-10 09:29:25,230 | INFO    | [RECORDER] Mouse up at (1025, 309) button=Button.left
+2026-01-10 09:29:25,270 | INFO    | [RECORDER] Mouse down at (1025, 309) button=Button.right
+2026-01-10 09:29:25,367 | INFO    | [RECORDER] Mouse down at (1025, 309) button=Button.left
+2026-01-10 09:29:25,386 | INFO    | [RECORDER] Mouse up at (1025, 309) button=Button.right
+2026-01-10 09:29:25,461 | INFO    | [RECORDER] Mouse up at (1025, 309) button=Button.left
+2026-01-10 09:29:26,030 | INFO    | [RECORDER] Mouse down at (981, 313) button=Button.left
+2026-01-10 09:29:26,110 | INFO    | [RECORDER] Mouse up at (981, 313) button=Button.left
+2026-01-10 09:29:26,417 | INFO    | [RECORDER] Scroll at (990, 313) dx=0 dy=-1
+2026-01-10 09:29:26,445 | INFO    | [RECORDER] Scroll at (990, 313) dx=0 dy=-1
+2026-01-10 09:29:26,617 | INFO    | [RECORDER] Scroll at (990, 313) dx=0 dy=1
+2026-01-10 09:29:26,638 | INFO    | [RECORDER] Scroll at (990, 313) dx=0 dy=1
+2026-01-10 09:29:26,667 | INFO    | [RECORDER] Scroll at (990, 313) dx=0 dy=1
+2026-01-10 09:29:26,713 | INFO    | [RECORDER] Scroll at (990, 313) dx=0 dy=1
+2026-01-10 09:29:27,974 | INFO    | [RECORDER] Mouse down at (1790, 76) button=Button.left
+2026-01-10 09:29:28,046 | INFO    | [RECORDER] Mouse up at (1790, 76) button=Button.left
+2026-01-10 09:29:28,048 | INFO    | [RECORDER] Resumed
+2026-01-10 09:29:28,049 | INFO    | [UI] Recording resumed
+2026-01-10 09:29:28,581 | INFO    | [RECORDER] Mouse down at (1852, 76) button=Button.left
+2026-01-10 09:29:28,666 | INFO    | [RECORDER] Mouse up at (1852, 76) button=Button.left
+2026-01-10 09:29:28,669 | INFO    | [RECORDER] Stopped. 1142 events captured
+2026-01-10 09:29:28,714 | INFO    | [UI] Added 30 recorded actions
+2026-01-10 09:29:28,789 | INFO    | [UI] Recording stopped
+2026-01-10 09:29:32,563 | INFO    | [UI] Playback loop: 30 actions, target_hwnd=657034
+2026-01-10 09:29:32,564 | INFO    | [UI] Executing action 0: WAIT = {'ms': 65}
+2026-01-10 09:29:32,564 | INFO    | [UI] Playback started
+2026-01-10 09:29:32,630 | INFO    | [UI] Executing action 1: WAIT = {'ms': 214}
+2026-01-10 09:29:32,846 | INFO    | [UI] Executing action 2: CLICK = {'button': 'left', 'x': 988, 'y': 310, 'screen_coords': True}
+2026-01-10 09:29:32,909 | INFO    | [UI] Executing action 3: WAIT = {'ms': 85}
+2026-01-10 09:29:32,996 | INFO    | [UI] Executing action 4: WAIT = {'ms': 348}
+2026-01-10 09:29:33,347 | INFO    | [UI] Executing action 5: CLICK = {'button': 'left', 'x': 1071, 'y': 389, 'screen_coords': True}
+2026-01-10 09:29:33,420 | INFO    | [UI] Executing action 6: WAIT = {'ms': 91}
+2026-01-10 09:29:33,524 | INFO    | [UI] Executing action 7: WAIT = {'ms': 53}
+2026-01-10 09:29:33,581 | INFO    | [UI] Executing action 8: WAIT = {'ms': 62}
+2026-01-10 09:29:33,645 | INFO    | [UI] Executing action 9: CLICK = {'button': 'left', 'x': 1051, 'y': 323, 'screen_coords': True}
+2026-01-10 09:29:33,707 | INFO    | [UI] Executing action 10: WAIT = {'ms': 92}
+2026-01-10 09:29:33,800 | INFO    | [UI] Executing action 11: WAIT = {'ms': 73}
+2026-01-10 09:29:33,874 | INFO    | [UI] Executing action 12: WAIT = {'ms': 306}
+2026-01-10 09:29:34,182 | INFO    | [UI] Executing action 13: CLICK = {'button': 'right', 'x': 1046, 'y': 325, 'screen_coords': True}
+2026-01-10 09:29:34,227 | INFO    | [UI] Executing action 14: WAIT = {'ms': 68}
+2026-01-10 09:29:34,298 | INFO    | [UI] Executing action 15: WAIT = {'ms': 270}
+2026-01-10 09:29:34,569 | INFO    | [UI] Executing action 16: WAIT = {'ms': 55}
+2026-01-10 09:29:34,625 | INFO    | [UI] Executing action 17: CLICK = {'button': 'left', 'x': 998, 'y': 332, 'screen_coords': True}
+2026-01-10 09:29:34,674 | INFO    | [UI] Executing action 18: WAIT = {'ms': 65}
+2026-01-10 09:29:34,741 | INFO    | [UI] Executing action 19: WAIT = {'ms': 259}
+2026-01-10 09:29:35,002 | INFO    | [UI] Executing action 20: WAIT = {'ms': 71}
+2026-01-10 09:29:35,075 | INFO    | [UI] Executing action 21: WAIT = {'ms': 213}
+2026-01-10 09:29:35,289 | INFO    | [UI] Executing action 22: WAIT = {'ms': 82}
+2026-01-10 09:29:35,372 | INFO    | [UI] Executing action 23: CLICK = {'button': 'left', 'x': 1780, 'y': 69, 'screen_coords': True}
+2026-01-10 09:29:35,415 | INFO    | [UI] Executing action 24: WAIT = {'ms': 75}
+2026-01-10 09:29:35,493 | INFO    | [UI] Executing action 25: WAIT = {'ms': 221}
+2026-01-10 09:29:35,716 | INFO    | [UI] Executing action 26: WAIT = {'ms': 153}
+2026-01-10 09:29:35,873 | INFO    | [UI] Executing action 27: WAIT = {'ms': 52}
+2026-01-10 09:29:35,926 | INFO    | [UI] Executing action 28: CLICK = {'button': 'left', 'x': 1852, 'y': 76, 'screen_coords': True}
+2026-01-10 09:29:35,970 | INFO    | [UI] Executing action 29: WAIT = {'ms': 74}
+2026-01-10 09:29:36,049 | INFO    | [UI] Playback complete
+2026-01-10 09:29:36,053 | INFO    | [UI] Playback complete

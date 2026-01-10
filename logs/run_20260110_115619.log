@@ -1,0 +1,14 @@
+2026-01-10 11:56:19,908 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 11:56:20,081 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 11:56:21,862 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 11:56:21,867 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 11:56:21,870 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 11:56:21,874 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 11:56:21,966 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 11:56:21,982 | INFO    | [UI] Global hotkeys registered
+2026-01-10 11:56:22,559 | INFO    | [UI] Global hotkeys registered: {'record': 'F9', 'play': 'F10', 'pause': 'F11', 'stop': 'F12'}
+2026-01-10 11:56:30,627 | INFO    | [UI] Window picked: main_ui.py - Tools_LDplay (hwnd=197496)
+2026-01-10 11:56:45,081 | INFO    | [UI] Window picked: Báo cáo Kinh Doanh Tháng  (hwnd=984082)
+2026-01-10 11:56:53,449 | INFO    | [UI] Window picked: Báo cáo Kinh Doanh Tháng  (hwnd=984082)
+2026-01-10 11:56:55,459 | INFO    | [UI] Capture target set: Báo cáo Kinh Doanh Tháng  (hwnd=984082)
+2026-01-10 11:56:57,727 | INFO    | [UI] Capture target set: Screen (Full) (hwnd=None)

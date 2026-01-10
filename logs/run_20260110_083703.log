@@ -1,0 +1,52 @@
+2026-01-10 08:37:03,579 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 08:37:03,664 | INFO    | [WorkerMgr] Loaded 1 assignments
+2026-01-10 08:37:05,109 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 08:37:05,109 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 08:37:05,109 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 08:37:05,114 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 08:37:05,179 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 08:37:05,179 | INFO    | [UI] Global hotkeys registered
+2026-01-10 08:37:10,929 | INFO    | [UI] Capture target set: Screen (Full) (hwnd=None)
+2026-01-10 08:39:56,099 | INFO    | [UI] Capture target set: Zalo1 (580x995) (hwnd=657034)
+2026-01-10 08:39:59,942 | INFO    | [UI] Captured: (297,194) in Zalo1 (580x995)
+2026-01-10 08:40:06,133 | INFO    | [UI] Added action: CLICK
+2026-01-10 08:40:35,546 | INFO    | [UI] Captured: (263,196) in Zalo1 (580x995)
+2026-01-10 08:40:37,949 | INFO    | [UI] Added action: WHEEL
+2026-01-10 08:40:41,158 | INFO    | [UI] Playback started
+2026-01-10 08:40:42,736 | INFO    | [UI] Playback complete
+2026-01-10 08:40:47,619 | INFO    | [UI] Playback started
+2026-01-10 08:40:49,210 | INFO    | [UI] Playback complete
+2026-01-10 08:40:59,449 | INFO    | [UI] Refreshing workers...
+2026-01-10 08:40:59,792 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 08:41:00,162 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 08:41:00,708 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 08:41:00,709 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-10 08:41:00,711 | INFO    | [WORKER] 1: Scale factors = 1.074x, 1.036y
+2026-01-10 08:41:00,989 | INFO    | [CAPTURE] BetterCam not installed
+2026-01-10 08:41:01,474 | INFO    | [CAPTURE] DXCam initialized successfully
+2026-01-10 08:41:01,474 | INFO    | [CAPTURE] Active provider: DXCam
+2026-01-10 08:41:01,475 | INFO    | [WORKER] 1: Providers initialized (Capture: DXCam)
+2026-01-10 08:41:01,477 | INFO    | [UI] Refreshed: 1 worker(s) detected
+2026-01-10 08:41:04,139 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 08:41:04,562 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 08:41:09,581 | INFO    | [UI] Set Worker dialog: detected 1 LDPlayer windows
+2026-01-10 08:41:09,824 | INFO    | [UI] Refresh: detected 1 LDPlayer windows
+2026-01-10 08:41:11,440 | INFO    | [WorkerMgr] Assigned 657034 → Worker 2
+2026-01-10 08:41:11,443 | INFO    | [WorkerMgr] Saved 2 assignments
+2026-01-10 08:41:13,010 | INFO    | [UI] Assigned 1 LDPlayer(s) to Worker IDs
+2026-01-10 08:41:13,082 | INFO    | [UI] Refresh: detected 1 LDPlayer windows
+2026-01-10 08:41:14,873 | INFO    | [UI] Refresh: detected 1 LDPlayer windows
+2026-01-10 08:41:27,809 | INFO    | [WORKER 1] Script stop requested
+2026-01-10 08:41:31,178 | INFO    | [UI] Playback started
+2026-01-10 08:41:32,906 | INFO    | [UI] Playback complete
+2026-01-10 08:41:45,981 | INFO    | [UI] Playback started
+2026-01-10 08:41:47,581 | INFO    | [UI] Playback complete
+2026-01-10 08:41:56,553 | INFO    | [UI] Playback started
+2026-01-10 08:41:58,171 | INFO    | [UI] Playback complete
+2026-01-10 08:42:05,769 | INFO    | [UI] Playback started
+2026-01-10 08:42:07,404 | INFO    | [UI] Playback complete
+2026-01-10 08:42:18,319 | INFO    | [RECORDER] Configured: target=657034, ignore_ui=460014
+2026-01-10 08:42:18,381 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 08:42:18,396 | INFO    | [UI] Recording started (V2 adapter), target hwnd: 657034
+2026-01-10 08:42:23,128 | INFO    | [RECORDER] Stopped. 831 events captured
+2026-01-10 08:46:48,596 | INFO    | [UI] Recording stopped

@@ -176,11 +176,13 @@ class PynputRecorderHook(IRecorderHook):
     
     def __init__(self):
         self._target_hwnd: Optional[int] = None
-        self._ignore_ui_hwnd: Optional[int] = None
+        self._ignore_ui_hwnds: set = set()  # Multiple UI windows to ignore
         self._running = False
+        self._paused = False  # Pause state
         self._events: List[RecordedEvent] = []
         self._events_lock = threading.Lock()
         self._start_time_ms: int = 0
+        self._pause_time_ms: int = 0  # Track time spent paused
         
         self._mouse_listener = None
         self._keyboard_listener = None
@@ -190,8 +192,15 @@ class PynputRecorderHook(IRecorderHook):
                   ignore_ui_hwnd: Optional[int] = None):
         """Configure target and ignore windows per spec A2"""
         self._target_hwnd = target_hwnd
-        self._ignore_ui_hwnd = ignore_ui_hwnd
-        log(f"[RECORDER] Configured: target={target_hwnd}, ignore_ui={ignore_ui_hwnd}")
+        if ignore_ui_hwnd:
+            self._ignore_ui_hwnds.add(ignore_ui_hwnd)
+        log(f"[RECORDER] Configured: target={target_hwnd}, ignore_ui={self._ignore_ui_hwnds}")
+    
+    def add_ignore_hwnd(self, hwnd: int):
+        """Add additional hwnd to ignore list (e.g., recording toolbar)"""
+        if hwnd:
+            self._ignore_ui_hwnds.add(hwnd)
+            log(f"[RECORDER] Added ignore hwnd: {hwnd}")
     
     def start(self):
         """Start recording"""
@@ -252,13 +261,32 @@ class PynputRecorderHook(IRecorderHook):
         log(f"[RECORDER] Stopped. {len(events)} events captured")
         return events
     
+    def pause(self):
+        """Pause recording - events will be ignored until resume"""
+        if self._running and not self._paused:
+            self._paused = True
+            self._pause_start = int(time.time() * 1000)
+            log("[RECORDER] Paused")
+    
+    def resume(self):
+        """Resume recording after pause"""
+        if self._running and self._paused:
+            # Add paused duration to offset
+            self._pause_time_ms += int(time.time() * 1000) - self._pause_start
+            self._paused = False
+            log("[RECORDER] Resumed")
+    
     @property
     def is_running(self) -> bool:
         return self._running
     
+    @property
+    def is_paused(self) -> bool:
+        return self._paused
+    
     def _get_ts_ms(self) -> int:
-        """Get current timestamp in ms since start"""
-        return int(time.time() * 1000) - self._start_time_ms
+        """Get current timestamp in ms since start (excluding paused time)"""
+        return int(time.time() * 1000) - self._start_time_ms - self._pause_time_ms
     
     def _should_filter_event(self, x_screen: int = None, y_screen: int = None) -> bool:
         """
@@ -266,22 +294,30 @@ class PynputRecorderHook(IRecorderHook):
         
         Returns True if event should be IGNORED
         """
-        # Get foreground window
+        # Ignore events while paused or not running
+        if self._paused or not self._running:
+            return True
+        
+        # If NO target window (Full Screen mode) - record everything
+        if not self._target_hwnd:
+            return False
+        
+        # If target window is set, check by COORDS
+        if x_screen is not None and y_screen is not None:
+            # Check if click is within target window bounds
+            try:
+                rect = WindowHelper.get_window_rect(self._target_hwnd)
+                if rect[0] <= x_screen <= rect[2] and rect[1] <= y_screen <= rect[3]:
+                    return False  # Accept - coords are in target window
+                else:
+                    return True  # Outside target
+            except:
+                pass
+        
+        # For keyboard events, check foreground
         fg = WindowHelper.get_foreground_window()
-        
-        # Ignore events from our UI window
-        if self._ignore_ui_hwnd and fg == self._ignore_ui_hwnd:
+        if fg != self._target_hwnd:
             return True
-        
-        # If target window is set, only accept events for that window
-        if self._target_hwnd and fg != self._target_hwnd:
-            return True
-        
-        # For mouse events, check if coords are in client area
-        if x_screen is not None and y_screen is not None and self._target_hwnd:
-            client_x, client_y = WindowHelper.screen_to_client(self._target_hwnd, x_screen, y_screen)
-            if not WindowHelper.is_point_in_client(self._target_hwnd, client_x, client_y):
-                return True
         
         return False
     
@@ -320,8 +356,10 @@ class PynputRecorderHook(IRecorderHook):
         if not self._running:
             return
         
+        log(f"[RECORDER] Mouse {'down' if pressed else 'up'} at ({x}, {y}) button={button}")
+        
         if self._should_filter_event(x, y):
-            return
+            return  # Don't spam log for filtered events
         
         # Map button
         button_map = {
@@ -354,8 +392,10 @@ class PynputRecorderHook(IRecorderHook):
         if not self._running:
             return
         
+        log(f"[RECORDER] Scroll at ({x}, {y}) dx={dx} dy={dy}")
+        
         if self._should_filter_event(x, y):
-            return
+            return  # Don't spam log for filtered events
         
         client_x, client_y = None, None
         if self._target_hwnd:
@@ -379,17 +419,12 @@ class PynputRecorderHook(IRecorderHook):
         if not self._running:
             return
         
-        # Don't filter keyboard by position
-        if self._target_hwnd:
-            fg = WindowHelper.get_foreground_window()
-            if fg != self._target_hwnd and self._ignore_ui_hwnd and fg != self._ignore_ui_hwnd:
-                # Only filter if not in target and not control hotkey from UI
-                pass  # For now, record all keyboard
-        
+        # Don't filter keyboard by position - record all keys
         key_str, vk = self._key_to_string(key)
+        log(f"[RECORDER] Key down: {key_str} (vk={vk})")
         
         # Track modifiers
-        if key_str in ('ctrl', 'alt', 'shift', 'cmd'):
+        if key_str in ('ctrl', 'ctrl_l', 'ctrl_r', 'alt', 'shift', 'win'):
             if key_str not in self._current_modifiers:
                 self._current_modifiers.append(key_str)
         
@@ -429,21 +464,30 @@ class PynputRecorderHook(IRecorderHook):
         try:
             from pynput.keyboard import Key
             
-            # Special keys mapping
-            special_map = {
-                Key.ctrl: 'ctrl', Key.ctrl_l: 'ctrl', Key.ctrl_r: 'ctrl',
-                Key.alt: 'alt', Key.alt_l: 'alt', Key.alt_r: 'alt',
-                Key.shift: 'shift', Key.shift_l: 'shift', Key.shift_r: 'shift',
-                Key.cmd: 'cmd', Key.cmd_l: 'cmd', Key.cmd_r: 'cmd',
-                Key.enter: 'enter', Key.space: 'space', Key.tab: 'tab',
-                Key.backspace: 'backspace', Key.delete: 'delete',
-                Key.escape: 'escape', Key.home: 'home', Key.end: 'end',
-                Key.page_up: 'page_up', Key.page_down: 'page_down',
-                Key.up: 'up', Key.down: 'down', Key.left: 'left', Key.right: 'right',
-                Key.f1: 'f1', Key.f2: 'f2', Key.f3: 'f3', Key.f4: 'f4',
-                Key.f5: 'f5', Key.f6: 'f6', Key.f7: 'f7', Key.f8: 'f8',
-                Key.f9: 'f9', Key.f10: 'f10', Key.f11: 'f11', Key.f12: 'f12',
-            }
+            # Build special_map dynamically to avoid missing key errors
+            special_map = {}
+            key_mappings = [
+                ('ctrl', 'ctrl'), ('ctrl_l', 'ctrl'), ('ctrl_r', 'ctrl'),
+                ('alt', 'alt'), ('alt_l', 'alt'), ('alt_r', 'alt'), ('alt_gr', 'alt_gr'),
+                ('shift', 'shift'), ('shift_l', 'shift'), ('shift_r', 'shift'),
+                ('cmd', 'win'), ('cmd_l', 'win'), ('cmd_r', 'win'),
+                ('enter', 'enter'), ('space', 'space'), ('tab', 'tab'),
+                ('backspace', 'backspace'), ('delete', 'delete'),
+                ('esc', 'escape'), ('escape', 'escape'),
+                ('home', 'home'), ('end', 'end'),
+                ('page_up', 'page_up'), ('page_down', 'page_down'),
+                ('up', 'up'), ('down', 'down'), ('left', 'left'), ('right', 'right'),
+                ('f1', 'f1'), ('f2', 'f2'), ('f3', 'f3'), ('f4', 'f4'),
+                ('f5', 'f5'), ('f6', 'f6'), ('f7', 'f7'), ('f8', 'f8'),
+                ('f9', 'f9'), ('f10', 'f10'), ('f11', 'f11'), ('f12', 'f12'),
+                ('caps_lock', 'caps_lock'), ('num_lock', 'num_lock'),
+                ('scroll_lock', 'scroll_lock'), ('print_screen', 'print_screen'),
+                ('pause', 'pause'), ('insert', 'insert'),
+            ]
+            
+            for attr, name in key_mappings:
+                if hasattr(Key, attr):
+                    special_map[getattr(Key, attr)] = name
             
             if key in special_map:
                 return (special_map[key], getattr(key, 'vk', None))
@@ -452,10 +496,12 @@ class PynputRecorderHook(IRecorderHook):
             if hasattr(key, 'char') and key.char:
                 return (key.char, getattr(key, 'vk', None))
             
-            # Fallback
-            return (str(key).replace('Key.', ''), getattr(key, 'vk', None))
-        except:
-            return (str(key), None)
+            # Fallback - clean up Key. prefix
+            key_str = str(key).replace('Key.', '')
+            return (key_str, getattr(key, 'vk', None))
+        except Exception as e:
+            log(f"[RECORDER] Key conversion error: {key} -> {e}")
+            return (str(key).replace('Key.', ''), None)
 
 
 # ==================== RECORDER FACADE ====================

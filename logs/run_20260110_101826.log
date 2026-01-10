@@ -1,0 +1,109 @@
+2026-01-10 10:18:26,893 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 10:18:27,142 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 10:18:27,586 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 10:18:27,586 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-10 10:18:27,586 | INFO    | [WORKER] 1: Scale factors = 1.000x, 1.000y
+2026-01-10 10:18:27,690 | INFO    | [CAPTURE] BetterCam not installed
+2026-01-10 10:18:28,034 | INFO    | [CAPTURE] DXCam initialized successfully
+2026-01-10 10:18:28,034 | INFO    | [CAPTURE] Active provider: DXCam
+2026-01-10 10:18:28,035 | INFO    | [WORKER] 1: Providers initialized (Capture: DXCam)
+2026-01-10 10:18:28,038 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 10:18:29,610 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 10:18:29,610 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 10:18:29,610 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 10:18:29,611 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 10:18:29,770 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 10:18:29,770 | INFO    | [UI] Global hotkeys registered
+2026-01-10 10:18:33,396 | INFO    | [RECORDER] Configured: target=None, ignore_ui={1968186}
+2026-01-10 10:18:33,446 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 10:18:33,460 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 10:18:33,548 | INFO    | [RECORDER] Added ignore hwnd: 2164506
+2026-01-10 10:18:33,879 | INFO    | [RECORDER] Scroll at (1130, 371) dx=0 dy=-1
+2026-01-10 10:18:33,929 | INFO    | [RECORDER] Scroll at (1130, 375) dx=0 dy=-1
+2026-01-10 10:18:34,002 | INFO    | [RECORDER] Scroll at (1127, 380) dx=0 dy=-1
+2026-01-10 10:18:34,084 | INFO    | [RECORDER] Scroll at (1127, 380) dx=0 dy=-1
+2026-01-10 10:18:34,127 | INFO    | [RECORDER] Scroll at (1124, 382) dx=0 dy=-1
+2026-01-10 10:18:34,213 | INFO    | [RECORDER] Scroll at (1122, 383) dx=0 dy=-1
+2026-01-10 10:18:34,285 | INFO    | [RECORDER] Scroll at (1115, 388) dx=0 dy=-1
+2026-01-10 10:18:34,473 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=1
+2026-01-10 10:18:34,490 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=1
+2026-01-10 10:18:34,514 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=1
+2026-01-10 10:18:34,541 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=1
+2026-01-10 10:18:34,600 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=1
+2026-01-10 10:18:34,640 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=1
+2026-01-10 10:18:34,722 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=1
+2026-01-10 10:18:34,826 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=1
+2026-01-10 10:18:34,939 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=1
+2026-01-10 10:18:35,085 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=-1
+2026-01-10 10:18:35,113 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=-1
+2026-01-10 10:18:35,141 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=-1
+2026-01-10 10:18:35,165 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=-1
+2026-01-10 10:18:35,238 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=-1
+2026-01-10 10:18:35,310 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=-1
+2026-01-10 10:18:35,383 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=-1
+2026-01-10 10:18:35,432 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=-1
+2026-01-10 10:18:35,469 | INFO    | [RECORDER] Scroll at (1107, 391) dx=0 dy=-1
+2026-01-10 10:18:35,761 | INFO    | [RECORDER] Scroll at (1105, 388) dx=0 dy=-1
+2026-01-10 10:18:35,786 | INFO    | [RECORDER] Scroll at (1105, 388) dx=0 dy=-1
+2026-01-10 10:18:35,803 | INFO    | [RECORDER] Scroll at (1105, 388) dx=0 dy=-1
+2026-01-10 10:18:35,831 | INFO    | [RECORDER] Scroll at (1105, 388) dx=0 dy=-1
+2026-01-10 10:18:35,858 | INFO    | [RECORDER] Scroll at (1105, 388) dx=0 dy=-1
+2026-01-10 10:18:35,895 | INFO    | [RECORDER] Scroll at (1105, 388) dx=0 dy=-1
+2026-01-10 10:18:35,928 | INFO    | [RECORDER] Scroll at (1105, 388) dx=0 dy=-1
+2026-01-10 10:18:36,150 | INFO    | [RECORDER] Scroll at (1103, 384) dx=0 dy=-1
+2026-01-10 10:18:36,167 | INFO    | [RECORDER] Scroll at (1103, 384) dx=0 dy=-1
+2026-01-10 10:18:36,185 | INFO    | [RECORDER] Scroll at (1103, 384) dx=0 dy=-1
+2026-01-10 10:18:36,200 | INFO    | [RECORDER] Scroll at (1103, 384) dx=0 dy=-1
+2026-01-10 10:18:36,224 | INFO    | [RECORDER] Scroll at (1103, 384) dx=0 dy=-1
+2026-01-10 10:18:36,246 | INFO    | [RECORDER] Scroll at (1103, 384) dx=0 dy=-1
+2026-01-10 10:18:36,284 | INFO    | [RECORDER] Scroll at (1103, 384) dx=0 dy=-1
+2026-01-10 10:18:36,508 | INFO    | [RECORDER] Scroll at (1103, 384) dx=0 dy=-1
+2026-01-10 10:18:36,526 | INFO    | [RECORDER] Scroll at (1103, 384) dx=0 dy=-1
+2026-01-10 10:18:36,538 | INFO    | [RECORDER] Scroll at (1103, 384) dx=0 dy=-1
+2026-01-10 10:18:36,557 | INFO    | [RECORDER] Scroll at (1103, 384) dx=0 dy=-1
+2026-01-10 10:18:36,574 | INFO    | [RECORDER] Scroll at (1103, 384) dx=0 dy=-1
+2026-01-10 10:18:36,601 | INFO    | [RECORDER] Scroll at (1103, 384) dx=0 dy=-1
+2026-01-10 10:18:36,626 | INFO    | [RECORDER] Scroll at (1103, 384) dx=0 dy=-1
+2026-01-10 10:18:36,865 | INFO    | [RECORDER] Scroll at (1103, 383) dx=0 dy=-1
+2026-01-10 10:18:36,881 | INFO    | [RECORDER] Scroll at (1103, 383) dx=0 dy=-1
+2026-01-10 10:18:36,896 | INFO    | [RECORDER] Scroll at (1103, 383) dx=0 dy=-1
+2026-01-10 10:18:36,909 | INFO    | [RECORDER] Scroll at (1103, 383) dx=0 dy=-1
+2026-01-10 10:18:36,929 | INFO    | [RECORDER] Scroll at (1103, 383) dx=0 dy=-1
+2026-01-10 10:18:36,948 | INFO    | [RECORDER] Scroll at (1103, 383) dx=0 dy=-1
+2026-01-10 10:18:36,980 | INFO    | [RECORDER] Scroll at (1103, 383) dx=0 dy=-1
+2026-01-10 10:18:37,246 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:37,268 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:37,283 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:37,302 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:37,322 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:37,354 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:37,653 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:37,684 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:37,700 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:37,719 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:37,739 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:37,780 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:37,813 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:38,055 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:38,076 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:38,099 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:38,130 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:38,175 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=-1
+2026-01-10 10:18:38,390 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=1
+2026-01-10 10:18:38,412 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=1
+2026-01-10 10:18:38,428 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=1
+2026-01-10 10:18:38,451 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=1
+2026-01-10 10:18:38,477 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=1
+2026-01-10 10:18:38,567 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=1
+2026-01-10 10:18:38,679 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=1
+2026-01-10 10:18:38,776 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=1
+2026-01-10 10:18:38,887 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=1
+2026-01-10 10:18:39,010 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=1
+2026-01-10 10:18:39,190 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=1
+2026-01-10 10:18:39,367 | INFO    | [RECORDER] Scroll at (1102, 382) dx=0 dy=1
+2026-01-10 10:18:40,740 | INFO    | [RECORDER] Mouse down at (1861, 74) button=Button.left
+2026-01-10 10:18:40,840 | INFO    | [RECORDER] Mouse up at (1861, 74) button=Button.left
+2026-01-10 10:18:40,845 | INFO    | [RECORDER] Paused
+2026-01-10 10:18:40,846 | INFO    | [RECORDER] Stopped. 961 events captured
+2026-01-10 10:18:40,925 | INFO    | [UI] Added 115 recorded actions
+2026-01-10 10:18:40,972 | INFO    | [UI] Recording stopped

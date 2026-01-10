@@ -1,0 +1,69 @@
+2026-01-10 10:32:28,620 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 10:32:28,788 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 10:32:28,959 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 10:32:28,959 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-10 10:32:28,959 | INFO    | [WORKER] 1: Scale factors = 1.000x, 1.000y
+2026-01-10 10:32:29,027 | INFO    | [CAPTURE] BetterCam not installed
+2026-01-10 10:32:29,260 | INFO    | [CAPTURE] DXCam initialized successfully
+2026-01-10 10:32:29,260 | INFO    | [CAPTURE] Active provider: DXCam
+2026-01-10 10:32:29,261 | INFO    | [WORKER] 1: Providers initialized (Capture: DXCam)
+2026-01-10 10:32:29,264 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 10:32:30,091 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 10:32:30,091 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 10:32:30,091 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 10:32:30,092 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 10:32:30,143 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 10:32:30,146 | INFO    | [UI] Global hotkeys registered
+2026-01-10 10:32:32,673 | INFO    | [RECORDER] Configured: target=None, ignore_ui={2098790}
+2026-01-10 10:32:32,686 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 10:32:32,686 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 10:32:32,776 | INFO    | [RECORDER] Added ignore hwnd: 1116202
+2026-01-10 10:32:33,248 | INFO    | [RECORDER] Scroll at (1090, 416) dx=0 dy=-1
+2026-01-10 10:32:33,303 | INFO    | [RECORDER] Scroll at (1091, 418) dx=0 dy=-1
+2026-01-10 10:32:33,385 | INFO    | [RECORDER] Scroll at (1091, 418) dx=0 dy=-1
+2026-01-10 10:32:33,428 | INFO    | [RECORDER] Scroll at (1091, 418) dx=0 dy=-1
+2026-01-10 10:32:33,630 | INFO    | [RECORDER] Scroll at (1091, 418) dx=0 dy=-1
+2026-01-10 10:32:33,758 | INFO    | [RECORDER] Scroll at (1091, 418) dx=0 dy=1
+2026-01-10 10:32:33,785 | INFO    | [RECORDER] Scroll at (1091, 418) dx=0 dy=1
+2026-01-10 10:32:34,645 | INFO    | [RECORDER] Mouse down at (994, 532) button=Button.left
+2026-01-10 10:32:35,745 | INFO    | [RECORDER] Mouse up at (328, 764) button=Button.left
+2026-01-10 10:32:36,091 | INFO    | [RECORDER] Scroll at (1200, 445) dx=0 dy=-1
+2026-01-10 10:32:36,107 | INFO    | [RECORDER] Scroll at (1200, 445) dx=0 dy=-1
+2026-01-10 10:32:36,127 | INFO    | [RECORDER] Scroll at (1200, 445) dx=0 dy=-1
+2026-01-10 10:32:36,159 | INFO    | [RECORDER] Scroll at (1200, 445) dx=0 dy=-1
+2026-01-10 10:32:36,475 | INFO    | [RECORDER] Scroll at (1194, 455) dx=0 dy=-1
+2026-01-10 10:32:36,494 | INFO    | [RECORDER] Scroll at (1194, 457) dx=0 dy=-1
+2026-01-10 10:32:36,516 | INFO    | [RECORDER] Scroll at (1193, 458) dx=0 dy=-1
+2026-01-10 10:32:36,543 | INFO    | [RECORDER] Scroll at (1193, 459) dx=0 dy=-1
+2026-01-10 10:32:36,600 | INFO    | [RECORDER] Scroll at (1193, 459) dx=0 dy=-1
+2026-01-10 10:32:36,888 | INFO    | [RECORDER] Scroll at (1193, 459) dx=0 dy=1
+2026-01-10 10:32:36,904 | INFO    | [RECORDER] Scroll at (1193, 459) dx=0 dy=1
+2026-01-10 10:32:36,921 | INFO    | [RECORDER] Scroll at (1193, 459) dx=0 dy=1
+2026-01-10 10:32:36,948 | INFO    | [RECORDER] Scroll at (1193, 459) dx=0 dy=1
+2026-01-10 10:32:36,994 | INFO    | [RECORDER] Scroll at (1193, 459) dx=0 dy=1
+2026-01-10 10:32:37,625 | INFO    | [RECORDER] Scroll at (1193, 459) dx=0 dy=-1
+2026-01-10 10:32:37,686 | INFO    | [RECORDER] Scroll at (1193, 459) dx=0 dy=-1
+2026-01-10 10:32:38,826 | INFO    | [RECORDER] Mouse down at (373, 793) button=Button.left
+2026-01-10 10:32:38,837 | INFO    | [RECORDER] Stopped. 1851 events captured
+2026-01-10 10:32:38,908 | INFO    | [UI] Added 46 recorded actions
+2026-01-10 10:32:38,939 | INFO    | [UI] Recording stopped
+2026-01-10 10:32:43,834 | INFO    | [RECORDER] Configured: target=None, ignore_ui={2098790}
+2026-01-10 10:32:43,848 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 10:32:43,851 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 10:32:43,886 | INFO    | [RECORDER] Added ignore hwnd: 1247274
+2026-01-10 10:32:44,341 | INFO    | [RECORDER] Scroll at (624, 476) dx=0 dy=-1
+2026-01-10 10:32:44,368 | INFO    | [RECORDER] Scroll at (624, 476) dx=0 dy=-1
+2026-01-10 10:32:44,469 | INFO    | [RECORDER] Scroll at (624, 476) dx=0 dy=-1
+2026-01-10 10:32:44,685 | INFO    | [RECORDER] Scroll at (624, 476) dx=0 dy=-1
+2026-01-10 10:32:44,911 | INFO    | [RECORDER] Scroll at (624, 475) dx=0 dy=1
+2026-01-10 10:32:44,936 | INFO    | [RECORDER] Scroll at (624, 475) dx=0 dy=1
+2026-01-10 10:32:44,967 | INFO    | [RECORDER] Scroll at (624, 475) dx=0 dy=1
+2026-01-10 10:32:45,000 | INFO    | [RECORDER] Scroll at (624, 475) dx=0 dy=1
+2026-01-10 10:32:45,066 | INFO    | [RECORDER] Scroll at (624, 473) dx=0 dy=1
+2026-01-10 10:32:45,317 | INFO    | [RECORDER] Scroll at (624, 471) dx=0 dy=1
+2026-01-10 10:32:45,336 | INFO    | [RECORDER] Scroll at (624, 471) dx=0 dy=1
+2026-01-10 10:32:45,373 | INFO    | [RECORDER] Scroll at (624, 471) dx=0 dy=1
+2026-01-10 10:32:49,766 | INFO    | [RECORDER] Mouse down at (355, 792) button=Button.left
+2026-01-10 10:32:49,797 | INFO    | [RECORDER] Stopped. 691 events captured
+2026-01-10 10:32:49,858 | INFO    | [UI] Added 28 recorded actions
+2026-01-10 10:32:49,892 | INFO    | [UI] Recording stopped

@@ -1,0 +1,11 @@
+2026-01-10 11:54:47,947 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 11:54:48,036 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 11:54:48,596 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 11:54:48,596 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 11:54:48,597 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 11:54:48,597 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 11:54:48,636 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 11:54:48,636 | INFO    | [UI] Global hotkeys registered
+2026-01-10 11:54:48,803 | INFO    | [UI] Global hotkeys registered: {'record': 'F9', 'play': 'F10', 'pause': 'F11', 'stop': 'F12'}
+2026-01-10 11:54:58,181 | INFO    | [UI] Window picked: main_ui.py - Tools_LDplay (hwnd=197496)
+2026-01-10 11:55:21,404 | INFO    | [UI] Capture target set: main_ui.py - Tools_LDplay (hwnd=197496)

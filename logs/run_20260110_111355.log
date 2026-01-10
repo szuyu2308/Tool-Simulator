@@ -1,0 +1,65 @@
+2026-01-10 11:13:55,529 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 11:13:55,714 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 11:13:55,898 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 11:13:55,898 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-10 11:13:55,899 | INFO    | [WORKER] 1: Scale factors = 1.000x, 1.000y
+2026-01-10 11:13:55,956 | INFO    | [CAPTURE] BetterCam not installed
+2026-01-10 11:13:56,175 | INFO    | [CAPTURE] DXCam initialized successfully
+2026-01-10 11:13:56,176 | INFO    | [CAPTURE] Active provider: DXCam
+2026-01-10 11:13:56,176 | INFO    | [WORKER] 1: Providers initialized (Capture: DXCam)
+2026-01-10 11:13:56,181 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 11:13:56,789 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 11:13:56,789 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 11:13:56,789 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 11:13:56,790 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 11:13:56,837 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 11:13:56,838 | INFO    | [UI] Global hotkeys registered
+2026-01-10 11:13:56,985 | INFO    | [UI] Global hotkeys registered: {'record': 'F9', 'play': 'F10', 'pause': 'F11', 'stop': 'F12'}
+2026-01-10 11:14:00,479 | INFO    | [RECORDER] Configured: target=None, ignore_ui={3606076}
+2026-01-10 11:14:00,532 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 11:14:00,534 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 11:14:00,659 | INFO    | [RECORDER] Added ignore hwnd: 2295848
+2026-01-10 11:14:01,786 | INFO    | [RECORDER] Mouse down at (407, 296) button=Button.left
+2026-01-10 11:14:03,009 | INFO    | [RECORDER] Mouse up at (742, 465) button=Button.left
+2026-01-10 11:14:04,314 | INFO    | [RECORDER] Mouse down at (751, 503) button=Button.left
+2026-01-10 11:14:04,406 | INFO    | [RECORDER] Mouse up at (751, 503) button=Button.left
+2026-01-10 11:14:05,445 | INFO    | [RECORDER] Mouse down at (738, 458) button=Button.left
+2026-01-10 11:14:06,933 | INFO    | [RECORDER] Mouse up at (411, 303) button=Button.left
+2026-01-10 11:14:10,214 | INFO    | [RECORDER] Mouse down at (356, 811) button=Button.left
+2026-01-10 11:14:10,242 | INFO    | [RECORDER] Stopped. 2115 events captured
+2026-01-10 11:14:10,323 | INFO    | [UI] Added 7 recorded actions
+2026-01-10 11:14:10,342 | INFO    | [UI] Recording stopped
+2026-01-10 11:14:12,227 | INFO    | [UI] Playback loop: 7 actions, target_hwnd=None
+2026-01-10 11:14:12,228 | INFO    | [UI] Executing action 0: DRAG = {'button': 'left', 'x1': 407, 'y1': 296, 'x2': 742, 'y2': 465, 'duration_ms': 1232, 'screen_coords': True}
+2026-01-10 11:14:12,272 | INFO    | [UI] Playback started
+2026-01-10 11:14:13,739 | INFO    | [UI] Executing action 1: WAIT = {'ms': 1297}
+2026-01-10 11:14:15,038 | INFO    | [UI] Executing action 2: CLICK = {'button': 'hold_left', 'x': 751, 'y': 503, 'hold_ms': 531, 'screen_coords': True}
+2026-01-10 11:14:15,599 | INFO    | [UI] Executing action 3: WAIT = {'ms': 608}
+2026-01-10 11:14:16,212 | INFO    | [UI] Executing action 4: DRAG = {'button': 'left', 'x1': 738, 'y1': 458, 'x2': 411, 'y2': 303, 'duration_ms': 1480, 'screen_coords': True}
+2026-01-10 11:14:17,853 | INFO    | [UI] Executing action 5: WAIT = {'ms': 3281}
+2026-01-10 11:14:21,135 | INFO    | [UI] Executing action 6: CLICK = {'button': 'left', 'x': 356, 'y': 811, 'screen_coords': True}
+2026-01-10 11:14:21,190 | INFO    | [UI] Playback complete
+2026-01-10 11:14:21,241 | INFO    | [UI] Playback stopped
+2026-01-10 11:14:21,259 | INFO    | [UI] Playback complete
+2026-01-10 11:14:26,239 | INFO    | [UI] Playback loop: 7 actions, target_hwnd=None
+2026-01-10 11:14:26,240 | INFO    | [UI] Executing action 0: DRAG = {'button': 'left', 'x1': 407, 'y1': 296, 'x2': 742, 'y2': 465, 'duration_ms': 1232, 'screen_coords': True}
+2026-01-10 11:14:26,361 | INFO    | [UI] Playback started
+2026-01-10 11:14:27,678 | INFO    | [UI] Executing action 1: WAIT = {'ms': 1297}
+2026-01-10 11:14:28,050 | INFO    | [UI] Playback paused
+2026-01-10 11:14:31,209 | INFO    | [UI] Playback resumed
+2026-01-10 11:14:31,295 | INFO    | [UI] Executing action 2: CLICK = {'button': 'hold_left', 'x': 751, 'y': 503, 'hold_ms': 531, 'screen_coords': True}
+2026-01-10 11:14:31,603 | INFO    | [UI] Playback stopped
+2026-01-10 11:14:31,863 | INFO    | [UI] Playback stopped by user
+2026-01-10 11:14:31,872 | INFO    | [UI] Playback complete
+2026-01-10 11:14:31,874 | INFO    | [UI] Playback complete
+2026-01-10 11:22:49,660 | INFO    | [UI] Playback loop: 7 actions, target_hwnd=None
+2026-01-10 11:22:49,664 | INFO    | [UI] Executing action 0: DRAG = {'button': 'left', 'x1': 407, 'y1': 296, 'x2': 742, 'y2': 465, 'duration_ms': 1232, 'screen_coords': True}
+2026-01-10 11:22:49,742 | INFO    | [UI] Playback started
+2026-01-10 11:22:51,130 | INFO    | [UI] Executing action 1: WAIT = {'ms': 1297}
+2026-01-10 11:22:52,430 | INFO    | [UI] Executing action 2: CLICK = {'button': 'hold_left', 'x': 751, 'y': 503, 'hold_ms': 531, 'screen_coords': True}
+2026-01-10 11:22:52,999 | INFO    | [UI] Executing action 3: WAIT = {'ms': 608}
+2026-01-10 11:22:53,611 | INFO    | [UI] Executing action 4: DRAG = {'button': 'left', 'x1': 738, 'y1': 458, 'x2': 411, 'y2': 303, 'duration_ms': 1480, 'screen_coords': True}
+2026-01-10 11:22:55,242 | INFO    | [UI] Executing action 5: WAIT = {'ms': 3281}
+2026-01-10 11:22:58,525 | INFO    | [UI] Executing action 6: CLICK = {'button': 'left', 'x': 356, 'y': 811, 'screen_coords': True}
+2026-01-10 11:22:58,574 | INFO    | [UI] Playback complete
+2026-01-10 11:22:58,607 | INFO    | [UI] Playback complete

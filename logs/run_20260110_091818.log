@@ -1,0 +1,188 @@
+2026-01-10 09:18:18,886 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 09:18:19,073 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 09:18:19,233 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 09:18:19,235 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-10 09:18:19,237 | INFO    | [WORKER] 1: Scale factors = 1.074x, 1.036y
+2026-01-10 09:18:19,302 | INFO    | [CAPTURE] BetterCam not installed
+2026-01-10 09:18:19,441 | INFO    | [CAPTURE] DXCam init failed: (-2005270494, 'A resource is not available at the time of the call, but may become available later.', (None, None, None, 0, None))
+2026-01-10 09:18:19,485 | INFO    | [CAPTURE] MSS initialized successfully
+2026-01-10 09:18:19,490 | INFO    | [CAPTURE] Active provider: MSS
+2026-01-10 09:18:19,491 | INFO    | [WORKER] 1: Providers initialized (Capture: MSS)
+2026-01-10 09:18:19,497 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 09:18:20,145 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 09:18:20,146 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 09:18:20,146 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 09:18:20,146 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 09:18:20,193 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 09:18:20,194 | INFO    | [UI] Global hotkeys registered
+2026-01-10 09:18:23,183 | INFO    | [RECORDER] Configured: target=None, ignore_ui=133126
+2026-01-10 09:18:23,199 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 09:18:23,200 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 09:18:23,700 | INFO    | [RECORDER] Mouse down at (1165, 422) button=Button.left
+2026-01-10 09:18:23,776 | INFO    | [RECORDER] Mouse up at (1165, 422) button=Button.left
+2026-01-10 09:18:23,978 | INFO    | [RECORDER] Scroll at (1165, 422) dx=0 dy=-1
+2026-01-10 09:18:24,042 | INFO    | [RECORDER] Scroll at (1165, 422) dx=0 dy=-1
+2026-01-10 09:18:24,086 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=-1
+2026-01-10 09:18:24,131 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=-1
+2026-01-10 09:18:24,185 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=-1
+2026-01-10 09:18:24,453 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:24,475 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:24,495 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:24,530 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:24,579 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:24,657 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:24,720 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:25,036 | INFO    | [RECORDER] Mouse down at (1165, 421) button=Button.left
+2026-01-10 09:18:25,112 | INFO    | [RECORDER] Mouse up at (1165, 421) button=Button.left
+2026-01-10 09:18:25,299 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=-1
+2026-01-10 09:18:25,324 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=-1
+2026-01-10 09:18:25,404 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=-1
+2026-01-10 09:18:25,459 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=-1
+2026-01-10 09:18:25,506 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=-1
+2026-01-10 09:18:25,536 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=-1
+2026-01-10 09:18:25,627 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=-1
+2026-01-10 09:18:25,797 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:25,816 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:25,830 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:25,851 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:25,885 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:25,930 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:26,058 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:26,312 | INFO    | [RECORDER] Mouse down at (1165, 421) button=Button.left
+2026-01-10 09:18:26,388 | INFO    | [RECORDER] Mouse up at (1165, 421) button=Button.left
+2026-01-10 09:18:26,572 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=-1
+2026-01-10 09:18:26,606 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=-1
+2026-01-10 09:18:26,676 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=-1
+2026-01-10 09:18:26,725 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=-1
+2026-01-10 09:18:26,819 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=-1
+2026-01-10 09:18:26,879 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=-1
+2026-01-10 09:18:27,080 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:27,108 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:27,151 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:27,183 | INFO    | [RECORDER] Scroll at (1165, 421) dx=0 dy=1
+2026-01-10 09:18:27,401 | INFO    | [RECORDER] Mouse down at (1165, 421) button=Button.left
+2026-01-10 09:18:27,493 | INFO    | [RECORDER] Mouse up at (1165, 421) button=Button.left
+2026-01-10 09:18:27,668 | INFO    | [RECORDER] Mouse down at (1165, 421) button=Button.right
+2026-01-10 09:18:27,768 | INFO    | [RECORDER] Mouse up at (1165, 421) button=Button.right
+2026-01-10 09:18:28,048 | INFO    | [RECORDER] Mouse down at (974, 396) button=Button.left
+2026-01-10 09:18:28,140 | INFO    | [RECORDER] Mouse up at (974, 396) button=Button.left
+2026-01-10 09:18:28,326 | INFO    | [RECORDER] Key down: alt (vk=None)
+2026-01-10 09:18:28,381 | INFO    | [RECORDER] Key down: tab (vk=None)
+2026-01-10 09:18:28,742 | INFO    | [RECORDER] Key down: alt (vk=None)
+2026-01-10 09:18:28,797 | INFO    | [RECORDER] Key down: tab (vk=None)
+2026-01-10 09:18:29,088 | INFO    | [RECORDER] Key down: alt (vk=None)
+2026-01-10 09:18:29,174 | INFO    | [RECORDER] Key down: tab (vk=None)
+2026-01-10 09:18:29,806 | INFO    | [RECORDER] Key down: alt (vk=None)
+2026-01-10 09:18:29,878 | INFO    | [RECORDER] Key down: tab (vk=None)
+2026-01-10 09:18:31,005 | INFO    | [RECORDER] Key down: alt (vk=None)
+2026-01-10 09:18:31,053 | INFO    | [RECORDER] Key down: tab (vk=None)
+2026-01-10 09:18:31,901 | INFO    | [RECORDER] Mouse down at (135, 129) button=Button.left
+2026-01-10 09:18:31,980 | INFO    | [RECORDER] Mouse up at (135, 129) button=Button.left
+2026-01-10 09:18:31,982 | INFO    | [RECORDER] Stopped. 1061 events captured
+2026-01-10 09:18:31,989 | INFO    | [UI] Added 101 recorded actions
+2026-01-10 09:18:31,991 | INFO    | [UI] Recording stopped
+2026-01-10 09:18:33,277 | INFO    | [UI] Playback loop: 101 actions, target_hwnd=657034
+2026-01-10 09:18:33,278 | INFO    | [UI] Executing action 0: WAIT = {'ms': 71}
+2026-01-10 09:18:33,280 | INFO    | [UI] Playback started
+2026-01-10 09:18:33,350 | INFO    | [UI] Executing action 1: CLICK = {'button': 'left', 'x': 1165, 'y': 422, 'screen_coords': True}
+2026-01-10 09:18:33,424 | INFO    | [UI] Executing action 2: WAIT = {'ms': 74}
+2026-01-10 09:18:33,525 | INFO    | [UI] Executing action 3: WAIT = {'ms': 265}
+2026-01-10 09:18:33,793 | INFO    | [UI] Executing action 4: WHEEL = {'delta': -120, 'x': 1165, 'y': 422, 'screen_coords': True}
+2026-01-10 09:18:33,845 | INFO    | [UI] Executing action 5: WHEEL = {'delta': -120, 'x': 1165, 'y': 422, 'screen_coords': True}
+2026-01-10 09:18:33,897 | INFO    | [UI] Executing action 6: WHEEL = {'delta': -120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:33,949 | INFO    | [UI] Executing action 7: WHEEL = {'delta': -120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:34,003 | INFO    | [UI] Executing action 8: WAIT = {'ms': 140}
+2026-01-10 09:18:34,147 | INFO    | [UI] Executing action 9: WHEEL = {'delta': -120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:34,199 | INFO    | [UI] Executing action 10: WAIT = {'ms': 182}
+2026-01-10 09:18:34,382 | INFO    | [UI] Executing action 11: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:34,433 | INFO    | [UI] Executing action 12: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:34,491 | INFO    | [UI] Executing action 13: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:34,543 | INFO    | [UI] Executing action 14: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:34,594 | INFO    | [UI] Executing action 15: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:34,646 | INFO    | [UI] Executing action 16: WAIT = {'ms': 78}
+2026-01-10 09:18:34,726 | INFO    | [UI] Executing action 17: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:34,777 | INFO    | [UI] Executing action 18: WAIT = {'ms': 62}
+2026-01-10 09:18:34,841 | INFO    | [UI] Executing action 19: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:34,892 | INFO    | [UI] Executing action 20: WAIT = {'ms': 316}
+2026-01-10 09:18:35,210 | INFO    | [UI] Executing action 21: CLICK = {'button': 'left', 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:35,255 | INFO    | [UI] Executing action 22: WAIT = {'ms': 78}
+2026-01-10 09:18:35,335 | INFO    | [UI] Executing action 23: WAIT = {'ms': 186}
+2026-01-10 09:18:35,525 | INFO    | [UI] Executing action 24: WHEEL = {'delta': -120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:35,577 | INFO    | [UI] Executing action 25: WHEEL = {'delta': -120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:35,630 | INFO    | [UI] Executing action 26: WAIT = {'ms': 79}
+2026-01-10 09:18:35,709 | INFO    | [UI] Executing action 27: WHEEL = {'delta': -120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:35,761 | INFO    | [UI] Executing action 28: WAIT = {'ms': 55}
+2026-01-10 09:18:35,817 | INFO    | [UI] Executing action 29: WHEEL = {'delta': -120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:35,869 | INFO    | [UI] Executing action 30: WHEEL = {'delta': -120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:35,921 | INFO    | [UI] Executing action 31: WHEEL = {'delta': -120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:35,973 | INFO    | [UI] Executing action 32: WAIT = {'ms': 91}
+2026-01-10 09:18:36,065 | INFO    | [UI] Executing action 33: WHEEL = {'delta': -120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:36,118 | INFO    | [UI] Executing action 34: WAIT = {'ms': 170}
+2026-01-10 09:18:36,290 | INFO    | [UI] Executing action 35: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:36,342 | INFO    | [UI] Executing action 36: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:36,394 | INFO    | [UI] Executing action 37: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:36,445 | INFO    | [UI] Executing action 38: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:36,498 | INFO    | [UI] Executing action 39: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:36,553 | INFO    | [UI] Executing action 40: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:36,609 | INFO    | [UI] Executing action 41: WAIT = {'ms': 127}
+2026-01-10 09:18:36,737 | INFO    | [UI] Executing action 42: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:36,789 | INFO    | [UI] Executing action 43: WAIT = {'ms': 255}
+2026-01-10 09:18:37,045 | INFO    | [UI] Executing action 44: CLICK = {'button': 'left', 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:37,089 | INFO    | [UI] Executing action 45: WAIT = {'ms': 75}
+2026-01-10 09:18:37,165 | INFO    | [UI] Executing action 46: WAIT = {'ms': 184}
+2026-01-10 09:18:37,350 | INFO    | [UI] Executing action 47: WHEEL = {'delta': -120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:37,402 | INFO    | [UI] Executing action 48: WHEEL = {'delta': -120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:37,457 | INFO    | [UI] Executing action 49: WAIT = {'ms': 70}
+2026-01-10 09:18:37,528 | INFO    | [UI] Executing action 50: WHEEL = {'delta': -120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:37,580 | INFO    | [UI] Executing action 51: WHEEL = {'delta': -120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:37,632 | INFO    | [UI] Executing action 52: WAIT = {'ms': 93}
+2026-01-10 09:18:37,726 | INFO    | [UI] Executing action 53: WHEEL = {'delta': -120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:37,792 | INFO    | [UI] Executing action 54: WAIT = {'ms': 60}
+2026-01-10 09:18:37,873 | INFO    | [UI] Executing action 55: WHEEL = {'delta': -120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:37,928 | INFO    | [UI] Executing action 56: WAIT = {'ms': 201}
+2026-01-10 09:18:38,130 | INFO    | [UI] Executing action 57: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:38,182 | INFO    | [UI] Executing action 58: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:38,234 | INFO    | [UI] Executing action 59: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:38,296 | INFO    | [UI] Executing action 60: WHEEL = {'delta': 120, 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:38,348 | INFO    | [UI] Executing action 61: WAIT = {'ms': 197}
+2026-01-10 09:18:38,545 | INFO    | [UI] Executing action 62: CLICK = {'button': 'left', 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:38,590 | INFO    | [UI] Executing action 63: WAIT = {'ms': 91}
+2026-01-10 09:18:38,684 | INFO    | [UI] Executing action 64: WAIT = {'ms': 175}
+2026-01-10 09:18:38,860 | INFO    | [UI] Executing action 65: CLICK = {'button': 'right', 'x': 1165, 'y': 421, 'screen_coords': True}
+2026-01-10 09:18:38,904 | INFO    | [UI] Executing action 66: WAIT = {'ms': 101}
+2026-01-10 09:18:39,006 | INFO    | [UI] Executing action 67: WAIT = {'ms': 61}
+2026-01-10 09:18:39,070 | INFO    | [UI] Executing action 68: CLICK = {'button': 'left', 'x': 974, 'y': 396, 'screen_coords': True}
+2026-01-10 09:18:39,112 | INFO    | [UI] Executing action 69: WAIT = {'ms': 91}
+2026-01-10 09:18:39,205 | INFO    | [UI] Executing action 70: WAIT = {'ms': 52}
+2026-01-10 09:18:39,259 | INFO    | [UI] Executing action 71: KEY_PRESS = {'key': 'alt', 'repeat': 1}
+2026-01-10 09:18:39,281 | INFO    | [UI] Executing action 72: WAIT = {'ms': 55}
+2026-01-10 09:18:39,338 | INFO    | [UI] Executing action 73: KEY_PRESS = {'key': 'tab', 'repeat': 1}
+2026-01-10 09:18:39,397 | INFO    | [UI] Executing action 74: WAIT = {'ms': 104}
+2026-01-10 09:18:39,505 | INFO    | [UI] Executing action 75: WAIT = {'ms': 73}
+2026-01-10 09:18:39,579 | INFO    | [UI] Executing action 76: WAIT = {'ms': 186}
+2026-01-10 09:18:39,765 | INFO    | [UI] Executing action 77: KEY_PRESS = {'key': 'alt', 'repeat': 1}
+2026-01-10 09:18:39,792 | INFO    | [UI] Executing action 78: WAIT = {'ms': 53}
+2026-01-10 09:18:39,845 | INFO    | [UI] Executing action 79: KEY_PRESS = {'key': 'tab', 'repeat': 1}
+2026-01-10 09:18:39,909 | INFO    | [UI] Executing action 80: WAIT = {'ms': 75}
+2026-01-10 09:18:40,112 | INFO    | [UI] Executing action 81: WAIT = {'ms': 93}
+2026-01-10 09:18:40,258 | INFO    | [UI] Executing action 82: WAIT = {'ms': 131}
+2026-01-10 09:18:40,394 | INFO    | [UI] Executing action 83: KEY_PRESS = {'key': 'alt', 'repeat': 1}
+2026-01-10 09:18:40,415 | INFO    | [UI] Executing action 84: WAIT = {'ms': 132}
+2026-01-10 09:18:40,548 | INFO    | [UI] Executing action 85: KEY_PRESS = {'key': 'tab', 'repeat': 1}
+2026-01-10 09:18:40,614 | INFO    | [UI] Executing action 86: WAIT = {'ms': 310}
+2026-01-10 09:18:40,925 | INFO    | [UI] Executing action 87: WAIT = {'ms': 89}
+2026-01-10 09:18:41,019 | INFO    | [UI] Executing action 88: KEY_PRESS = {'key': 'alt', 'repeat': 1}
+2026-01-10 09:18:41,057 | INFO    | [UI] Executing action 89: WAIT = {'ms': 73}
+2026-01-10 09:18:41,170 | INFO    | [UI] Executing action 90: KEY_PRESS = {'key': 'tab', 'repeat': 1}
+2026-01-10 09:18:41,238 | INFO    | [UI] Executing action 91: WAIT = {'ms': 55}
+2026-01-10 09:18:41,386 | INFO    | [UI] Executing action 92: WAIT = {'ms': 114}
+2026-01-10 09:18:41,505 | INFO    | [UI] Executing action 93: WAIT = {'ms': 95}
+2026-01-10 09:18:41,605 | INFO    | [UI] Executing action 94: WAIT = {'ms': 863}
+2026-01-10 09:18:42,470 | INFO    | [UI] Executing action 95: KEY_PRESS = {'key': 'alt', 'repeat': 1}
+2026-01-10 09:18:42,492 | INFO    | [UI] Executing action 96: KEY_PRESS = {'key': 'tab', 'repeat': 1}
+2026-01-10 09:18:42,560 | INFO    | [UI] Executing action 97: WAIT = {'ms': 69}
+2026-01-10 09:18:42,644 | INFO    | [UI] Executing action 98: WAIT = {'ms': 131}
+2026-01-10 09:18:42,803 | INFO    | [UI] Executing action 99: CLICK = {'button': 'left', 'x': 135, 'y': 129, 'screen_coords': True}
+2026-01-10 09:18:42,856 | INFO    | [UI] Executing action 100: WAIT = {'ms': 72}
+2026-01-10 09:18:42,934 | INFO    | [UI] Playback complete
+2026-01-10 09:18:42,948 | INFO    | [UI] Playback complete

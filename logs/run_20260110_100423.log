@@ -1,0 +1,76 @@
+2026-01-10 10:04:23,292 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 10:04:23,674 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 10:04:24,241 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 10:04:24,241 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-10 10:04:24,242 | INFO    | [WORKER] 1: Scale factors = 1.000x, 1.000y
+2026-01-10 10:04:24,328 | INFO    | [CAPTURE] BetterCam not installed
+2026-01-10 10:04:24,990 | INFO    | [CAPTURE] DXCam initialized successfully
+2026-01-10 10:04:25,003 | INFO    | [CAPTURE] Active provider: DXCam
+2026-01-10 10:04:25,030 | INFO    | [WORKER] 1: Providers initialized (Capture: DXCam)
+2026-01-10 10:04:25,088 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 10:04:26,888 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 10:04:26,893 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 10:04:26,893 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 10:04:26,900 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 10:04:26,990 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 10:04:27,022 | INFO    | [UI] Global hotkeys registered
+2026-01-10 10:04:32,091 | INFO    | [UI] Added action: CLICK
+2026-01-10 10:04:38,477 | INFO    | [UI] Capture target set: Screen (Full) (hwnd=None)
+2026-01-10 10:04:41,608 | INFO    | [UI] Captured: screen(930,300)
+2026-01-10 10:04:45,299 | INFO    | [UI] Added action: CLICK
+2026-01-10 10:04:56,254 | INFO    | [UI] Added action: WHEEL
+2026-01-10 10:04:58,865 | INFO    | [UI] Playback loop: 2 actions, target_hwnd=None
+2026-01-10 10:04:58,866 | INFO    | [UI] Playback started
+2026-01-10 10:04:58,867 | INFO    | [UI] Executing action 0: CLICK = {'button': 'left', 'x': 930, 'y': 300}
+2026-01-10 10:04:58,924 | INFO    | [UI] Executing action 1: WHEEL = {'direction': 'up', 'amount': 3, 'speed': 50, 'x': 0, 'y': 0}
+2026-01-10 10:04:59,079 | INFO    | [UI] Playback complete
+2026-01-10 10:04:59,080 | INFO    | [UI] Playback complete
+2026-01-10 10:05:01,941 | INFO    | [UI] Playback loop: 2 actions, target_hwnd=None
+2026-01-10 10:05:01,941 | INFO    | [UI] Executing action 0: CLICK = {'button': 'left', 'x': 930, 'y': 300}
+2026-01-10 10:05:01,942 | INFO    | [UI] Playback started
+2026-01-10 10:05:01,995 | INFO    | [UI] Executing action 1: WHEEL = {'direction': 'up', 'amount': 3, 'speed': 50, 'x': 0, 'y': 0}
+2026-01-10 10:05:02,167 | INFO    | [UI] Playback complete
+2026-01-10 10:05:02,171 | INFO    | [UI] Playback complete
+2026-01-10 10:05:17,645 | INFO    | [UI] Playback loop: 2 actions, target_hwnd=None
+2026-01-10 10:05:17,646 | INFO    | [UI] Playback started
+2026-01-10 10:05:17,672 | INFO    | [UI] Executing action 0: CLICK = {'button': 'left', 'x': 930, 'y': 300}
+2026-01-10 10:05:17,755 | INFO    | [UI] Executing action 1: WHEEL = {'direction': 'up', 'amount': 3, 'speed': 50, 'x': 0, 'y': 0}
+2026-01-10 10:05:17,938 | INFO    | [UI] Playback complete
+2026-01-10 10:05:17,949 | INFO    | [UI] Playback complete
+2026-01-10 10:05:20,258 | INFO    | [UI] Playback loop: 2 actions, target_hwnd=None
+2026-01-10 10:05:20,259 | INFO    | [UI] Playback started
+2026-01-10 10:05:20,260 | INFO    | [UI] Executing action 0: CLICK = {'button': 'left', 'x': 930, 'y': 300}
+2026-01-10 10:05:20,353 | INFO    | [UI] Executing action 1: WHEEL = {'direction': 'up', 'amount': 3, 'speed': 50, 'x': 0, 'y': 0}
+2026-01-10 10:05:20,567 | INFO    | [UI] Playback complete
+2026-01-10 10:05:20,569 | INFO    | [UI] Playback complete
+2026-01-10 10:05:33,154 | INFO    | [UI] Updated action: WHEEL
+2026-01-10 10:05:38,075 | INFO    | [UI] Captured: screen(1049,410)
+2026-01-10 10:05:39,431 | INFO    | [UI] Updated action: WHEEL
+2026-01-10 10:05:40,680 | INFO    | [UI] Playback loop: 2 actions, target_hwnd=None
+2026-01-10 10:05:40,680 | INFO    | [UI] Executing action 0: CLICK = {'button': 'left', 'x': 930, 'y': 300}
+2026-01-10 10:05:40,682 | INFO    | [UI] Playback started
+2026-01-10 10:05:40,743 | INFO    | [UI] Executing action 1: WHEEL = {'direction': 'up', 'amount': 3, 'speed': 50, 'x': 1049, 'y': 410}
+2026-01-10 10:05:40,909 | INFO    | [UI] Playback complete
+2026-01-10 10:05:40,911 | INFO    | [UI] Playback complete
+2026-01-10 10:06:14,812 | INFO    | [UI] Updated action: WHEEL
+2026-01-10 10:06:15,724 | INFO    | [UI] Playback loop: 2 actions, target_hwnd=None
+2026-01-10 10:06:15,724 | INFO    | [UI] Executing action 0: CLICK = {'button': 'left', 'x': 930, 'y': 300}
+2026-01-10 10:06:15,725 | INFO    | [UI] Playback started
+2026-01-10 10:06:15,776 | INFO    | [UI] Executing action 1: WHEEL = {'direction': 'up', 'amount': 50, 'speed': 50, 'x': 1049, 'y': 410}
+2026-01-10 10:06:18,353 | INFO    | [UI] Playback complete
+2026-01-10 10:06:18,355 | INFO    | [UI] Playback complete
+2026-01-10 10:06:23,245 | INFO    | [UI] Playback loop: 2 actions, target_hwnd=None
+2026-01-10 10:06:23,245 | INFO    | [UI] Executing action 0: CLICK = {'button': 'left', 'x': 930, 'y': 300}
+2026-01-10 10:06:23,246 | INFO    | [UI] Playback started
+2026-01-10 10:06:23,342 | INFO    | [UI] Executing action 1: WHEEL = {'direction': 'up', 'amount': 50, 'speed': 50, 'x': 1049, 'y': 410}
+2026-01-10 10:06:26,055 | INFO    | [UI] Playback complete
+2026-01-10 10:06:26,059 | INFO    | [UI] Playback complete
+2026-01-10 10:06:38,767 | INFO    | [UI] Updated action: WHEEL
+2026-01-10 10:06:39,904 | INFO    | [UI] Playback loop: 2 actions, target_hwnd=None
+2026-01-10 10:06:39,904 | INFO    | [UI] Executing action 0: CLICK = {'button': 'left', 'x': 930, 'y': 300}
+2026-01-10 10:06:39,905 | INFO    | [UI] Playback started
+2026-01-10 10:06:39,963 | INFO    | [UI] Executing action 1: WHEEL = {'direction': 'up', 'amount': 50, 'speed': 50, 'x': 0, 'y': 0}
+2026-01-10 10:06:42,561 | INFO    | [UI] Playback complete
+2026-01-10 10:06:42,564 | INFO    | [UI] Playback complete
+2026-01-10 10:07:01,025 | INFO    | [UI] Deleted 1 action(s)
+2026-01-10 10:07:01,768 | INFO    | [UI] Deleted 1 action(s)

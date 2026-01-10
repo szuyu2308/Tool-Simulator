@@ -1,0 +1,74 @@
+2026-01-10 10:26:35,032 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 10:26:35,205 | INFO    | [ADB] Found ADB at: adb
+2026-01-10 10:26:35,357 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
+2026-01-10 10:26:35,358 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
+2026-01-10 10:26:35,358 | INFO    | [WORKER] 1: Scale factors = 1.000x, 1.000y
+2026-01-10 10:26:35,394 | INFO    | [CAPTURE] BetterCam not installed
+2026-01-10 10:26:35,631 | INFO    | [CAPTURE] DXCam initialized successfully
+2026-01-10 10:26:35,631 | INFO    | [CAPTURE] Active provider: DXCam
+2026-01-10 10:26:35,631 | INFO    | [WORKER] 1: Providers initialized (Capture: DXCam)
+2026-01-10 10:26:35,634 | INFO    | [WorkerMgr] Loaded 2 assignments
+2026-01-10 10:26:36,211 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-10 10:26:36,211 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-10 10:26:36,211 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-10 10:26:36,211 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-10 10:26:36,255 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-10 10:26:36,257 | INFO    | [UI] Global hotkeys registered
+2026-01-10 10:26:39,992 | INFO    | [RECORDER] Configured: target=None, ignore_ui={2491984}
+2026-01-10 10:26:40,020 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 10:26:40,023 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 10:26:40,104 | INFO    | [RECORDER] Added ignore hwnd: 1247296
+2026-01-10 10:26:40,725 | INFO    | [RECORDER] Scroll at (720, 628) dx=0 dy=-1
+2026-01-10 10:26:40,756 | INFO    | [RECORDER] Scroll at (720, 628) dx=0 dy=-1
+2026-01-10 10:26:40,845 | INFO    | [RECORDER] Scroll at (720, 628) dx=0 dy=-1
+2026-01-10 10:26:40,979 | INFO    | [RECORDER] Scroll at (720, 628) dx=0 dy=-1
+2026-01-10 10:26:41,073 | INFO    | [RECORDER] Scroll at (720, 628) dx=0 dy=-1
+2026-01-10 10:26:41,143 | INFO    | [RECORDER] Scroll at (720, 628) dx=0 dy=-1
+2026-01-10 10:26:41,259 | INFO    | [RECORDER] Scroll at (720, 628) dx=0 dy=-1
+2026-01-10 10:26:41,477 | INFO    | [RECORDER] Scroll at (720, 628) dx=0 dy=1
+2026-01-10 10:26:41,493 | INFO    | [RECORDER] Scroll at (720, 628) dx=0 dy=1
+2026-01-10 10:26:41,513 | INFO    | [RECORDER] Scroll at (720, 628) dx=0 dy=1
+2026-01-10 10:26:41,528 | INFO    | [RECORDER] Scroll at (720, 628) dx=0 dy=1
+2026-01-10 10:26:41,550 | INFO    | [RECORDER] Scroll at (720, 628) dx=0 dy=1
+2026-01-10 10:26:42,227 | INFO    | [RECORDER] Mouse down at (938, 537) button=Button.left
+2026-01-10 10:26:42,659 | INFO    | [RECORDER] Mouse up at (927, 537) button=Button.left
+2026-01-10 10:26:44,815 | INFO    | [RECORDER] Mouse down at (1187, 1061) button=Button.left
+2026-01-10 10:26:44,878 | INFO    | [RECORDER] Mouse up at (1187, 1061) button=Button.left
+2026-01-10 10:26:45,519 | INFO    | [RECORDER] Mouse down at (972, 536) button=Button.left
+2026-01-10 10:26:45,819 | INFO    | [RECORDER] Mouse up at (667, 520) button=Button.left
+2026-01-10 10:26:46,207 | INFO    | [RECORDER] Mouse down at (969, 538) button=Button.left
+2026-01-10 10:26:46,375 | INFO    | [RECORDER] Mouse up at (897, 542) button=Button.left
+2026-01-10 10:26:46,611 | INFO    | [RECORDER] Mouse down at (967, 536) button=Button.left
+2026-01-10 10:26:46,822 | INFO    | [RECORDER] Mouse up at (1074, 497) button=Button.left
+2026-01-10 10:26:47,171 | INFO    | [RECORDER] Mouse down at (990, 530) button=Button.left
+2026-01-10 10:26:47,423 | INFO    | [RECORDER] Mouse up at (1047, 487) button=Button.left
+2026-01-10 10:26:47,779 | INFO    | [RECORDER] Mouse down at (975, 530) button=Button.left
+2026-01-10 10:26:48,119 | INFO    | [RECORDER] Mouse up at (972, 614) button=Button.left
+2026-01-10 10:26:48,395 | INFO    | [RECORDER] Mouse down at (971, 535) button=Button.left
+2026-01-10 10:26:48,679 | INFO    | [RECORDER] Mouse up at (971, 582) button=Button.left
+2026-01-10 10:26:50,843 | INFO    | [RECORDER] Mouse down at (941, 582) button=Button.left
+2026-01-10 10:26:50,843 | INFO    | [RECORDER] Paused
+2026-01-10 10:26:50,899 | INFO    | [UI] Recording paused
+2026-01-10 10:26:50,915 | INFO    | [RECORDER] Mouse up at (941, 582) button=Button.left
+2026-01-10 10:26:51,319 | INFO    | [RECORDER] Mouse down at (962, 534) button=Button.left
+2026-01-10 10:26:51,588 | INFO    | [RECORDER] Mouse up at (831, 531) button=Button.left
+2026-01-10 10:26:52,155 | INFO    | [RECORDER] Mouse down at (1012, 576) button=Button.left
+2026-01-10 10:26:52,166 | INFO    | [RECORDER] Stopped. 3310 events captured
+2026-01-10 10:26:52,221 | INFO    | [UI] Added 50 recorded actions
+2026-01-10 10:26:52,227 | INFO    | [UI] Recording stopped
+2026-01-10 10:27:01,720 | INFO    | [RECORDER] Configured: target=None, ignore_ui={2491984}
+2026-01-10 10:27:01,734 | INFO    | [RECORDER] PynputRecorderHook started
+2026-01-10 10:27:01,736 | INFO    | [UI] Recording started (V2 adapter), Full Screen
+2026-01-10 10:27:01,772 | INFO    | [RECORDER] Added ignore hwnd: 1378368
+2026-01-10 10:27:02,379 | INFO    | [RECORDER] Mouse down at (960, 539) button=Button.left
+2026-01-10 10:27:02,539 | INFO    | [RECORDER] Mouse up at (862, 530) button=Button.left
+2026-01-10 10:27:02,791 | INFO    | [RECORDER] Mouse down at (948, 526) button=Button.left
+2026-01-10 10:27:02,947 | INFO    | [RECORDER] Mouse up at (1016, 488) button=Button.left
+2026-01-10 10:27:03,147 | INFO    | [RECORDER] Mouse down at (967, 527) button=Button.left
+2026-01-10 10:27:03,287 | INFO    | [RECORDER] Mouse up at (1017, 484) button=Button.left
+2026-01-10 10:27:03,835 | INFO    | [RECORDER] Mouse down at (1022, 535) button=Button.left
+2026-01-10 10:27:03,923 | INFO    | [RECORDER] Mouse up at (1022, 535) button=Button.left
+2026-01-10 10:27:03,934 | INFO    | [RECORDER] Stopped. 1076 events captured
+2026-01-10 10:27:04,019 | INFO    | [UI] Added 10 recorded actions
+2026-01-10 10:27:04,041 | INFO    | [UI] Recording stopped
+2026-01-10 10:27:09,437 | INFO    | [UI] Deleted 60 action(s)

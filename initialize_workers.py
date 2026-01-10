@@ -132,8 +132,11 @@ def initialize_workers_from_ldplayer():
     
     if not devices:
         print("✗ No ADB devices found")
-        print("   (Make sure ADB is configured and LDPlayer is running)")
-        return []
+        print("   (App sẽ chạy không có worker - dùng Refresh sau khi mở LDPlayer)")
+        print(f"\n{'='*60}")
+        print(f"✓ Initialized 0 worker(s) - Standalone mode")
+        print(f"{'='*60}\n")
+        return []  # Return empty, app vẫn chạy bình thường
     
     print(f"✓ Found {len(devices)} device(s):")
     for i, d in enumerate(devices, 1):
