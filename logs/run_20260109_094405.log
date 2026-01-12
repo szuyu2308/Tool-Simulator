@@ -1,8 +1,0 @@
-2026-01-09 09:44:05,073 | INFO    | [ADB] Found ADB at: adb
-2026-01-09 09:44:05,241 | INFO    | [ADB] Found ADB at: adb
-2026-01-09 09:44:05,499 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
-2026-01-09 09:44:05,504 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
-2026-01-09 09:44:05,505 | INFO    | [WORKER] 1: Scale factors = 1.074x, 1.036y
-2026-01-09 09:44:05,573 | INFO    | [WorkerMgr] Loaded 1 assignments
-2026-01-09 09:48:14,486 | INFO    | [ADB] Found ADB at: adb
-2026-01-09 09:48:14,808 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)

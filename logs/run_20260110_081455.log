@@ -1,8 +1,0 @@
-2026-01-10 08:14:55,262 | INFO    | [ADB] Found ADB at: adb
-2026-01-10 08:14:55,343 | INFO    | [WorkerMgr] Loaded 1 assignments
-2026-01-10 08:14:57,244 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
-2026-01-10 08:14:57,244 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
-2026-01-10 08:14:57,244 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
-2026-01-10 08:14:57,244 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
-2026-01-10 08:14:57,308 | INFO    | [HOTKEY] GlobalHotkeyManager started
-2026-01-10 08:14:57,309 | INFO    | [UI] Global hotkeys registered

@@ -1,7 +1,0 @@
-2026-01-09 11:39:58,199 | INFO    | [ADB] Found ADB at: adb
-2026-01-09 11:39:58,607 | INFO    | [ADB] Found ADB at: adb
-2026-01-09 11:39:59,205 | INFO    | [ADB] emulator-5554: Resolution 540x960 (wm size)
-2026-01-09 11:39:59,205 | INFO    | [WORKER] 1: Auto-detected resolution 540x960 from ADB device emulator-5554
-2026-01-09 11:39:59,205 | INFO    | [WORKER] 1: Scale factors = 1.074x, 1.036y
-2026-01-09 11:39:59,276 | INFO    | [WorkerMgr] Loaded 1 assignments
-2026-01-09 11:41:33,114 | INFO    | [UI] Added command: cẹc

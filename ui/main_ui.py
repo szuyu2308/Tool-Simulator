@@ -64,6 +64,579 @@ except ImportError:
     IMAGE_ACTIONS_AVAILABLE = False
 
 
+# ==================== MODERN UI STYLE CONFIGURATION 2026 ====================
+
+class ModernStyle:
+    """
+    Modern Dark Pro UI - 2026 Design System
+    Inspired by: VS Code, GitHub Dark, JetBrains New UI, shadcn/ui
+    Theme: Refined dark mode with subtle depth and polish
+    """
+    
+    # === CORE COLORS (GitHub Dark / VS Code inspired) ===
+    BG_PRIMARY = "#0d1117"       # Deep background
+    BG_SECONDARY = "#161b22"     # Card/panel background  
+    BG_TERTIARY = "#21262d"      # Hover/elevated surfaces
+    BG_ELEVATED = "#1c2128"      # Modal/dropdown bg
+    BG_INPUT = "#0d1117"         # Input fields
+    BG_CARD = "#161b22"          # Cards
+    BG_GLASS = "#21262d"         # Glass panels
+    
+    # Text colors - High contrast for accessibility
+    FG_PRIMARY = "#e6edf3"       # Primary text (soft white)
+    FG_SECONDARY = "#8b949e"     # Secondary text
+    FG_MUTED = "#484f58"         # Muted/placeholder
+    FG_ACCENT = "#58a6ff"        # Accent/links
+    
+    # === ACCENT COLORS (Refined, not neon) ===
+    ACCENT_RED = "#f85149"       # Record/Danger
+    ACCENT_GREEN = "#3fb950"     # Play/Success
+    ACCENT_ORANGE = "#d29922"    # Pause/Warning  
+    ACCENT_PURPLE = "#a371f7"    # Screen/Special
+    ACCENT_BLUE = "#58a6ff"      # Primary action
+    ACCENT_CYAN = "#39c5cf"      # Info/highlight
+    ACCENT_GRAY = "#6e7681"      # Stop/Neutral
+    
+    # Button colors with gradient support
+    BTN_RECORD = "#da3633"       # Record - deep red
+    BTN_RECORD_HOVER = "#f85149"
+    BTN_PLAY = "#238636"         # Play - rich green
+    BTN_PLAY_HOVER = "#2ea043"
+    BTN_PAUSE = "#9e6a03"        # Pause - amber
+    BTN_PAUSE_HOVER = "#d29922"
+    BTN_STOP = "#21262d"         # Stop - subtle gray
+    BTN_STOP_HOVER = "#30363d"
+    BTN_SCREEN = "#8957e5"       # Screen - purple
+    BTN_SCREEN_HOVER = "#a371f7"
+    BTN_SETTINGS = "#6e7681"     # Settings - neutral
+    BTN_PRIMARY = "#238636"      # Primary action
+    BTN_PRIMARY_HOVER = "#2ea043"
+    BTN_SECONDARY = "#21262d"    # Secondary
+    BTN_SECONDARY_HOVER = "#30363d"
+    BTN_DANGER = "#da3633"
+    BTN_DANGER_HOVER = "#f85149"
+    BTN_SUCCESS = "#238636"
+    
+    # Borders & effects
+    BORDER_COLOR = "#30363d"
+    BORDER_FOCUS = "#58a6ff"
+    BORDER_SUBTLE = "#21262d"
+    SHADOW_COLOR = "rgba(0,0,0,0.4)"
+    
+    # === TYPOGRAPHY (Compact for better fit) ===
+    FONT_FAMILY = "Segoe UI"
+    FONT_MONO = "Cascadia Code"
+    FONT_SIZE_XS = 8
+    FONT_SIZE_SM = 9
+    FONT_SIZE_MD = 10
+    FONT_SIZE_LG = 11
+    FONT_SIZE_XL = 12
+    FONT_SIZE_XXL = 14
+    FONT_SIZE_TITLE = 11
+    
+    # === SPACING (Compact) ===
+    PAD_XS = 2
+    PAD_SM = 4
+    PAD_MD = 6
+    PAD_LG = 8
+    PAD_XL = 12
+    PAD_XXL = 16
+    
+    # Component sizes
+    ROW_HEIGHT = 28
+    BTN_HEIGHT = 26
+    INPUT_HEIGHT = 28
+    TOOLBAR_HEIGHT = 40
+    BORDER_RADIUS = 6
+    
+    @classmethod
+    def apply_dark_theme(cls, root):
+        """Apply modern dark theme to all widgets"""
+        root.configure(bg=cls.BG_PRIMARY)
+        root.option_add("*Background", cls.BG_SECONDARY)
+        root.option_add("*Foreground", cls.FG_PRIMARY)
+        root.option_add("*Font", (cls.FONT_FAMILY, cls.FONT_SIZE_MD))
+        root.option_add("*Listbox.selectBackground", cls.ACCENT_BLUE)
+        root.option_add("*Listbox.selectForeground", cls.FG_PRIMARY)
+        
+        style = ttk.Style(root)
+        style.theme_use('clam')
+        
+        # Global style
+        style.configure(".",
+                       background=cls.BG_SECONDARY,
+                       foreground=cls.FG_PRIMARY,
+                       fieldbackground=cls.BG_INPUT,
+                       insertcolor=cls.FG_PRIMARY,
+                       font=(cls.FONT_FAMILY, cls.FONT_SIZE_MD))
+        
+        # Frame styles
+        style.configure("TFrame", background=cls.BG_SECONDARY)
+        style.configure("Card.TFrame", background=cls.BG_CARD)
+        style.configure("Glass.TFrame", background=cls.BG_GLASS)
+        
+        # Label styles
+        style.configure("TLabel", 
+                       background=cls.BG_SECONDARY, 
+                       foreground=cls.FG_PRIMARY)
+        style.configure("Title.TLabel",
+                       font=(cls.FONT_FAMILY, cls.FONT_SIZE_XL, "bold"),
+                       foreground=cls.FG_PRIMARY)
+        style.configure("Muted.TLabel",
+                       foreground=cls.FG_SECONDARY)
+        
+        # Button styles - Modern
+        style.configure("TButton",
+                       background=cls.BTN_SECONDARY,
+                       foreground=cls.FG_PRIMARY,
+                       padding=(cls.PAD_LG, cls.PAD_SM),
+                       font=(cls.FONT_FAMILY, cls.FONT_SIZE_MD))
+        style.map("TButton",
+                 background=[("active", cls.BTN_SECONDARY_HOVER), ("pressed", cls.BG_PRIMARY)])
+        
+        # Entry & Combobox - Refined
+        style.configure("TEntry",
+                       fieldbackground=cls.BG_INPUT,
+                       foreground=cls.FG_PRIMARY,
+                       insertcolor=cls.FG_PRIMARY,
+                       padding=(cls.PAD_SM, cls.PAD_XS))
+        style.configure("TCombobox",
+                       fieldbackground=cls.BG_INPUT,
+                       foreground=cls.FG_PRIMARY,
+                       arrowcolor=cls.FG_SECONDARY,
+                       padding=(cls.PAD_SM, cls.PAD_XS))
+        style.map("TCombobox",
+                 fieldbackground=[("readonly", cls.BG_INPUT)],
+                 selectbackground=[("readonly", cls.ACCENT_BLUE)])
+        
+        # Spinbox
+        style.configure("TSpinbox",
+                       fieldbackground=cls.BG_INPUT,
+                       foreground=cls.FG_PRIMARY,
+                       arrowcolor=cls.FG_SECONDARY)
+        
+        # LabelFrame - Modern card look
+        style.configure("TLabelframe",
+                       background=cls.BG_CARD,
+                       foreground=cls.FG_PRIMARY,
+                       bordercolor=cls.BORDER_COLOR)
+        style.configure("TLabelframe.Label",
+                       background=cls.BG_CARD,
+                       foreground=cls.FG_ACCENT,
+                       font=(cls.FONT_FAMILY, cls.FONT_SIZE_LG, "bold"))
+        
+        # Notebook (tabs)
+        style.configure("TNotebook",
+                       background=cls.BG_SECONDARY,
+                       bordercolor=cls.BORDER_COLOR)
+        style.configure("TNotebook.Tab",
+                       background=cls.BG_TERTIARY,
+                       foreground=cls.FG_SECONDARY,
+                       padding=(cls.PAD_LG, cls.PAD_SM))
+        style.map("TNotebook.Tab",
+                 background=[("selected", cls.BG_CARD)],
+                 foreground=[("selected", cls.FG_PRIMARY)])
+        
+        # Scrollbar - Minimal modern
+        style.configure("TScrollbar",
+                       background=cls.BG_TERTIARY,
+                       troughcolor=cls.BG_PRIMARY,
+                       arrowcolor=cls.FG_MUTED,
+                       width=10)
+        style.map("TScrollbar",
+                 background=[("active", cls.FG_MUTED)])
+        
+        # Separator
+        style.configure("TSeparator", background=cls.BORDER_COLOR)
+        
+        # Treeview (Tables) - Modern DataGrid with zebra
+        style.configure("Treeview",
+                       background=cls.BG_INPUT,
+                       foreground=cls.FG_PRIMARY,
+                       fieldbackground=cls.BG_INPUT,
+                       rowheight=cls.ROW_HEIGHT,
+                       font=(cls.FONT_FAMILY, cls.FONT_SIZE_MD))
+        style.configure("Treeview.Heading",
+                       background=cls.BG_TERTIARY,
+                       foreground=cls.FG_SECONDARY,
+                       font=(cls.FONT_FAMILY, cls.FONT_SIZE_SM, "bold"),
+                       padding=(cls.PAD_MD, cls.PAD_SM))
+        style.map("Treeview",
+                 background=[("selected", "#1f6feb")],  # Blue selection
+                 foreground=[("selected", cls.FG_PRIMARY)])
+        style.map("Treeview.Heading",
+                 background=[("active", cls.BG_GLASS)])
+        
+        # Checkbutton & Radiobutton
+        style.configure("TCheckbutton",
+                       background=cls.BG_SECONDARY,
+                       foreground=cls.FG_PRIMARY)
+        style.map("TCheckbutton",
+                 background=[("active", cls.BG_TERTIARY)])
+        style.configure("TRadiobutton",
+                       background=cls.BG_SECONDARY,
+                       foreground=cls.FG_PRIMARY)
+        
+        # Scale (slider)
+        style.configure("TScale",
+                       background=cls.BG_SECONDARY,
+                       troughcolor=cls.BG_INPUT)
+        style.configure("Horizontal.TScale",
+                       background=cls.BG_SECONDARY)
+        
+        # Progressbar
+        style.configure("TProgressbar",
+                       background=cls.ACCENT_BLUE,
+                       troughcolor=cls.BG_INPUT)
+    
+    @classmethod
+    def create_toolbar_button(cls, parent, text, icon, command=None, color=None, width=None):
+        """Create modern toolbar button with hover effects"""
+        bg = color or cls.BTN_SECONDARY
+        
+        # Calculate hover/press colors
+        def adjust_color(hex_color, factor):
+            """Lighten (factor>0) or darken (factor<0) a color"""
+            r = int(hex_color[1:3], 16)
+            g = int(hex_color[3:5], 16)
+            b = int(hex_color[5:7], 16)
+            if factor > 0:
+                r = min(255, int(r + (255 - r) * factor))
+                g = min(255, int(g + (255 - g) * factor))
+                b = min(255, int(b + (255 - b) * factor))
+            else:
+                r = max(0, int(r * (1 + factor)))
+                g = max(0, int(g * (1 + factor)))
+                b = max(0, int(b * (1 + factor)))
+            return f"#{r:02x}{g:02x}{b:02x}"
+        
+        hover_bg = adjust_color(bg, 0.15)
+        press_bg = adjust_color(bg, -0.1)
+        
+        # Button with icon + text
+        btn = tk.Button(parent, text=f"{icon}  {text}", command=command,
+                       bg=bg, fg=cls.FG_PRIMARY, 
+                       activebackground=hover_bg, activeforeground=cls.FG_PRIMARY,
+                       font=(cls.FONT_FAMILY, cls.FONT_SIZE_MD, "bold"),
+                       relief="flat", cursor="hand2", bd=0,
+                       padx=cls.PAD_LG, pady=cls.PAD_SM)
+        if width:
+            btn.config(width=width)
+        
+        # Smooth hover effects
+        def on_enter(e):
+            btn.config(bg=hover_bg)
+        def on_leave(e):
+            btn.config(bg=bg)
+        def on_press(e):
+            btn.config(bg=press_bg, relief="sunken")
+        def on_release(e):
+            btn.config(bg=hover_bg, relief="flat")
+        
+        btn.bind("<Enter>", on_enter)
+        btn.bind("<Leave>", on_leave)
+        btn.bind("<ButtonPress-1>", on_press)
+        btn.bind("<ButtonRelease-1>", on_release)
+        
+        return btn
+    
+    @classmethod
+    def create_action_button(cls, parent, text, command=None, style="secondary", icon=None, width=None):
+        """Create action button for panels (Add, Edit, Delete, etc.)"""
+        styles = {
+            "primary": (cls.BTN_PRIMARY, cls.BTN_PRIMARY_HOVER, cls.FG_PRIMARY),
+            "success": (cls.BTN_SUCCESS, cls.BTN_PLAY_HOVER, cls.FG_PRIMARY),
+            "danger": (cls.BTN_DANGER, cls.BTN_DANGER_HOVER, cls.FG_PRIMARY),
+            "warning": (cls.BTN_PAUSE, cls.BTN_PAUSE_HOVER, "#000000"),
+            "secondary": (cls.BTN_SECONDARY, cls.BTN_SECONDARY_HOVER, cls.FG_PRIMARY),
+        }
+        bg, hover_bg, fg = styles.get(style, styles["secondary"])
+        
+        display_text = f"{icon} {text}" if icon else text
+        
+        btn = tk.Button(parent, text=display_text, command=command,
+                       bg=bg, fg=fg, 
+                       activebackground=hover_bg, activeforeground=fg,
+                       font=(cls.FONT_FAMILY, cls.FONT_SIZE_SM, "bold"),
+                       relief="flat", cursor="hand2", bd=0,
+                       padx=cls.PAD_MD, pady=cls.PAD_XS)
+        if width:
+            btn.config(width=width)
+        
+        # Hover effect
+        def on_enter(e):
+            btn.config(bg=hover_bg)
+        def on_leave(e):
+            btn.config(bg=bg)
+        
+        btn.bind("<Enter>", on_enter)
+        btn.bind("<Leave>", on_leave)
+        
+        return btn
+    
+    @classmethod
+    def create_modern_button(cls, parent, text, command=None, style="primary", width=None, icon=None, **kwargs):
+        """Create a Win11-style modern button with smooth hover effects"""
+        # Win11-style colors with softer shades
+        colors = {
+            "primary": (cls.BTN_PRIMARY, "#2ea043", cls.FG_PRIMARY),
+            "success": (cls.BTN_SUCCESS, "#2ea043", cls.FG_PRIMARY),
+            "warning": ("#b08800", "#d4a500", "#000000"),
+            "danger": (cls.BTN_DANGER, "#f85149", cls.FG_PRIMARY),
+            "secondary": ("#2d333b", "#373e47", cls.FG_PRIMARY),
+            "record": (cls.BTN_RECORD, "#f85149", cls.FG_PRIMARY),
+            "play": (cls.BTN_PLAY, "#2ea043", cls.FG_PRIMARY),
+            "stop": ("#3d444d", "#484f58", cls.FG_PRIMARY),
+            "accent": (cls.ACCENT_BLUE, "#79b8ff", cls.FG_PRIMARY),
+        }
+        bg, hover_bg, fg = colors.get(style, colors["primary"])
+        
+        display_text = f"{icon} {text}" if icon else text
+        
+        # Create button with smooth rounded look
+        btn = tk.Button(parent, text=display_text, command=command,
+                       bg=bg, fg=fg, 
+                       activebackground=hover_bg, activeforeground=fg,
+                       font=(cls.FONT_FAMILY, cls.FONT_SIZE_SM),
+                       relief="flat", cursor="hand2", bd=0,
+                       padx=cls.PAD_MD, pady=cls.PAD_SM,
+                       highlightthickness=0)
+        if width:
+            btn.config(width=width)
+        
+        # Smooth hover animation
+        def on_enter(e):
+            btn.config(bg=hover_bg)
+        def on_leave(e):
+            btn.config(bg=bg)
+        def on_press(e):
+            # Slight darken on press
+            btn.config(relief="flat")
+        def on_release(e):
+            btn.config(relief="flat")
+        
+        btn.bind("<Enter>", on_enter)
+        btn.bind("<Leave>", on_leave)
+        btn.bind("<ButtonPress-1>", on_press)
+        btn.bind("<ButtonRelease-1>", on_release)
+        
+        return btn
+    
+    @classmethod
+    def create_pill_button(cls, parent, text, command=None, color=None, width=None):
+        """Create a pill-shaped button (rounded edges look)"""
+        bg = color or cls.ACCENT_BLUE
+        
+        def adjust_color(hex_color, factor):
+            r = int(hex_color[1:3], 16)
+            g = int(hex_color[3:5], 16)
+            b = int(hex_color[5:7], 16)
+            if factor > 0:
+                r = min(255, int(r + (255 - r) * factor))
+                g = min(255, int(g + (255 - g) * factor))
+                b = min(255, int(b + (255 - b) * factor))
+            else:
+                r = max(0, int(r * (1 + factor)))
+                g = max(0, int(g * (1 + factor)))
+                b = max(0, int(b * (1 + factor)))
+            return f"#{r:02x}{g:02x}{b:02x}"
+        
+        hover_bg = adjust_color(bg, 0.2)
+        
+        btn = tk.Button(parent, text=text, command=command,
+                       bg=bg, fg=cls.FG_PRIMARY,
+                       activebackground=hover_bg, activeforeground=cls.FG_PRIMARY,
+                       font=(cls.FONT_FAMILY, cls.FONT_SIZE_SM, "bold"),
+                       relief="flat", cursor="hand2", bd=0,
+                       padx=cls.PAD_LG, pady=cls.PAD_SM,
+                       highlightthickness=0)
+        if width:
+            btn.config(width=width)
+        
+        def on_enter(e):
+            btn.config(bg=hover_bg)
+        def on_leave(e):
+            btn.config(bg=bg)
+        
+        btn.bind("<Enter>", on_enter)
+        btn.bind("<Leave>", on_leave)
+        
+        return btn
+    
+    @classmethod
+    def create_glass_panel(cls, parent, **kwargs):
+        """Create glassmorphism styled panel"""
+        frame = tk.Frame(parent, bg=cls.BG_GLASS,
+                        highlightbackground=cls.BORDER_COLOR,
+                        highlightthickness=1,
+                        **kwargs)
+        return frame
+    
+    @classmethod
+    def create_section_frame(cls, parent, title, icon=None, **kwargs):
+        """Create a simple LabelFrame section. Returns the frame directly."""
+        title_text = f" {icon} {title} " if icon else f" {title} "
+        frame = tk.LabelFrame(parent, text=title_text,
+                             bg=cls.BG_CARD, fg=cls.FG_ACCENT,
+                             font=(cls.FONT_FAMILY, cls.FONT_SIZE_TITLE, "bold"),
+                             relief="flat", bd=1,
+                             highlightbackground=cls.BORDER_COLOR,
+                             highlightthickness=1,
+                             padx=cls.PAD_SM, pady=cls.PAD_SM)
+        # For backward compatibility
+        frame.content = frame
+        return frame
+    
+    @classmethod
+    def create_card_frame(cls, parent, title=None, icon=None):
+        """Create a modern card with optional header"""
+        card = tk.Frame(parent, bg=cls.BG_CARD,
+                       highlightbackground=cls.BORDER_COLOR,
+                       highlightthickness=1)
+        
+        if title:
+            # Header
+            header = tk.Frame(card, bg=cls.BG_CARD)
+            header.pack(fill="x", padx=cls.PAD_LG, pady=(cls.PAD_MD, 0))
+            
+            # Accent dot
+            if icon:
+                tk.Label(header, text=icon, bg=cls.BG_CARD, fg=cls.ACCENT_BLUE,
+                        font=(cls.FONT_FAMILY, cls.FONT_SIZE_LG)).pack(side="left", padx=(0, cls.PAD_SM))
+            
+            tk.Label(header, text=title, bg=cls.BG_CARD, fg=cls.FG_PRIMARY,
+                    font=(cls.FONT_FAMILY, cls.FONT_SIZE_LG, "bold")).pack(side="left")
+            
+            # Separator line
+            sep = tk.Frame(card, bg=cls.BORDER_COLOR, height=1)
+            sep.pack(fill="x", padx=cls.PAD_MD, pady=(cls.PAD_SM, 0))
+        
+        return card
+    
+    @classmethod
+    def create_entry(cls, parent, textvariable=None, width=20, **kwargs):
+        """Create a modern styled entry"""
+        entry = tk.Entry(parent, textvariable=textvariable, width=width,
+                        bg=cls.BG_INPUT, fg=cls.FG_PRIMARY,
+                        insertbackground=cls.FG_PRIMARY,
+                        relief="flat",
+                        font=(cls.FONT_FAMILY, cls.FONT_SIZE_MD),
+                        highlightthickness=1,
+                        highlightbackground=cls.BORDER_COLOR,
+                        highlightcolor=cls.BORDER_FOCUS,
+                        selectbackground=cls.ACCENT_BLUE,
+                        selectforeground=cls.FG_PRIMARY)
+        return entry
+    
+    @classmethod
+    def create_label(cls, parent, text, style="primary", size=None, bold=False, **kwargs):
+        """Create a modern styled label"""
+        colors = {
+            "primary": cls.FG_PRIMARY,
+            "secondary": cls.FG_SECONDARY,
+            "muted": cls.FG_MUTED,
+            "accent": cls.FG_ACCENT,
+            "success": cls.ACCENT_GREEN,
+            "warning": cls.ACCENT_ORANGE,
+            "danger": cls.ACCENT_RED,
+        }
+        fg = colors.get(style, cls.FG_PRIMARY)
+        font_size = size or cls.FONT_SIZE_MD
+        font_weight = "bold" if bold else "normal"
+        bg = kwargs.pop("bg", cls.BG_SECONDARY)
+        
+        label = tk.Label(parent, text=text, bg=bg, fg=fg,
+                        font=(cls.FONT_FAMILY, font_size, font_weight))
+        return label
+    
+    # === ZEBRA STRIPING COLORS ===
+    ZEBRA_ODD = "#0d1117"   # Same as BG_PRIMARY
+    ZEBRA_EVEN = "#161b22"  # Same as BG_SECONDARY
+    
+    @classmethod
+    def apply_zebra_striping(cls, treeview):
+        """Apply zebra striping to a Treeview by configuring tags on rows.
+        Call this after inserting items and use 'oddrow' and 'evenrow' tags."""
+        treeview.tag_configure('oddrow', background=cls.ZEBRA_ODD)
+        treeview.tag_configure('evenrow', background=cls.ZEBRA_EVEN)
+        treeview.tag_configure('selected', background=cls.ACCENT_BLUE)
+        # Error and warning states
+        treeview.tag_configure('error', background='#3d1c1c', foreground=cls.ACCENT_RED)
+        treeview.tag_configure('warning', background='#3d2e1c', foreground=cls.ACCENT_ORANGE)
+        treeview.tag_configure('success', background='#1c3d2e', foreground=cls.ACCENT_GREEN)
+        treeview.tag_configure('running', background='#1c2d3d', foreground=cls.ACCENT_BLUE)
+        # Muted state for disabled items
+        treeview.tag_configure('muted', foreground=cls.FG_MUTED)
+    
+    @classmethod
+    def refresh_zebra_striping(cls, treeview):
+        """Refresh zebra striping after rows have been added/removed.
+        Should be called after any item insertion or deletion."""
+        children = treeview.get_children()
+        for index, child in enumerate(children):
+            tag = 'evenrow' if index % 2 == 0 else 'oddrow'
+            # Get existing tags and preserve non-zebra ones
+            existing = list(treeview.item(child, 'tags'))
+            # Remove old zebra tags
+            existing = [t for t in existing if t not in ('oddrow', 'evenrow')]
+            existing.append(tag)
+            treeview.item(child, tags=existing)
+    
+    @classmethod
+    def create_status_badge(cls, parent, text, status="info"):
+        """Create a colored status badge/pill"""
+        colors = {
+            "info": (cls.ACCENT_BLUE, cls.FG_PRIMARY),
+            "success": (cls.ACCENT_GREEN, "#000000"),
+            "warning": (cls.ACCENT_ORANGE, "#000000"),
+            "danger": (cls.ACCENT_RED, cls.FG_PRIMARY),
+            "muted": (cls.BG_TERTIARY, cls.FG_SECONDARY),
+        }
+        bg, fg = colors.get(status, colors["info"])
+        
+        badge = tk.Label(parent, text=f"  {text}  ", bg=bg, fg=fg,
+                        font=(cls.FONT_FAMILY, cls.FONT_SIZE_XS, "bold"))
+        return badge
+    
+    @classmethod
+    def create_icon_button(cls, parent, icon, command=None, tooltip=None, color=None):
+        """Create a small icon-only button (for toolbars, row actions)"""
+        bg = color or cls.BG_TERTIARY
+        
+        def adjust_color(hex_color, factor):
+            r = int(hex_color[1:3], 16)
+            g = int(hex_color[3:5], 16)
+            b = int(hex_color[5:7], 16)
+            if factor > 0:
+                r = min(255, int(r + (255 - r) * factor))
+                g = min(255, int(g + (255 - g) * factor))
+                b = min(255, int(b + (255 - b) * factor))
+            else:
+                r = max(0, int(r * (1 + factor)))
+                g = max(0, int(g * (1 + factor)))
+                b = max(0, int(b * (1 + factor)))
+            return f"#{r:02x}{g:02x}{b:02x}"
+        
+        hover_bg = adjust_color(bg, 0.2)
+        
+        btn = tk.Button(parent, text=icon, command=command,
+                       bg=bg, fg=cls.FG_PRIMARY,
+                       activebackground=hover_bg, activeforeground=cls.FG_PRIMARY,
+                       font=(cls.FONT_FAMILY, cls.FONT_SIZE_MD),
+                       relief="flat", cursor="hand2", bd=0,
+                       padx=cls.PAD_SM, pady=cls.PAD_XS)
+        
+        def on_enter(e):
+            btn.config(bg=hover_bg)
+        def on_leave(e):
+            btn.config(bg=bg)
+        
+        btn.bind("<Enter>", on_enter)
+        btn.bind("<Leave>", on_leave)
+        
+        return btn
+
+
 # ==================== ACTION MODELS (Lightweight) ====================
 
 class ActionType(Enum):
@@ -235,6 +808,11 @@ class MainUI:
     REFRESH_MS = 800
 
     def __init__(self, workers):
+        self.root = tk.Tk()
+        self.root.title("Tools LDPlayer - Action Recorder")
+        self.root.geometry("1100x650")  # Larger for better UI fit
+        self.root.minsize(900, 550)  # Minimum size
+
         self.workers = workers
         self.macros = []
         self.commands = []  # Store Command objects (old architecture)
@@ -246,7 +824,7 @@ class MainUI:
         self.launcher = MacroLauncher(
             macro_exe_path=r"C:\Program Files\MacroRecorder\MacroRecorder.exe"
         )
-        
+
         # Recording/Playback state
         self._is_recording = False
         self._is_playing = False
@@ -258,234 +836,323 @@ class MainUI:
         self._playback_pause_event = threading.Event()
         self._current_action_index = 0
         self._target_hwnd: Optional[int] = None  # Target window for recording
-        
+
         # Recording toolbar
         self._recording_toolbar: Optional[tk.Toplevel] = None
-        
+
         # Playback toolbar
         self._playback_toolbar: Optional[tk.Toplevel] = None
-        
+
         # Hotkey settings
         self._hotkey_settings = self._load_hotkey_settings()
-        
+
         # Capture target state (for XY/Region capture)
         self._capture_target_hwnd: Optional[int] = None  # None = screen coords (default)
         self._capture_target_name: str = "Screen (Full)"
-        
+        self._capture_crop_region = (0, 0, 0, 0)  # (x1, y1, x2, y2) - vùng crop
+
         # Worker-specific actions storage
         self._worker_actions: Dict[int, List[Action]] = {}  # worker_id -> custom actions
         self._worker_playback_threads: Dict[int, threading.Thread] = {}  # worker_id -> thread
         self._worker_stop_events: Dict[int, threading.Event] = {}  # worker_id -> stop event
-        
+
         # Global hotkey manager
         self._hotkey_manager: Optional['GlobalHotkeyManager'] = None
-        
+
         # Initialize Macro Manager if available (for recorder hooks)
         self._macro_manager = None
         if MACRO_RECORDER_AVAILABLE:
             self._macro_manager = get_macro_manager()
 
-        self.root = tk.Tk()
-        self.root.title("Tools LDPlayer - Action Recorder")
-        self.root.geometry("950x580")  # Adjusted size
-
         self._build_ui()
         self._load_macros()
         self._auto_refresh_status()
-        
+
         # Register global hotkeys on startup
         self._register_global_hotkeys()
+
+    # Khi chọn vùng, lưu lại vùng crop
+    def on_region_selected(self, region):
+        self._capture_crop_region = region  # (x1, y1, x2, y2)
+        self._capture_target_name = f"Region {region}"
+        self._target_btn_text.set(f"🎯 {self._capture_target_name}")
 
     # ================= UI =================
 
     def _build_ui(self):
         root = self.root
 
-        # ===== TOP TOOLBAR: Record/Play/Pause/Stop (per spec 1.1) =====
-        top_btn_frame = tk.Frame(root)
-        top_btn_frame.pack(fill="x", padx=10, pady=8)
+        # ===== APPLY MODERN DARK THEME =====
+        ModernStyle.apply_dark_theme(root)
+        S = ModernStyle  # Shorthand
+        
+        # Configure root window
+        root.configure(bg=S.BG_PRIMARY)
+        
+        # ===== TOP TOOLBAR: Modern design with icon + label =====
+        toolbar_frame = tk.Frame(root, bg=S.BG_PRIMARY)
+        toolbar_frame.pack(fill="x", padx=S.PAD_SM, pady=S.PAD_SM)
+        
+        # Left side - Main action buttons
+        btn_group_left = tk.Frame(toolbar_frame, bg=S.BG_PRIMARY)
+        btn_group_left.pack(side="left")
 
-        # Record button (toggle)
-        self.btn_record = tk.Button(
-            top_btn_frame, text="⏺ Record", command=self._toggle_record,
-            bg="#f44336", fg="white", font=("Arial", 9, "bold"), width=10
+        # Record button (toggle) - Red
+        self.btn_record = S.create_toolbar_button(
+            btn_group_left, "Record", "⏺", self._toggle_record, 
+            color=S.BTN_RECORD, width=9
         )
-        self.btn_record.pack(side="left", padx=4)
+        self.btn_record.pack(side="left", padx=S.PAD_XS)
 
-        # Play button
-        self.btn_play = tk.Button(
-            top_btn_frame, text="▶ Play", command=self._toggle_play,
-            bg="#4CAF50", fg="white", font=("Arial", 9, "bold"), width=10
+        # Play button - Green
+        self.btn_play = S.create_toolbar_button(
+            btn_group_left, "Play", "▶", self._toggle_play,
+            color=S.BTN_PLAY, width=8
         )
-        self.btn_play.pack(side="left", padx=4)
+        self.btn_play.pack(side="left", padx=S.PAD_XS)
 
-        # Pause/Resume button (toggle)
-        self.btn_pause = tk.Button(
-            top_btn_frame, text="⏸ Pause", command=self._toggle_pause,
-            bg="#FF9800", fg="white", font=("Arial", 9, "bold"), width=10
+        # Pause/Resume button (toggle) - Orange
+        self.btn_pause = S.create_toolbar_button(
+            btn_group_left, "Pause", "⏸", self._toggle_pause,
+            color=S.BTN_PAUSE, width=8
         )
-        self.btn_pause.pack(side="left", padx=4)
+        self.btn_pause.pack(side="left", padx=S.PAD_XS)
 
-        # Stop button (Esc to stop recording)
-        self.btn_stop = tk.Button(
-            top_btn_frame, text="⏹ Stop (Esc)", command=self._stop_all,
-            bg="#9E9E9E", fg="white", font=("Arial", 9, "bold"), width=12
+        # Stop button - Gray
+        self.btn_stop = S.create_toolbar_button(
+            btn_group_left, "Stop", "⏹", self._stop_all,
+            color=S.BTN_STOP, width=7
         )
-        self.btn_stop.pack(side="left", padx=4)
+        self.btn_stop.pack(side="left", padx=S.PAD_XS)
         
         # Separator
-        ttk.Separator(top_btn_frame, orient="vertical").pack(side="left", fill="y", padx=8)
+        sep1 = tk.Frame(btn_group_left, bg=S.BORDER_COLOR, width=1, height=22)
+        sep1.pack(side="left", padx=S.PAD_SM, pady=2)
         
-        # Target Window button (for capture)
-        self._target_btn_text = tk.StringVar(value="🎯 Screen")
-        self.btn_target = tk.Button(
-            top_btn_frame, textvariable=self._target_btn_text, command=self._select_capture_target,
-            bg="#673AB7", fg="white", font=("Arial", 9, "bold"), width=14
+        # Target Window button (for capture) - Purple
+        self._target_btn_text = tk.StringVar(value="Screen")
+        self.btn_target = S.create_toolbar_button(
+            btn_group_left, "Screen", "📷", self._select_capture_target,
+            color=S.BTN_SCREEN, width=9
         )
-        self.btn_target.pack(side="left", padx=4)
+        self.btn_target.pack(side="left", padx=S.PAD_XS)
         
         # Separator
-        ttk.Separator(top_btn_frame, orient="vertical").pack(side="left", fill="y", padx=8)
+        sep2 = tk.Frame(btn_group_left, bg=S.BORDER_COLOR, width=1, height=22)
+        sep2.pack(side="left", padx=S.PAD_SM, pady=2)
         
         # Settings button
-        self.btn_settings = tk.Button(
-            top_btn_frame, text="⚙ Settings", command=self._open_settings_dialog,
-            bg="#607D8B", fg="white", font=("Arial", 9), width=10
+        self.btn_settings = S.create_toolbar_button(
+            btn_group_left, "Settings", "⚙", self._open_settings_dialog,
+            color=S.BTN_SETTINGS, width=9
         )
-        self.btn_settings.pack(side="left", padx=4)
+        self.btn_settings.pack(side="left", padx=S.PAD_XS)
         
-        # Status label
-        self._status_var = tk.StringVar(value="Ready")
+        # Right side - Status
+        status_frame = tk.Frame(toolbar_frame, bg=S.BG_PRIMARY)
+        status_frame.pack(side="right")
+        
+        self._status_var = tk.StringVar(value="● Ready")
         self._status_label = tk.Label(
-            top_btn_frame, textvariable=self._status_var,
-            font=("Arial", 9), fg="gray"
+            status_frame, textvariable=self._status_var,
+            font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"), 
+            fg=S.ACCENT_GREEN, bg=S.BG_PRIMARY
         )
-        self._status_label.pack(side="left", padx=10)
+        self._status_label.pack(side="right", padx=S.PAD_SM)
+        
+        # Helper method to update status with appropriate color
+        def update_status(text, status_type="ready"):
+            """Update status text and color. Types: ready, recording, playing, paused, stopped, error"""
+            colors = {
+                "ready": S.ACCENT_GREEN,
+                "recording": S.ACCENT_RED,
+                "playing": S.ACCENT_GREEN,
+                "paused": S.ACCENT_ORANGE,
+                "stopped": S.FG_MUTED,
+                "error": S.ACCENT_RED,
+            }
+            self._status_var.set(text)
+            self._status_label.config(fg=colors.get(status_type, S.FG_PRIMARY))
+        self._update_status = update_status
         
         # Update button text with hotkeys
         self._update_button_hotkey_text()
 
-        # Container frame for vertical layout
-        container = tk.Frame(root)
-        container.pack(fill="both", expand=True, padx=10, pady=8)
+        # ===== MAIN CONTAINER: Two panels side by side =====
+        container = tk.Frame(root, bg=S.BG_PRIMARY)
+        container.pack(fill="both", expand=True, padx=S.PAD_SM, pady=(0, S.PAD_SM))
 
-        # Worker status frame (left side)
-        worker_frame = tk.LabelFrame(container, text="Trạng thái LDPlayer (Worker)")
-        worker_frame.pack(side="left", fill="both", expand=True, padx=(0, 4), pady=0)
+        # ===== LEFT PANEL: Worker Status =====
+        worker_frame = S.create_section_frame(container, "Worker Status", icon="🎮")
+        worker_frame.pack(side="left", fill="both", expand=False, padx=(0, S.PAD_XS), pady=0)
+        worker_frame.configure(width=380)
+        worker_frame.pack_propagate(False)
 
-        # Worker buttons
-        worker_btn_frame = tk.Frame(worker_frame)
-        worker_btn_frame.pack(fill="x", padx=8, pady=6)
+        # Worker mini buttons - 2 rows for better layout
+        worker_btn_frame = tk.Frame(worker_frame, bg=S.BG_CARD)
+        worker_btn_frame.pack(fill="x", padx=S.PAD_XS, pady=S.PAD_XS)
 
-        tk.Button(worker_btn_frame, text="🔄 Refresh", command=self.refresh_workers).pack(side="left", padx=2)
-        tk.Button(worker_btn_frame, text="⚙ Set Worker", command=self.set_worker_dialog).pack(side="left", padx=2)
-        tk.Button(worker_btn_frame, text="🔍 Check", command=self.check_status).pack(side="left", padx=2)
-        tk.Button(worker_btn_frame, text=" Xóa", command=self.remove_macro).pack(side="left", padx=2)
+        # Row 1: Main actions
+        btn_row1 = tk.Frame(worker_btn_frame, bg=S.BG_CARD)
+        btn_row1.pack(fill="x", pady=(0, S.PAD_XS))
+        
+        for text, icon, cmd, color in [
+            ("Refresh", "🔄", self.refresh_workers, S.BTN_SECONDARY),
+            ("Set", "⚙", self.set_worker_dialog, S.ACCENT_BLUE),
+            ("Check", "🔍", self.check_status, S.BTN_SECONDARY),
+        ]:
+            btn = tk.Button(btn_row1, text=f"{icon} {text}", command=cmd,
+                           bg=color, fg=S.FG_PRIMARY,
+                           font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                           relief="flat", cursor="hand2", width=10)
+            btn.pack(side="left", padx=S.PAD_XS)
+            btn.bind("<Enter>", lambda e, b=btn: b.config(bg=S.BG_TERTIARY))
+            btn.bind("<Leave>", lambda e, b=btn, c=color: b.config(bg=c))
 
-        # Worker Treeview with columns
-        tree_frame = tk.Frame(worker_frame)
-        tree_frame.pack(fill="both", expand=True, padx=8, pady=(0, 6))
+        # Row 2: Additional actions
+        btn_row2 = tk.Frame(worker_btn_frame, bg=S.BG_CARD)
+        btn_row2.pack(fill="x")
+        
+        for text, icon, cmd, color in [
+            ("Play All", "▶", self._play_all_workers, S.ACCENT_GREEN),
+            ("Stop All", "⏹", self._stop_all_workers, S.ACCENT_RED),
+            ("Remove", "🗑", self.remove_macro, S.BTN_SECONDARY),
+        ]:
+            btn = tk.Button(btn_row2, text=f"{icon} {text}", command=cmd,
+                           bg=color, fg=S.FG_PRIMARY,
+                           font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                           relief="flat", cursor="hand2", width=10)
+            btn.pack(side="left", padx=S.PAD_XS)
+            btn.bind("<Enter>", lambda e, b=btn: b.config(bg=S.BG_TERTIARY))
+            btn.bind("<Leave>", lambda e, b=btn, c=color: b.config(bg=c))
 
-        # Create Treeview - Added Actions column for per-worker controls
+        # Worker Treeview
+        tree_frame = tk.Frame(worker_frame, bg=S.BG_CARD)
+        tree_frame.pack(fill="both", expand=True, padx=S.PAD_XS, pady=(0, S.PAD_XS))
+
         columns = ("ID", "Name", "Worker", "Status", "Actions")
-        self.worker_tree = ttk.Treeview(tree_frame, columns=columns, height=10, show="headings")
+        self.worker_tree = ttk.Treeview(tree_frame, columns=columns, height=14, show="headings")
 
-        # Define column headings and widths
         self.worker_tree.column("#0", width=0, stretch=tk.NO)
-        self.worker_tree.column("ID", anchor=tk.CENTER, width=35)
-        self.worker_tree.column("Name", anchor=tk.W, width=90)
-        self.worker_tree.column("Worker", anchor=tk.CENTER, width=60)
-        self.worker_tree.column("Status", anchor=tk.CENTER, width=70)
-        self.worker_tree.column("Actions", anchor=tk.CENTER, width=90)
+        self.worker_tree.column("ID", anchor=tk.CENTER, width=30, minwidth=25)
+        self.worker_tree.column("Name", anchor=tk.W, width=100, minwidth=70)
+        self.worker_tree.column("Worker", anchor=tk.CENTER, width=55, minwidth=45)
+        self.worker_tree.column("Status", anchor=tk.CENTER, width=65, minwidth=50)
+        self.worker_tree.column("Actions", anchor=tk.CENTER, width=70, minwidth=50)
 
-        self.worker_tree.heading("#0", text="", anchor=tk.W)
-        self.worker_tree.heading("ID", text="ID", anchor=tk.CENTER)
-        self.worker_tree.heading("Name", text="Name", anchor=tk.W)
-        self.worker_tree.heading("Worker", text="Worker", anchor=tk.CENTER)
-        self.worker_tree.heading("Status", text="Status", anchor=tk.CENTER)
-        self.worker_tree.heading("Actions", text="Actions", anchor=tk.CENTER)
+        for col in columns:
+            self.worker_tree.heading(col, text=col, anchor=tk.CENTER if col != "Name" else tk.W)
 
-        # Add scrollbar
         scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=self.worker_tree.yview)
         self.worker_tree.configure(yscroll=scrollbar.set)
 
         self.worker_tree.pack(side=tk.LEFT, fill="both", expand=True)
         scrollbar.pack(side=tk.RIGHT, fill="y")
 
-        # Enable click events for worker row actions
         self.worker_tree.bind("<Button-1>", self._on_worker_tree_click)
-        self.worker_tree.bind("<Double-1>", lambda e: "break")  # Block double-click selection
-
-        # Store worker IDs for reference
+        self.worker_tree.bind("<Double-1>", lambda e: "break")
         self.worker_tree_items = {}
+        
+        # Apply zebra striping
+        S.apply_zebra_striping(self.worker_tree)
 
-        # Action list frame (right side) - per spec 1.3
-        action_frame = tk.LabelFrame(container, text="Action List")
-        action_frame.pack(side="left", fill="both", expand=True, padx=(4, 0), pady=0)
+        # ===== RIGHT PANEL: Action List (Primary workspace) =====
+        action_frame = S.create_section_frame(container, "Action List", icon="📋")
+        action_frame.pack(side="left", fill="both", expand=True, padx=(S.PAD_XS, 0), pady=0)
 
-        # Action buttons - per spec 1.4
-        action_btn_frame = tk.Frame(action_frame)
-        action_btn_frame.pack(fill="x", padx=8, pady=6)
+        # Action control buttons - 2 rows for better layout
+        action_btn_frame = tk.Frame(action_frame, bg=S.BG_CARD)
+        action_btn_frame.pack(fill="x", padx=S.PAD_XS, pady=S.PAD_XS)
 
-        tk.Button(action_btn_frame, text="➕ Thêm", command=self._open_add_action_dialog).pack(side="left", padx=2)
-        tk.Button(action_btn_frame, text="🗑 Xóa", command=self._remove_action).pack(side="left", padx=2)
-        tk.Button(action_btn_frame, text="⬆", command=self._move_action_up, width=2).pack(side="left", padx=2)
-        tk.Button(action_btn_frame, text="⬇", command=self._move_action_down, width=2).pack(side="left", padx=2)
-        tk.Button(action_btn_frame, text="💾 Save", command=self._save_actions).pack(side="left", padx=2)
-        tk.Button(action_btn_frame, text="📂 Load", command=self._load_actions).pack(side="left", padx=2)
+        # Row 1: Main action buttons
+        action_row1 = tk.Frame(action_btn_frame, bg=S.BG_CARD)
+        action_row1.pack(fill="x", pady=(0, S.PAD_XS))
 
-        # Action Treeview - NEW COLUMNS per spec: #, Action, Value, Label, Comment
-        action_tree_frame = tk.Frame(action_frame)
-        action_tree_frame.pack(fill="both", expand=True, padx=8, pady=(0, 6))
+        action_buttons_row1 = [
+            ("➕ Add", self._open_add_action_dialog, S.ACCENT_GREEN, 7),
+            ("✏️ Edit", self._edit_selected_action, S.ACCENT_BLUE, 7),
+            ("🗑 Del", self._remove_action, S.ACCENT_RED, 6),
+            ("⬆", self._move_action_up, S.BTN_SECONDARY, 2),
+            ("⬇", self._move_action_down, S.BTN_SECONDARY, 2),
+        ]
+        
+        for text, cmd, color, w in action_buttons_row1:
+            btn = tk.Button(action_row1, text=text, command=cmd,
+                           bg=color, fg=S.FG_PRIMARY,
+                           font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                           relief="flat", cursor="hand2", width=w)
+            btn.pack(side="left", padx=S.PAD_XS)
+            btn.bind("<Enter>", lambda e, b=btn: b.config(bg=S.BG_TERTIARY))
+            btn.bind("<Leave>", lambda e, b=btn, c=color: b.config(bg=c))
 
-        # Create Treeview for actions with NEW columns
-        # selectmode="extended" allows Ctrl+A, Shift+Click, Ctrl+Click multi-select
+        # Row 2: File operations
+        action_row2 = tk.Frame(action_btn_frame, bg=S.BG_CARD)
+        action_row2.pack(fill="x")
+
+        action_buttons_row2 = [
+            ("💾 Save", self._save_actions, S.BTN_PRIMARY, 7),
+            ("📂 Load", self._load_actions, S.BTN_SECONDARY, 7),
+            ("📋 Copy", self._copy_selected_actions, S.BTN_SECONDARY, 7),
+            ("📥 Paste", self._paste_actions, S.BTN_SECONDARY, 7),
+        ]
+        
+        for text, cmd, color, w in action_buttons_row2:
+            btn = tk.Button(action_row2, text=text, command=cmd,
+                           bg=color, fg=S.FG_PRIMARY,
+                           font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                           relief="flat", cursor="hand2", width=w)
+            btn.pack(side="left", padx=S.PAD_XS)
+            btn.bind("<Enter>", lambda e, b=btn: b.config(bg=S.BG_TERTIARY))
+            btn.bind("<Leave>", lambda e, b=btn, c=color: b.config(bg=c))
+
+        # Action Treeview with proper columns
+        action_tree_frame = tk.Frame(action_frame, bg=S.BG_CARD)
+        action_tree_frame.pack(fill="both", expand=True, padx=S.PAD_XS, pady=(0, S.PAD_XS))
+
         action_columns = ("#", "Action", "Value", "Label", "Comment")
-        self.action_tree = ttk.Treeview(action_tree_frame, columns=action_columns, height=10, show="headings", selectmode="extended")
+        self.action_tree = ttk.Treeview(action_tree_frame, columns=action_columns, 
+                                        height=16, show="headings", selectmode="extended")
 
-        # Define column headings and widths
         self.action_tree.column("#0", width=0, stretch=tk.NO)
-        self.action_tree.column("#", anchor=tk.CENTER, width=35)
-        self.action_tree.column("Action", anchor=tk.W, width=100)
-        self.action_tree.column("Value", anchor=tk.W, width=150)
-        self.action_tree.column("Label", anchor=tk.W, width=80)
-        self.action_tree.column("Comment", anchor=tk.W, width=120)
+        self.action_tree.column("#", anchor=tk.CENTER, width=30, minwidth=25)
+        self.action_tree.column("Action", anchor=tk.W, width=90, minwidth=70)
+        self.action_tree.column("Value", anchor=tk.W, width=180, minwidth=120)
+        self.action_tree.column("Label", anchor=tk.W, width=70, minwidth=50)
+        self.action_tree.column("Comment", anchor=tk.W, width=120, minwidth=80)
 
-        self.action_tree.heading("#0", text="", anchor=tk.W)
-        self.action_tree.heading("#", text="#", anchor=tk.CENTER)
-        self.action_tree.heading("Action", text="Action", anchor=tk.W)
-        self.action_tree.heading("Value", text="Value", anchor=tk.W)
-        self.action_tree.heading("Label", text="Label", anchor=tk.W)
-        self.action_tree.heading("Comment", text="Comment", anchor=tk.W)
+        for col in action_columns:
+            anchor = tk.CENTER if col == "#" else tk.W
+            self.action_tree.heading(col, text=col, anchor=anchor)
 
-        # Add scrollbar
         action_scrollbar = ttk.Scrollbar(action_tree_frame, orient=tk.VERTICAL, command=self.action_tree.yview)
         self.action_tree.configure(yscroll=action_scrollbar.set)
 
         self.action_tree.pack(side=tk.LEFT, fill="both", expand=True)
         action_scrollbar.pack(side=tk.RIGHT, fill="y")
         
-        # Bind double-click to edit
+        # Alias for backward compatibility with old code referencing command_tree
+        self.command_tree = self.action_tree
+        self.command_tree_items = {}
+        
+        # Bindings
         self.action_tree.bind("<Double-1>", self._on_action_double_click)
-        # Bind click for context menu
         self.action_tree.bind("<Button-3>", self._on_action_right_click)
-        # Bind Ctrl+A to select all
         self.action_tree.bind("<Control-a>", self._select_all_actions)
-        # Bind Delete key to delete selected
         self.action_tree.bind("<Delete>", self._delete_selected_actions)
-        # Bind Backspace as alternative delete
         self.action_tree.bind("<BackSpace>", self._delete_selected_actions)
         
-        # Drag and Drop support
+        # Drag and Drop
         self._drag_data = {"items": [], "start_y": 0}
         self.action_tree.bind("<ButtonPress-1>", self._on_drag_start)
         self.action_tree.bind("<B1-Motion>", self._on_drag_motion)
         self.action_tree.bind("<ButtonRelease-1>", self._on_drag_end)
 
-        # Store action IDs for reference
         self.action_tree_items = {}
         
-        # Setup global hotkeys (if available)
+        # Apply zebra striping to action tree
+        S.apply_zebra_striping(self.action_tree)
+        
+        # Setup global hotkeys
         self._setup_global_hotkeys()
 
     # ================= WORKER ACTIONS =================
@@ -596,6 +1263,86 @@ class MainUI:
         if self.current_script:
             worker.start(self.current_script)
             log(f"[UI] Worker {worker_id}: Restarted")
+    
+    def _play_all_workers(self):
+        """Start/Resume all workers"""
+        if not self.workers:
+            messagebox.showinfo("Info", "No workers available")
+            return
+        for w in self.workers:
+            self._play_worker(w.id)
+        log(f"[UI] Play All: Started {len(self.workers)} workers")
+    
+    def _stop_all_workers(self):
+        """Stop all workers"""
+        if not self.workers:
+            return
+        for w in self.workers:
+            self._stop_worker(w.id)
+        log(f"[UI] Stop All: Stopped {len(self.workers)} workers")
+    
+    def _edit_selected_action(self):
+        """Edit the selected action in action list"""
+        selection = self.action_tree.selection()
+        if not selection:
+            messagebox.showinfo("Edit", "Please select an action to edit")
+            return
+        # Get index from first column
+        values = self.action_tree.item(selection[0], "values")
+        if values:
+            idx = int(values[0]) - 1  # Convert to 0-based index
+            if 0 <= idx < len(self.actions):
+                self._open_add_action_dialog(edit_index=idx)
+    
+    def _copy_selected_actions(self):
+        """Copy selected actions to clipboard"""
+        import json
+        selection = self.action_tree.selection()
+        if not selection:
+            messagebox.showinfo("Copy", "Please select actions to copy")
+            return
+        
+        copied = []
+        for item in selection:
+            values = self.action_tree.item(item, "values")
+            if values:
+                idx = int(values[0]) - 1
+                if 0 <= idx < len(self.actions):
+                    copied.append(self.actions[idx].to_dict())
+        
+        if copied:
+            self._clipboard_actions = copied
+            self.root.clipboard_clear()
+            self.root.clipboard_append(json.dumps(copied))
+            messagebox.showinfo("Copied", f"Copied {len(copied)} action(s)")
+    
+    def _paste_actions(self):
+        """Paste actions from clipboard"""
+        import json
+        
+        # Try internal clipboard first
+        if hasattr(self, '_clipboard_actions') and self._clipboard_actions:
+            for action_dict in self._clipboard_actions:
+                action = Action.from_dict(action_dict)
+                action.id = str(uuid.uuid4())[:8]  # New ID
+                self.actions.append(action)
+            self._refresh_action_tree()
+            messagebox.showinfo("Pasted", f"Pasted {len(self._clipboard_actions)} action(s)")
+            return
+        
+        # Try system clipboard
+        try:
+            data = self.root.clipboard_get()
+            actions_data = json.loads(data)
+            if isinstance(actions_data, list):
+                for action_dict in actions_data:
+                    action = Action.from_dict(action_dict)
+                    action.id = str(uuid.uuid4())[:8]
+                    self.actions.append(action)
+                self._refresh_action_tree()
+                messagebox.showinfo("Pasted", f"Pasted {len(actions_data)} action(s)")
+        except:
+            messagebox.showwarning("Paste", "No valid actions in clipboard")
     
     def _find_worker(self, worker_id: int):
         """Find worker by ID"""
@@ -802,7 +1549,7 @@ class MainUI:
         
         # Update UI
         self._update_ui_state()
-        self._status_var.set("🔴 Recording...")
+        self._update_status("🔴 Recording...", "recording")
         self.btn_record.config(text="⏺ Stop Rec", bg="#B71C1C")
         
         # Show floating recording toolbar
@@ -993,13 +1740,13 @@ class MainUI:
                 self._recorder.resume()
             self._recording_paused = False
             self._toolbar_pause_btn.config(text="⏸ Pause", bg="#FF9800")
-            self._status_var.set("🔴 Recording...")
+            self._update_status("🔴 Recording...", "recording")
             log("[UI] Recording resumed")
         else:
             # Was recording, now paused (already paused in button press handler)
             self._recording_paused = True
             self._toolbar_pause_btn.config(text="▶ Resume", bg="#4CAF50")
-            self._status_var.set("⏸ Recording Paused")
+            self._update_status("⏸ Recording Paused", "paused")
             log("[UI] Recording paused")
     
     def _on_stop_button_press(self, event=None):
@@ -1062,7 +1809,7 @@ class MainUI:
         
         # Update UI
         self._update_ui_state()
-        self._status_var.set("Ready")
+        self._update_status("● Ready", "ready")
         self.btn_record.config(text="⏺ Record", bg="#f44336")
         log("[UI] Recording stopped")
     
@@ -1454,7 +2201,8 @@ class MainUI:
         
         # Update UI
         self._update_ui_state()
-        self._status_var.set(f"▶ Playing on {len(ready_workers)} workers..." if ready_workers else "▶ Playing...")
+        status_text = f"▶ Playing on {len(ready_workers)} workers..." if ready_workers else "▶ Playing..."
+        self._update_status(status_text, "playing")
     
     def _worker_playback_loop(self, worker, actions: List[Action], stop_event: threading.Event):
         """Playback loop for a specific worker - runs in its own thread"""
@@ -1560,6 +2308,119 @@ class MainUI:
         log("[UI] Playback complete")
         self.root.after(0, self._on_playback_complete)
     
+    def _paste_text(self, text: str):
+        """Paste text using clipboard (Ctrl+V)"""
+        import ctypes
+        
+        try:
+            # Use tkinter clipboard (more reliable)
+            self.root.clipboard_clear()
+            self.root.clipboard_append(text)
+            self.root.update()  # Required for clipboard to work
+            
+            # Small delay to ensure clipboard is ready
+            time.sleep(0.05)
+            
+            # Send Ctrl+V
+            VK_CTRL = 0x11
+            VK_V = 0x56
+            ctypes.windll.user32.keybd_event(VK_CTRL, 0, 0, 0)  # Ctrl down
+            time.sleep(0.05)
+            ctypes.windll.user32.keybd_event(VK_V, 0, 0, 0)  # V down
+            time.sleep(0.05)
+            ctypes.windll.user32.keybd_event(VK_V, 0, 2, 0)  # V up
+            time.sleep(0.05)
+            ctypes.windll.user32.keybd_event(VK_CTRL, 0, 2, 0)  # Ctrl up
+            
+            log(f"[UI] Pasted text: {text[:30]}...")
+        except Exception as e:
+            log(f"[UI] Paste error: {e}")
+    
+    def _type_text_humanize(self, text: str, speed_ms: int = 100):
+        """Type text character by character with configurable delays"""
+        import ctypes
+        import random
+        # Calculate delay range based on speed_ms
+        base_delay = speed_ms / 1000.0
+        min_delay = max(0.02, base_delay * 0.5)
+        max_delay = base_delay * 1.5
+        for char in text:
+            if self._playback_stop_event.is_set():
+                break
+            # Nếu là xuống dòng thì Enter
+            if char == '\n':
+                ctypes.windll.user32.keybd_event(0x0D, 0, 0, 0)
+                time.sleep(0.02)
+                ctypes.windll.user32.keybd_event(0x0D, 0, 2, 0)
+                time.sleep(random.uniform(min_delay, max_delay))
+                continue
+            # Nếu là tab thì Tab
+            if char == '\t':
+                ctypes.windll.user32.keybd_event(0x09, 0, 0, 0)
+                time.sleep(0.02)
+                ctypes.windll.user32.keybd_event(0x09, 0, 2, 0)
+                time.sleep(random.uniform(min_delay, max_delay))
+                continue
+            # Paste từng ký tự bằng clipboard và Ctrl+V
+            self.root.clipboard_clear()
+            self.root.clipboard_append(char)
+            self.root.update()
+            time.sleep(0.03)
+            VK_CTRL = 0x11
+            VK_V = 0x56
+            ctypes.windll.user32.keybd_event(VK_CTRL, 0, 0, 0)
+            time.sleep(0.01)
+            ctypes.windll.user32.keybd_event(VK_V, 0, 0, 0)
+            time.sleep(0.01)
+            ctypes.windll.user32.keybd_event(VK_V, 0, 2, 0)
+            time.sleep(0.01)
+            ctypes.windll.user32.keybd_event(VK_CTRL, 0, 2, 0)
+            time.sleep(random.uniform(min_delay, max_delay))
+        log(f"[UI] Typed text (humanize-paste, speed={speed_ms}ms): {text[:30]}...")
+    
+    def _send_unicode_char(self, char: str):
+        """Send a single Unicode character using SendInput"""
+        import ctypes
+        from ctypes import wintypes
+        
+        # INPUT structure for SendInput
+        class KEYBDINPUT(ctypes.Structure):
+            _fields_ = [
+                ("wVk", wintypes.WORD),
+                ("wScan", wintypes.WORD),
+                ("dwFlags", wintypes.DWORD),
+                ("time", wintypes.DWORD),
+                ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong))
+            ]
+        
+        class INPUT(ctypes.Structure):
+            _fields_ = [
+                ("type", wintypes.DWORD),
+                ("ki", KEYBDINPUT)
+            ]
+        
+        KEYEVENTF_UNICODE = 0x0004
+        KEYEVENTF_KEYUP = 0x0002
+        INPUT_KEYBOARD = 1
+        
+        # Key down
+        inp_down = INPUT()
+        inp_down.type = INPUT_KEYBOARD
+        inp_down.ki.wVk = 0
+        inp_down.ki.wScan = ord(char)
+        inp_down.ki.dwFlags = KEYEVENTF_UNICODE
+        
+        # Key up
+        inp_up = INPUT()
+        inp_up.type = INPUT_KEYBOARD
+        inp_up.ki.wVk = 0
+        inp_up.ki.wScan = ord(char)
+        inp_up.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP
+        
+        ctypes.windll.user32.SendInput(1, ctypes.byref(inp_down), ctypes.sizeof(INPUT))
+        time.sleep(0.02)
+        ctypes.windll.user32.SendInput(1, ctypes.byref(inp_up), ctypes.sizeof(INPUT))
+
     def _send_key(self, key: str, repeat: int = 1):
         """Send keyboard key using Win32 API - handles modifiers properly"""
         import ctypes
@@ -1595,11 +2456,28 @@ class MainUI:
         if key_clean in VK_MAP:
             vk = VK_MAP[key_clean]
         elif len(key_clean) == 1:
-            # Single character - get VK from ord
-            vk = ctypes.windll.user32.VkKeyScanW(ord(key_clean)) & 0xFF
+            # Single character - get VK using VkKeyScanW
+            # VkKeyScanW expects wchar (int), but need to handle return value properly
+            from ctypes import wintypes
+            ctypes.windll.user32.VkKeyScanW.argtypes = [wintypes.WCHAR]
+            ctypes.windll.user32.VkKeyScanW.restype = ctypes.c_short
+            result = ctypes.windll.user32.VkKeyScanW(key_clean)
+            if result == -1:
+                log(f"[UI] Cannot map key: {key_clean}")
+                return
+            vk = result & 0xFF
+            shift_needed = (result >> 8) & 1
+            # If shift needed, press shift
+            if shift_needed:
+                ctypes.windll.user32.keybd_event(0x10, 0, 0, 0)  # Shift down
+                time.sleep(0.01)
         else:
-            log(f"[UI] Unknown key: {key}")
-            return
+            # Try alphanumeric mapping
+            if key_clean.isalnum() and len(key_clean) == 1:
+                vk = ord(key_clean.upper())
+            else:
+                log(f"[UI] Unknown key: {key}")
+                return
         
         is_modifier = key_clean in MODIFIER_KEYS
         
@@ -1612,6 +2490,9 @@ class MainUI:
             if not is_modifier:
                 ctypes.windll.user32.keybd_event(vk, 0, 2, 0)  # Key up
                 time.sleep(0.02)
+                # Release shift if it was pressed
+                if len(key_clean) == 1:
+                    ctypes.windll.user32.keybd_event(0x10, 0, 2, 0)  # Shift up
                 # Release any held modifiers after the key
                 self._release_all_modifiers()
     
@@ -1836,18 +2717,129 @@ class MainUI:
         elif action.action == "FIND_IMAGE":
             if IMAGE_ACTIONS_AVAILABLE:
                 from core.image_actions import FindImage
-                finder = FindImage(
-                    template_path=v.get("template_path", ""),
-                    threshold=v.get("threshold", 0.8),
-                    timeout_ms=v.get("timeout_ms", 5000),
-                    target_hwnd=target_hwnd or 0
-                )
-                match = finder.find(self._playback_stop_event)
-                # Store result for subsequent actions
-                if hasattr(self, '_action_vars'):
-                    self._action_vars["last_image_x"] = match.center_x if match.found else 0
-                    self._action_vars["last_image_y"] = match.center_y if match.found else 0
-                    self._action_vars["last_image_found"] = match.found
+                import time as time_module
+                
+                template_path = v.get("template_path", "")
+                threshold = v.get("threshold", 0.8)
+                retry_seconds = v.get("retry_seconds", 30)
+                
+                # Initialize vars storage
+                if not hasattr(self, '_action_vars'):
+                    self._action_vars = {}
+                
+                # Search loop with retry
+                found = False
+                match = None
+                start_time = time_module.time()
+                
+                while not found and (time_module.time() - start_time) < retry_seconds:
+                    if self._playback_stop_event and self._playback_stop_event.is_set():
+                        break
+                    
+                    finder = FindImage(
+                        template_path=template_path,
+                        threshold=threshold,
+                        timeout_ms=1000,  # Single scan timeout
+                        target_hwnd=target_hwnd or 0
+                    )
+                    match = finder.find(self._playback_stop_event)
+                    found = match.found if match else False
+                    
+                    if not found:
+                        time_module.sleep(0.5)  # Wait before retry
+                
+                # Store result
+                self._action_vars["last_image_x"] = match.center_x if match and match.found else 0
+                self._action_vars["last_image_y"] = match.center_y if match and match.found else 0
+                self._action_vars["last_image_found"] = found
+                
+                # Process result
+                if found and match:
+                    log(f"[FIND_IMAGE] Found at ({match.center_x}, {match.center_y}) confidence={match.confidence:.2f}")
+                    
+                    # Calculate click position based on setting
+                    click_pos = v.get("click_position", "Centered")
+                    click_x, click_y = match.center_x, match.center_y
+                    
+                    if click_pos == "Top left":
+                        click_x, click_y = match.x, match.y
+                    elif click_pos == "Top right":
+                        click_x, click_y = match.x + match.width, match.y
+                    elif click_pos == "Bottom left":
+                        click_x, click_y = match.x, match.y + match.height
+                    elif click_pos == "Bottom right":
+                        click_x, click_y = match.x + match.width, match.y + match.height
+                    elif click_pos == "Random":
+                        import random
+                        click_x = match.x + random.randint(0, match.width)
+                        click_y = match.y + random.randint(0, match.height)
+                    
+                    # Save coordinates if enabled
+                    if v.get("save_xy_enabled", False):
+                        x_var = v.get("save_x_var", "$foundX")
+                        y_var = v.get("save_y_var", "$foundY")
+                        self._action_vars[x_var.strip("$")] = click_x
+                        self._action_vars[y_var.strip("$")] = click_y
+                    
+                    # Perform mouse action if enabled
+                    if v.get("mouse_action_enabled", True):
+                        mouse_type = v.get("mouse_type", "Left click")
+                        
+                        # Convert to screen coordinates
+                        screen_x, screen_y = click_x, click_y
+                        if target_hwnd:
+                            pt = wintypes.POINT(click_x, click_y)
+                            ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt))
+                            screen_x, screen_y = pt.x, pt.y
+                        
+                        # Move cursor
+                        ctypes.windll.user32.SetCursorPos(screen_x, screen_y)
+                        time_module.sleep(0.05)
+                        
+                        if mouse_type != "Positioning":
+                            if mouse_type == "Left click":
+                                ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)  # LEFTDOWN
+                                time_module.sleep(0.02)
+                                ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)  # LEFTUP
+                            elif mouse_type == "Right click":
+                                ctypes.windll.user32.mouse_event(0x0008, 0, 0, 0, 0)  # RIGHTDOWN
+                                time_module.sleep(0.02)
+                                ctypes.windll.user32.mouse_event(0x0010, 0, 0, 0, 0)  # RIGHTUP
+                            elif mouse_type == "Double click":
+                                for _ in range(2):
+                                    ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)
+                                    time_module.sleep(0.02)
+                                    ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)
+                                    time_module.sleep(0.05)
+                            elif mouse_type == "Middle click":
+                                ctypes.windll.user32.mouse_event(0x0020, 0, 0, 0, 0)  # MIDDLEDOWN
+                                time_module.sleep(0.02)
+                                ctypes.windll.user32.mouse_event(0x0040, 0, 0, 0, 0)  # MIDDLEUP
+                        
+                        log(f"[FIND_IMAGE] {mouse_type} at ({screen_x}, {screen_y})")
+                    
+                    # Handle goto if found
+                    goto_target = v.get("goto_found_label", "").strip()
+                    if not goto_target:
+                        goto_target = v.get("goto_if_found", "Next")
+                    
+                    if goto_target and goto_target.startswith("→ "):
+                        goto_target = goto_target[2:]  # Remove prefix
+                    
+                    self._handle_goto(goto_target)
+                    
+                else:
+                    log(f"[FIND_IMAGE] Not found after {retry_seconds}s")
+                    
+                    # Handle goto if not found
+                    goto_target = v.get("goto_notfound_label", "").strip()
+                    if not goto_target:
+                        goto_target = v.get("goto_if_not_found", "Next")
+                    
+                    if goto_target and goto_target.startswith("→ "):
+                        goto_target = goto_target[2:]
+                    
+                    self._handle_goto(goto_target)
         
         elif action.action == "CAPTURE_IMAGE":
             if IMAGE_ACTIONS_AVAILABLE:
@@ -1913,6 +2905,58 @@ class MainUI:
             
             # Release mouse button
             ctypes.windll.user32.mouse_event(up_flag, 0, 0, 0, 0)
+        
+        elif action.action == "TEXT":
+            text = v.get("text", "")
+            mode = v.get("mode", "paste")
+            speed_ms = v.get("speed_ms", 100)
+            
+            if not text:
+                return
+            
+            if mode == "paste":
+                # Use clipboard to paste text
+                self._paste_text(text)
+            else:  # humanize
+                # Type each character with configurable delays
+                self._type_text_humanize(text, speed_ms)
+    
+    def _handle_goto(self, target: str):
+        """Handle goto logic for flow control (FIND_IMAGE, conditions, etc.)"""
+        if not target:
+            return
+        
+        target = target.strip()
+        
+        if target == "Next":
+            # Continue to next action (default behavior)
+            pass
+        elif target == "Previous":
+            # Go back one action
+            if self._current_action_index > 0:
+                self._current_action_index -= 2  # -2 because loop will +1
+        elif target == "Start":
+            # Go to beginning
+            self._current_action_index = -1  # Will become 0 after loop increment
+        elif target == "End":
+            # Go to end (skip remaining)
+            self._current_action_index = len(self.actions)
+        elif target == "Exit macro":
+            # Stop playback
+            self._stop_playback()
+        else:
+            # Find label by name
+            label_name = target.replace("→ ", "").strip()
+            for idx, act in enumerate(self.actions):
+                if act.action == "LABEL":
+                    act_label = act.value.get("name", "") if isinstance(act.value, dict) else ""
+                    if not act_label and act.label:
+                        act_label = act.label
+                    if act_label == label_name:
+                        self._current_action_index = idx - 1  # -1 because loop will +1
+                        log(f"[GOTO] Jumping to label '{label_name}' at index {idx}")
+                        return
+            log(f"[GOTO] Warning: Label '{label_name}' not found")
     
     def _on_playback_complete(self):
         """Called when playback completes"""
@@ -1923,7 +2967,7 @@ class MainUI:
         self._hide_playback_toolbar()
         
         self._update_ui_state()
-        self._status_var.set("Ready")
+        self._update_status("● Ready", "ready")
         log("[UI] Playback complete")
     
     def _toggle_pause(self):
@@ -1934,14 +2978,14 @@ class MainUI:
         if self._is_paused:
             self._playback_pause_event.clear()
             self._is_paused = False
-            self._status_var.set("▶ Playing...")
+            self._update_status("▶ Playing...", "playing")
             self.btn_pause.config(text="⏸ Pause")
             self._update_playback_toolbar_pause_button()
             log("[UI] Playback resumed")
         else:
             self._playback_pause_event.set()
             self._is_paused = True
-            self._status_var.set("⏸ Paused")
+            self._update_status("⏸ Paused", "paused")
             self.btn_pause.config(text="▶ Resume")
             self._update_playback_toolbar_pause_button()
             log("[UI] Playback paused")
@@ -1967,7 +3011,7 @@ class MainUI:
         self._hide_playback_toolbar()
         
         self._update_ui_state()
-        self._status_var.set("Ready")
+        self._update_status("● Ready", "ready")
         self.btn_pause.config(text="⏸ Pause")
         log("[UI] Playback stopped")
     
@@ -1994,7 +3038,7 @@ class MainUI:
     # ================= ACTION LIST OPERATIONS (per spec 1.3, 1.4) =================
     
     def _refresh_action_list(self):
-        """Refresh action tree display"""
+        """Refresh action tree display with zebra striping"""
         for item in self.action_tree.get_children():
             self.action_tree.delete(item)
         
@@ -2003,9 +3047,17 @@ class MainUI:
             action_text = f"{'✓' if action.enabled else '✗'} {action.action}"
             value_text = action.get_value_summary()
             
+            # Zebra striping tag
+            row_tag = 'evenrow' if (idx - 1) % 2 == 0 else 'oddrow'
+            
+            # Add warning tag for disabled actions
+            tags = [row_tag]
+            if not action.enabled:
+                tags.append('muted')
+            
             self.action_tree.insert("", tk.END, values=(
                 idx, action_text, value_text, action.label, action.comment
-            ))
+            ), tags=tags)
     
     def _on_action_double_click(self, event):
         """Handle double-click on action row to edit"""
@@ -2327,34 +3379,132 @@ class MainUI:
         log(f"[UI] Ungrouped {len(grouped_actions)} actions")
     
     def _save_actions(self):
-        """Save actions to JSON file (per spec 4.2)"""
+        """Save actions to macro folder (portable - includes all template images)"""
         if not self.actions:
             messagebox.showwarning("Warning", "No actions to save")
             return
         
-        filepath = filedialog.asksaveasfilename(
-            title="Save Actions",
-            defaultextension=".json",
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
-        )
-        if not filepath:
+        # Ask for macro name
+        macro_name = simpledialog.askstring("Save Macro", "Nhập tên macro:", 
+                                            initialvalue="my_macro")
+        if not macro_name:
             return
         
+        # Sanitize name for folder
+        import re
+        safe_name = re.sub(r'[<>:"/\\|?*]', '_', macro_name)
+        
+        # Create macro folder
+        macro_dir = os.path.join("data", "macros", safe_name)
+        templates_dir = os.path.join(macro_dir, "templates")
+        os.makedirs(templates_dir, exist_ok=True)
+        
         try:
+            # Copy all template images to macro folder and update paths
+            actions_data = []
+            for action in self.actions:
+                action_dict = action.to_dict()
+                
+                # Handle FIND_IMAGE - copy template to macro folder
+                if action.action == "FIND_IMAGE" and action.value.get("template_path"):
+                    old_path = action.value["template_path"]
+                    if os.path.exists(old_path):
+                        # Copy to templates folder
+                        import shutil
+                        filename = os.path.basename(old_path)
+                        new_path = os.path.join(templates_dir, filename)
+                        if old_path != new_path:  # Avoid copying to same location
+                            shutil.copy2(old_path, new_path)
+                        # Update path to relative
+                        action_dict["value"]["template_path"] = f"templates/{filename}"
+                
+                actions_data.append(action_dict)
+            
+            # Save macro config
             data = {
-                "version": "1.0",
+                "version": "2.0",
+                "name": macro_name,
                 "target_window_match": None,
-                "actions": [a.to_dict() for a in self.actions]
+                "actions": actions_data
             }
-            with open(filepath, "w", encoding="utf-8") as f:
+            
+            config_path = os.path.join(macro_dir, "macro.json")
+            with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
-            messagebox.showinfo("Success", f"Saved {len(self.actions)} actions")
-            log(f"[UI] Saved actions to: {filepath}")
+            
+            # Count templates
+            template_count = len([f for f in os.listdir(templates_dir) if f.endswith(('.png', '.jpg', '.bmp'))]) if os.path.exists(templates_dir) else 0
+            
+            messagebox.showinfo("Success", 
+                f"✅ Đã lưu macro '{macro_name}'\n"
+                f"📁 Folder: {macro_dir}\n"
+                f"📝 Actions: {len(self.actions)}\n"
+                f"🖼️ Templates: {template_count}\n\n"
+                f"💡 Copy cả folder '{safe_name}' để mang đi máy khác!")
+            log(f"[UI] Saved macro to folder: {macro_dir}")
+            
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save: {e}")
     
     def _load_actions(self):
-        """Load actions from JSON file (per spec 4.2)"""
+        """Load actions from macro folder or JSON file"""
+        # Ask user to choose folder or file
+        choice = messagebox.askyesnocancel(
+            "Load Macro",
+            "Chọn cách load:\n\n"
+            "YES = Load từ Macro Folder (portable)\n"
+            "NO = Load từ file JSON đơn lẻ\n"
+            "CANCEL = Hủy"
+        )
+        
+        if choice is None:  # Cancel
+            return
+        
+        if choice:  # Yes - Load from folder
+            self._load_macro_folder()
+        else:  # No - Load from single JSON
+            self._load_single_json()
+    
+    def _load_macro_folder(self):
+        """Load macro from folder (portable format)"""
+        folder = filedialog.askdirectory(
+            title="Chọn Macro Folder",
+            initialdir="data/macros"
+        )
+        if not folder:
+            return
+        
+        config_path = os.path.join(folder, "macro.json")
+        if not os.path.exists(config_path):
+            messagebox.showerror("Error", f"Không tìm thấy macro.json trong folder:\n{folder}")
+            return
+        
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            
+            # Update template paths to absolute
+            actions_data = data.get("actions", [])
+            for action_data in actions_data:
+                if action_data.get("action") == "FIND_IMAGE":
+                    template_path = action_data.get("value", {}).get("template_path", "")
+                    if template_path and not os.path.isabs(template_path):
+                        # Convert relative to absolute
+                        abs_path = os.path.join(folder, template_path)
+                        action_data["value"]["template_path"] = abs_path
+            
+            self.actions = [Action.from_dict(a) for a in actions_data]
+            self._refresh_action_list()
+            
+            macro_name = data.get("name", os.path.basename(folder))
+            messagebox.showinfo("Success", f"✅ Loaded macro '{macro_name}'\n📝 Actions: {len(self.actions)}")
+            log(f"[UI] Loaded macro from folder: {folder}")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load: {e}")
+    
+    def _load_single_json(self):
+        """Load actions from single JSON file (legacy format)"""
         filepath = filedialog.askopenfilename(
             title="Load Actions",
             filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
@@ -2376,50 +3526,209 @@ class MainUI:
     # ================= ADD ACTION DIALOG (per spec 5 - V2 expanded) =================
     
     def _open_add_action_dialog(self, edit_index: int = None):
-        """Open Add Action dialog (per spec 5.1 - V2 expanded)"""
+        """Open Add Action dialog with modern JetBrains-inspired UI"""
         dialog = tk.Toplevel(self.root)
         dialog.title("Add Action" if edit_index is None else "Edit Action")
-        dialog.geometry("500x600")
+        dialog.geometry("920x850")  # Full size to show all content
+        dialog.minsize(900, 800)
         dialog.transient(self.root)
         dialog.grab_set()
+        
+        # Apply dark theme colors
+        S = ModernStyle
+        dialog.configure(bg=S.BG_PRIMARY)
         
         # Load existing action if editing
         edit_action = None
         if edit_index is not None and 0 <= edit_index < len(self.actions):
             edit_action = self.actions[edit_index]
         
-        # ===== TYPE DROPDOWN with categories =====
-        type_frame = tk.Frame(dialog)
-        type_frame.pack(fill="x", padx=15, pady=10)
+        # ===== HEADER (compact) =====
+        header_frame = tk.Frame(dialog, bg=S.BG_SECONDARY, height=40)
+        header_frame.pack(fill="x", padx=0, pady=0)
+        header_frame.pack_propagate(False)
         
-        tk.Label(type_frame, text="Type:", font=("Arial", 9, "bold")).pack(side="left", padx=(0, 5))
-        type_var = tk.StringVar(value=edit_action.action if edit_action else "CLICK")
+        title_text = "✏️ Edit Action" if edit_action else "➕ Add New Action"
+        tk.Label(header_frame, text=title_text, 
+                bg=S.BG_SECONDARY, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_LG, "bold")).pack(side="left", padx=S.PAD_MD, pady=S.PAD_SM)
         
-        # V2 expanded type options with categories
-        type_options = [
-            # Basic
-            "CLICK", "WAIT", "KEY_PRESS", "COMBOKEY", "WHEEL", "DRAG", "TEXT",
-            # Wait Actions (V2)
-            "---Wait Actions---",
-            "WAIT_TIME", "WAIT_PIXEL_COLOR", "WAIT_SCREEN_CHANGE", "WAIT_COMBOKEY", "WAIT_FILE",
-            # Image Actions (V2)
-            "---Image Actions---",
-            "FIND_IMAGE", "CAPTURE_IMAGE",
-            # Flow Control (V2)
-            "---Flow Control---",
-            "LABEL", "GOTO", "REPEAT", "EMBED_MACRO", "GROUP",
-            # Misc
-            "---Misc---",
-            "COMMENT", "SET_VARIABLE"
-        ]
+        # ===== MAIN CONTENT AREA =====
+        content_frame = tk.Frame(dialog, bg=S.BG_PRIMARY)
+        content_frame.pack(fill="both", expand=True, padx=S.PAD_MD, pady=S.PAD_SM)
         
-        type_dropdown = ttk.Combobox(type_frame, textvariable=type_var, values=type_options, 
-                                     state="readonly", font=("Arial", 9), width=20)
-        type_dropdown.pack(side="left")
+        # ===== CATEGORY BUTTONS (compact) =====
+        cat_frame = tk.Frame(content_frame, bg=S.BG_CARD, relief="flat")
+        cat_frame.pack(fill="x", pady=(0, S.PAD_SM))
         
-        # ===== CONFIGURATION PANEL =====
-        config_frame = tk.LabelFrame(dialog, text="Configuration", font=("Arial", 10, "bold"))
-        config_frame.pack(fill="both", expand=True, padx=15, pady=10)
+        cat_header = tk.Frame(cat_frame, bg=S.BG_CARD)
+        cat_header.pack(fill="x", padx=S.PAD_SM, pady=S.PAD_XS)
+        
+        tk.Label(cat_header, text="📋 Select Action Type", 
+                bg=S.BG_CARD, fg=S.FG_ACCENT,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold")).pack(side="left")
+        
+        type_var = tk.StringVar(value=edit_action.action if edit_action else "")
+        
+        # Category definitions with their sub-options (uniform icon+text)
+        categories = {
+            "Click": ["CLICK", "DRAG", "WHEEL"],
+            "Input": ["KEY_PRESS", "COMBOKEY", "TEXT"],
+            "Image": ["FIND_IMAGE", "CAPTURE_IMAGE"],
+            "Wait": ["WAIT", "WAIT_TIME", "WAIT_PIXEL_COLOR", "WAIT_SCREEN_CHANGE", "WAIT_COMBOKEY", "WAIT_FILE"],
+            "Flow": ["LABEL", "GOTO", "REPEAT", "EMBED_MACRO", "GROUP", "SET_VARIABLE", "COMMENT"]
+        }
+        
+        # Category button display (icon + short text) and colors
+        cat_display = {
+            "Click": ("🖱", "Click"),
+            "Input": ("⌨", "Input"),
+            "Image": ("🖼", "Image"),
+            "Wait": ("⏳", "Wait"),
+            "Flow": ("🔄", "Flow")
+        }
+        cat_colors = {
+            "Click": S.ACCENT_GREEN,
+            "Input": S.ACCENT_BLUE, 
+            "Image": S.ACCENT_ORANGE,
+            "Wait": S.ACCENT_PURPLE,
+            "Flow": S.ACCENT_CYAN
+        }
+        
+        selected_type_label = tk.Label(cat_frame, text="No action selected", 
+                                       bg=S.BG_CARD, fg=S.FG_MUTED,
+                                       font=(S.FONT_FAMILY, S.FONT_SIZE_MD))
+        
+        def show_category_popup(category):
+            """Show popup with sub-options for category"""
+            popup = tk.Toplevel(dialog)
+            icon, text = cat_display[category]
+            popup.title(f"Select {text} Action")
+            popup.geometry("280x350")
+            popup.transient(dialog)
+            popup.grab_set()
+            popup.configure(bg=S.BG_PRIMARY)
+            
+            # Center on dialog
+            popup.geometry(f"+{dialog.winfo_x() + 250}+{dialog.winfo_y() + 100}")
+            
+            # Header
+            header = tk.Frame(popup, bg=S.BG_SECONDARY, height=40)
+            header.pack(fill="x")
+            header.pack_propagate(False)
+            tk.Label(header, text=f"{icon} {text} Actions", 
+                    bg=S.BG_SECONDARY, fg=S.FG_PRIMARY,
+                    font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold")).pack(side="left", padx=S.PAD_MD, pady=S.PAD_SM)
+            
+            list_frame = tk.Frame(popup, bg=S.BG_PRIMARY)
+            list_frame.pack(fill="both", expand=True, padx=S.PAD_MD, pady=S.PAD_MD)
+            
+            # Get the key for lookup
+            cat_key = category
+            for action_type in categories[cat_key]:
+                def select_action(t=action_type):
+                    type_var.set(t)
+                    selected_type_label.config(text=f"✓ {t}", fg=S.ACCENT_GREEN)
+                    popup.destroy()
+                    render_config_panel()
+                
+                # Format display name
+                display_name = action_type.replace("_", " ").title()
+                btn = tk.Button(list_frame, text=f"  {display_name}", 
+                               command=select_action,
+                               bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                               activebackground=S.BG_TERTIARY, activeforeground=S.FG_PRIMARY,
+                               font=(S.FONT_FAMILY, S.FONT_SIZE_SM), 
+                               anchor="w", relief="flat", cursor="hand2", bd=0,
+                               padx=S.PAD_MD, pady=S.PAD_XS, highlightthickness=0)
+                btn.pack(fill="x", pady=1)
+                
+                # Hover effect
+                def on_enter(e, b=btn):
+                    b.config(bg=S.BG_TERTIARY)
+                def on_leave(e, b=btn):
+                    b.config(bg=S.BG_CARD)
+                btn.bind("<Enter>", on_enter)
+                btn.bind("<Leave>", on_leave)
+            
+            # Cancel button
+            cancel_btn = S.create_modern_button(popup, "Cancel", popup.destroy, "secondary", width=12)
+            cancel_btn.pack(pady=S.PAD_MD)
+        
+        # Create category buttons in a row - Win11 style
+        btn_row = tk.Frame(cat_frame, bg=S.BG_CARD)
+        btn_row.pack(fill="x", padx=S.PAD_SM, pady=(0, S.PAD_XS))
+        
+        def adjust_color(hex_color, factor):
+            r = int(hex_color[1:3], 16)
+            g = int(hex_color[3:5], 16)
+            b = int(hex_color[5:7], 16)
+            if factor > 0:
+                r = min(255, int(r + (255 - r) * factor))
+                g = min(255, int(g + (255 - g) * factor))
+                b = min(255, int(b + (255 - b) * factor))
+            else:
+                r = max(0, int(r * (1 + factor)))
+                g = max(0, int(g * (1 + factor)))
+                b = max(0, int(b * (1 + factor)))
+            return f"#{r:02x}{g:02x}{b:02x}"
+        
+        for cat_name in categories.keys():
+            bg_color = cat_colors[cat_name]
+            hover_color = adjust_color(bg_color, 0.2)
+            icon, text = cat_display[cat_name]
+            
+            btn = tk.Button(btn_row, text=f"{icon}  {text}", 
+                          command=lambda c=cat_name: show_category_popup(c),
+                          bg=bg_color, fg=S.FG_PRIMARY,
+                          activebackground=hover_color, activeforeground=S.FG_PRIMARY,
+                          font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold"), 
+                          relief="flat", cursor="hand2", bd=0,
+                          width=8, height=1,
+                          highlightthickness=0)
+            btn.pack(side="left", padx=S.PAD_XS, pady=S.PAD_SM)
+            
+            # Smooth hover
+            def on_enter(e, b=btn, hc=hover_color):
+                b.config(bg=hc)
+            def on_leave(e, b=btn, bc=bg_color):
+                b.config(bg=bc)
+            btn.bind("<Enter>", on_enter)
+            btn.bind("<Leave>", on_leave)
+        
+        selected_type_label.pack(side="left", padx=S.PAD_LG)
+        
+        # Set initial type if editing
+        if edit_action:
+            type_var.set(edit_action.action)
+            selected_type_label.config(text=f"✓ {edit_action.action}", fg=S.ACCENT_GREEN)
+        
+        # ===== CONFIGURATION PANEL (compact) =====
+        config_outer = tk.Frame(content_frame, bg=S.BG_CARD)
+        config_outer.pack(fill="both", expand=True, pady=(0, S.PAD_SM))
+        
+        config_header = tk.Frame(config_outer, bg=S.BG_CARD)
+        config_header.pack(fill="x", padx=S.PAD_SM, pady=S.PAD_XS)
+        tk.Label(config_header, text="⚙️ Configuration", 
+                bg=S.BG_CARD, fg=S.FG_ACCENT,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold")).pack(side="left")
+        
+        # Scrollable config frame
+        config_canvas = tk.Canvas(config_outer, bg=S.BG_CARD, highlightthickness=0)
+        config_scrollbar = ttk.Scrollbar(config_outer, orient="vertical", command=config_canvas.yview)
+        config_frame = tk.Frame(config_canvas, bg=S.BG_CARD)
+        
+        config_frame.bind("<Configure>", lambda e: config_canvas.configure(scrollregion=config_canvas.bbox("all")))
+        config_canvas.create_window((0, 0), window=config_frame, anchor="nw")
+        config_canvas.configure(yscrollcommand=config_scrollbar.set)
+        
+        config_canvas.pack(side="left", fill="both", expand=True, padx=S.PAD_SM, pady=(0, S.PAD_XS))
+        config_scrollbar.pack(side="right", fill="y")
+        
+        # Enable mousewheel scrolling
+        def on_mousewheel(event):
+            config_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        config_canvas.bind_all("<MouseWheel>", on_mousewheel)
         
         config_widgets = {}
         
@@ -2431,10 +3740,12 @@ class MainUI:
             
             action_type = type_var.get()
             
-            # Skip separator items
-            if action_type.startswith("---"):
-                tk.Label(config_frame, text="Please select an action type", 
-                        fg="gray").pack(pady=20)
+            if not action_type:
+                placeholder = tk.Frame(config_frame, bg=S.BG_CARD, height=200)
+                placeholder.pack(fill="both", expand=True, pady=S.PAD_XXL)
+                tk.Label(placeholder, text="👆 Select an action type above", 
+                        bg=S.BG_CARD, fg=S.FG_MUTED,
+                        font=(S.FONT_FAMILY, S.FONT_SIZE_LG)).pack(expand=True)
                 return
             
             value = edit_action.value if edit_action else {}
@@ -2487,39 +3798,54 @@ class MainUI:
             elif action_type == "SET_VARIABLE":
                 self._render_set_variable_config(config_frame, config_widgets, value)
         
-        type_dropdown.bind("<<ComboboxSelected>>", lambda e: render_config_panel())
+        # Render initial config panel
         render_config_panel()
         
-        # ===== ENABLED CHECKBOX =====
-        enabled_frame = tk.Frame(dialog)
-        enabled_frame.pack(fill="x", padx=15, pady=5)
+        # ===== BOTTOM OPTIONS (Label, Comment, Enabled) =====
+        options_frame = tk.Frame(content_frame, bg=S.BG_CARD)
+        options_frame.pack(fill="x", pady=(0, S.PAD_LG))
         
+        options_inner = tk.Frame(options_frame, bg=S.BG_CARD)
+        options_inner.pack(fill="x", padx=S.PAD_LG, pady=S.PAD_MD)
+        
+        # Enabled checkbox
         enabled_var = tk.BooleanVar(value=edit_action.enabled if edit_action else True)
-        tk.Checkbutton(enabled_frame, text="Enabled", variable=enabled_var, 
-                      font=("Arial", 9, "bold")).pack(anchor="w")
+        enabled_cb = tk.Checkbutton(options_inner, text="✓ Enabled", variable=enabled_var,
+                                    bg=S.BG_CARD, fg=S.FG_PRIMARY, selectcolor=S.BG_INPUT,
+                                    activebackground=S.BG_CARD, activeforeground=S.FG_PRIMARY,
+                                    font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"))
+        enabled_cb.pack(side="left", padx=(0, S.PAD_XL))
         
-        # ===== LABEL =====
-        label_frame = tk.Frame(dialog)
-        label_frame.pack(fill="x", padx=15, pady=5)
-        
-        tk.Label(label_frame, text="Label:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        # Label
+        tk.Label(options_inner, text="Label:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(side="left", padx=(0, S.PAD_SM))
         label_var = tk.StringVar(value=edit_action.label if edit_action else "")
-        tk.Entry(label_frame, textvariable=label_var, width=25).pack(side="left")
+        label_entry = S.create_entry(options_inner, textvariable=label_var, width=15)
+        label_entry.pack(side="left", padx=(0, S.PAD_XL))
         
-        # ===== COMMENT =====
-        comment_frame = tk.Frame(dialog)
-        comment_frame.pack(fill="x", padx=15, pady=5)
-        
-        tk.Label(comment_frame, text="Comment:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        # Comment
+        tk.Label(options_inner, text="Comment:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(side="left", padx=(0, S.PAD_SM))
         comment_var = tk.StringVar(value=edit_action.comment if edit_action else "")
-        tk.Entry(comment_frame, textvariable=comment_var, width=35).pack(side="left")
+        comment_entry = S.create_entry(options_inner, textvariable=comment_var, width=30)
+        comment_entry.pack(side="left")
         
-        # ===== BUTTONS =====
-        btn_frame = tk.Frame(dialog)
-        btn_frame.pack(fill="x", padx=15, pady=10)
+        # ===== FOOTER BUTTONS (compact) =====
+        footer_frame = tk.Frame(dialog, bg=S.BG_SECONDARY, height=45)
+        footer_frame.pack(fill="x", side="bottom")
+        footer_frame.pack_propagate(False)
+        
+        btn_container = tk.Frame(footer_frame, bg=S.BG_SECONDARY)
+        btn_container.pack(expand=True)
         
         def save_action():
             action_type = type_var.get()
+            
+            # Validate type selected
+            if not action_type:
+                messagebox.showwarning("Warning", "Vui lòng chọn loại Action trước!")
+                return
+            
             value = self._get_action_value_from_widgets(action_type, config_widgets)
             
             new_action = Action(
@@ -2537,20 +3863,30 @@ class MainUI:
                 self.actions.append(new_action)
             
             self._refresh_action_list()
+            # Unbind mousewheel before closing
+            config_canvas.unbind_all("<MouseWheel>")
             dialog.destroy()
             log(f"[UI] {'Updated' if edit_index is not None else 'Added'} action: {action_type}")
         
-        tk.Button(btn_frame, text="✓ Save", command=save_action, bg="#4CAF50", fg="white", 
-                 font=("Arial", 9, "bold"), width=12).pack(side="left", padx=5)
-        tk.Button(btn_frame, text="✗ Cancel", command=dialog.destroy, bg="#f44336", fg="white", 
-                 font=("Arial", 9, "bold"), width=12).pack(side="left", padx=5)
+        save_btn = S.create_modern_button(btn_container, "💾 Save", save_action, "success", width=12)
+        save_btn.pack(side="left", padx=S.PAD_SM, pady=S.PAD_SM)
+        
+        def cancel_dialog():
+            config_canvas.unbind_all("<MouseWheel>")
+            dialog.destroy()
+        
+        cancel_btn = S.create_modern_button(btn_container, "✖ Cancel", cancel_dialog, "danger", width=12)
+        cancel_btn.pack(side="left", padx=S.PAD_SM, pady=S.PAD_SM)
     
     def _render_click_action_config(self, parent, widgets, value, dialog=None):
         """Render Click action config (per spec 5.2) - V2 with improved capture"""
+        S = ModernStyle
+        
         # Button type
-        btn_frame = tk.Frame(parent)
-        btn_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(btn_frame, text="Button:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        btn_frame = tk.Frame(parent, bg=S.BG_CARD)
+        btn_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        tk.Label(btn_frame, text="Button:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(0, S.PAD_SM))
         btn_var = tk.StringVar(value=value.get("button", "left"))
         btn_combo = ttk.Combobox(btn_frame, textvariable=btn_var, 
                     values=["left", "right", "middle", "double", "hold_left", "hold_right"], 
@@ -2559,38 +3895,44 @@ class MainUI:
         widgets["button"] = btn_var
         
         # Hold duration frame (only shown for hold_left/hold_right)
-        hold_frame = tk.Frame(parent)
-        hold_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(hold_frame, text="Hold (ms):", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        hold_frame = tk.Frame(parent, bg=S.BG_CARD)
+        hold_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        tk.Label(hold_frame, text="Hold (ms):", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(0, S.PAD_SM))
         hold_var = tk.IntVar(value=value.get("hold_ms", 500))
-        hold_entry = tk.Entry(hold_frame, textvariable=hold_var, width=8)
-        hold_entry.pack(side="left", padx=2)
+        hold_entry = S.create_entry(hold_frame, textvariable=hold_var, width=8)
+        hold_entry.pack(side="left", padx=S.PAD_XS)
         widgets["hold_ms"] = hold_var
         
         # Position
-        pos_frame = tk.Frame(parent)
-        pos_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(pos_frame, text="Position:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        pos_frame = tk.Frame(parent, bg=S.BG_CARD)
+        pos_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        tk.Label(pos_frame, text="Position:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(0, S.PAD_SM))
         
         x_var = tk.IntVar(value=value.get("x", 0))
-        tk.Label(pos_frame, text="X:").pack(side="left", padx=(10, 2))
-        tk.Entry(pos_frame, textvariable=x_var, width=8).pack(side="left", padx=2)
+        tk.Label(pos_frame, text="X:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(S.PAD_MD, S.PAD_XS))
+        S.create_entry(pos_frame, textvariable=x_var, width=6).pack(side="left", padx=S.PAD_XS)
         widgets["x"] = x_var
         
         y_var = tk.IntVar(value=value.get("y", 0))
-        tk.Label(pos_frame, text="Y:").pack(side="left", padx=(10, 2))
-        tk.Entry(pos_frame, textvariable=y_var, width=8).pack(side="left", padx=2)
+        tk.Label(pos_frame, text="Y:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(S.PAD_MD, S.PAD_XS))
+        S.create_entry(pos_frame, textvariable=y_var, width=6).pack(side="left", padx=S.PAD_XS)
         widgets["y"] = y_var
         
-        # Capture button - captures position, and for hold types also measures hold duration
-        capture_btn = tk.Button(pos_frame, text="📍 Capture", 
-                               command=lambda: self._capture_click_with_hold(x_var, y_var, hold_var, btn_var),
-                               bg="#2196F3", fg="white", font=("Arial", 8))
-        capture_btn.pack(side="left", padx=10)
+        # Capture button - Win11 style
+        capture_btn = S.create_modern_button(pos_frame, "📍 Capture", 
+                               lambda: self._capture_click_with_hold(x_var, y_var, hold_var, btn_var),
+                               "accent", width=10)
+        capture_btn.pack(side="left", padx=S.PAD_MD)
         
         # Status label for capture feedback
-        status_label = tk.Label(parent, text="", fg="blue", font=("Arial", 8))
-        status_label.pack(anchor="w", padx=10)
+        status_label = tk.Label(parent, text="💡 Capture: Click vị trí cần thao tác", 
+                               bg=S.BG_CARD, fg=S.FG_MUTED,
+                               font=(S.FONT_FAMILY, S.FONT_SIZE_XS))
+        status_label.pack(anchor="w", padx=S.PAD_MD)
         widgets["_status_label"] = status_label
         
         # Hint text
@@ -2895,9 +4237,34 @@ class MainUI:
         mode_frame.pack(fill="x", padx=10, pady=5)
         tk.Label(mode_frame, text="Mode:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
         mode_var = tk.StringVar(value=value.get("mode", "paste"))
-        ttk.Combobox(mode_frame, textvariable=mode_var, values=["paste", "humanize"], 
-                    state="readonly", width=10).pack(side="left")
+        mode_combo = ttk.Combobox(mode_frame, textvariable=mode_var, values=["paste", "humanize"], 
+                    state="readonly", width=10)
+        mode_combo.pack(side="left")
         widgets["mode"] = mode_var
+        
+        # Speed frame for humanize mode
+        speed_frame = tk.Frame(parent)
+        speed_frame.pack(fill="x", padx=10, pady=5)
+        tk.Label(speed_frame, text="Speed (ms/char):", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        speed_var = tk.IntVar(value=value.get("speed_ms", 100))
+        speed_entry = tk.Entry(speed_frame, textvariable=speed_var, width=8)
+        speed_entry.pack(side="left")
+        widgets["speed_ms"] = speed_var
+        
+        # Info labels
+        info_label = tk.Label(parent, text="", font=("Arial", 8), fg="gray")
+        info_label.pack(anchor="w", padx=10, pady=5)
+        
+        def update_info(*args):
+            if mode_var.get() == "paste":
+                info_label.config(text="💡 Paste: Copy to clipboard then Ctrl+V (fast)")
+                speed_entry.config(state="disabled")
+            else:
+                info_label.config(text="💡 Humanize: Type each character with delays (natural)")
+                speed_entry.config(state="normal")
+        
+        mode_combo.bind("<<ComboboxSelected>>", update_info)
+        update_info()
     
     def _get_action_value_from_widgets(self, action_type: str, widgets: dict) -> dict:
         """Extract action value from config widgets"""
@@ -2941,7 +4308,8 @@ class MainUI:
         elif action_type == "TEXT":
             return {
                 "text": widgets["text"].get("1.0", tk.END).strip(),
-                "mode": widgets["mode"].get()
+                "mode": widgets["mode"].get(),
+                "speed_ms": widgets.get("speed_ms", tk.IntVar(value=100)).get()
             }
         # V2 Wait Actions
         elif action_type == "WAIT_TIME":
@@ -2980,7 +4348,20 @@ class MainUI:
             return {
                 "template_path": widgets["template_path"].get(),
                 "threshold": widgets["threshold"].get(),
-                "timeout_ms": widgets["timeout_ms"].get()
+                "crop_region": widgets.get("crop_region", tk.StringVar()).get(),
+                # If Found options
+                "mouse_action_enabled": widgets.get("mouse_action_enabled", tk.BooleanVar(value=True)).get(),
+                "mouse_type": widgets.get("mouse_type", tk.StringVar(value="Left click")).get(),
+                "click_position": widgets.get("click_position", tk.StringVar(value="Centered")).get(),
+                "save_xy_enabled": widgets.get("save_xy_enabled", tk.BooleanVar(value=False)).get(),
+                "save_x_var": widgets.get("save_x_var", tk.StringVar(value="$foundX")).get(),
+                "save_y_var": widgets.get("save_y_var", tk.StringVar(value="$foundY")).get(),
+                "goto_if_found": widgets.get("goto_if_found", tk.StringVar(value="Next")).get(),
+                "goto_found_label": widgets.get("goto_found_label", tk.StringVar()).get(),
+                # If Not Found options
+                "retry_seconds": widgets.get("retry_seconds", tk.IntVar(value=30)).get(),
+                "goto_if_not_found": widgets.get("goto_if_not_found", tk.StringVar(value="Next")).get(),
+                "goto_notfound_label": widgets.get("goto_notfound_label", tk.StringVar()).get(),
             }
         elif action_type == "CAPTURE_IMAGE":
             return {
@@ -3185,51 +4566,541 @@ class MainUI:
         widgets["timeout_ms"] = timeout_var
     
     def _render_find_image_config(self, parent, widgets, value, dialog=None):
-        """Render FIND_IMAGE config (spec B2-1)"""
-        if not IMAGE_ACTIONS_AVAILABLE:
-            tk.Label(parent, text="⚠ OpenCV not installed. Install with: pip install opencv-python",
-                    fg="red", font=("Arial", 9)).pack(padx=10, pady=10)
+        """Render FIND_IMAGE config - Modern dark UI with proper color tolerance"""
+        from PIL import Image, ImageTk
+        import os
         
-        path_frame = tk.Frame(parent)
-        path_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(path_frame, text="Template:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        # Use ModernStyle
+        S = ModernStyle
+        parent.configure(bg=S.BG_CARD)
+        
+        # ==================== IMAGE SPECIFICATIONS ====================
+        spec_frame = tk.LabelFrame(parent, text=" 🖼️ Image Specifications ", 
+                                   font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                   bg=S.BG_CARD, fg=S.FG_ACCENT,
+                                   padx=S.PAD_MD, pady=S.PAD_MD)
+        spec_frame.pack(fill="x", padx=S.PAD_MD, pady=(S.PAD_MD, S.PAD_SM))
+        
+        # Top row: Preview + Controls
+        top_row = tk.Frame(spec_frame, bg=S.BG_CARD)
+        top_row.pack(fill="x")
+        
+        # Left: Preview with border - compact size
+        preview_frame = tk.Frame(top_row, bg=S.BORDER_COLOR, relief="flat")
+        preview_frame.pack(side="left", padx=(0, S.PAD_MD))
+        
+        preview_container = tk.Frame(preview_frame, width=100, height=75, bg=S.BG_INPUT)
+        preview_container.pack(padx=1, pady=1)
+        preview_container.pack_propagate(False)
+        
+        preview_label = tk.Label(preview_container, text="No Image\n📷", bg=S.BG_INPUT, 
+                                fg=S.FG_MUTED, font=(S.FONT_FAMILY, S.FONT_SIZE_SM))
+        preview_label.pack(expand=True)
+        
+        # Buttons under preview
+        btn_frame = tk.Frame(top_row, bg=S.BG_CARD)
+        btn_frame.pack(side="left", anchor="n")
+        
+        # Path variable (hidden but needed)
         path_var = tk.StringVar(value=value.get("template_path", ""))
-        tk.Entry(path_frame, textvariable=path_var, width=25).pack(side="left")
         widgets["template_path"] = path_var
         
-        def browse_template():
+        # Crop region variable 
+        crop_region_var = tk.StringVar(value=value.get("crop_region", ""))
+        widgets["crop_region"] = crop_region_var
+        
+        def update_preview():
+            img_path = path_var.get()
+            if img_path and os.path.exists(img_path):
+                try:
+                    img = Image.open(img_path)
+                    orig_size = f"{img.width}x{img.height}"
+                    img.thumbnail((95, 70))  # Smaller thumbnail
+                    img_tk = ImageTk.PhotoImage(img)
+                    preview_label.config(image=img_tk, text="")
+                    preview_label.image = img_tk
+                    size_label.config(text=f"{orig_size}")
+                except Exception as e:
+                    preview_label.config(text=f"Err", image="")
+            else:
+                preview_label.config(text="No Image\n📷", image="")
+                size_label.config(text="--")
+        
+        def browse_image():
             from tkinter import filedialog
-            fp = filedialog.askopenfilename(filetypes=[("Images", "*.png *.jpg *.bmp")])
+            fp = filedialog.askopenfilename(
+                title="Select Template Image",
+                filetypes=[("Images", "*.png *.jpg *.jpeg *.bmp"), ("All files", "*.*")]
+            )
             if fp:
                 path_var.set(fp)
-        tk.Button(path_frame, text="...", command=browse_template).pack(side="left", padx=5)
+                update_preview()
         
-        thresh_frame = tk.Frame(parent)
-        thresh_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(thresh_frame, text="Threshold:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
-        thresh_var = tk.DoubleVar(value=value.get("threshold", 0.8))
-        tk.Entry(thresh_frame, textvariable=thresh_var, width=8).pack(side="left")
-        tk.Label(thresh_frame, text="(0.0-1.0)", fg="gray").pack(side="left", padx=5)
+        def load_from_files():
+            from tkinter import filedialog
+            files_dir = os.path.join(os.getcwd(), "files")
+            os.makedirs(files_dir, exist_ok=True)
+            fp = filedialog.askopenfilename(
+                title="Load from Files Folder",
+                initialdir=files_dir,
+                filetypes=[("Images", "*.png *.jpg *.jpeg *.bmp"), ("All files", "*.*")]
+            )
+            if fp:
+                path_var.set(fp)
+                update_preview()
+        
+        def crop_screen():
+            """Crop from screen/emulator"""
+            from core.capture_utils import CaptureOverlay
+            
+            target_hwnd = getattr(self, '_capture_target_hwnd', None)
+            target_name = getattr(self, '_capture_target_name', 'Screen (Full)')
+            
+            emu_bounds = None
+            emu_resolution = None
+            if target_hwnd and self.workers:
+                for w in self.workers:
+                    if w.hwnd == target_hwnd:
+                        emu_bounds = (w.client_x, w.client_y, 
+                                     w.client_x + w.client_w, w.client_y + w.client_h)
+                        emu_resolution = (w.res_width, w.res_height)
+                        break
+            
+            def on_crop(result):
+                if not result.success:
+                    return
+                
+                if emu_bounds and emu_resolution:
+                    emu_x, emu_y, emu_x2, emu_y2 = emu_bounds
+                    res_w, res_h = emu_resolution
+                    
+                    if (result.x >= emu_x and result.y >= emu_y and 
+                        result.x2 <= emu_x2 and result.y2 <= emu_y2):
+                        local_x1 = int((result.x - emu_x) * res_w / (emu_x2 - emu_x))
+                        local_y1 = int((result.y - emu_y) * res_h / (emu_y2 - emu_y))
+                        local_x2 = int((result.x2 - emu_x) * res_w / (emu_x2 - emu_x))
+                        local_y2 = int((result.y2 - emu_y) * res_h / (emu_y2 - emu_y))
+                        crop_region_var.set(f"{local_x1},{local_y1},{local_x2},{local_y2}")
+                        screen_info_var.set(f"📍 Region: ({local_x1},{local_y1})-({local_x2},{local_y2})")
+                    else:
+                        messagebox.showwarning("Crop", f"Selection outside emulator!\nPlease crop within: {target_name}")
+                        return
+                
+                if hasattr(result, 'img_path') and result.img_path:
+                    path_var.set(result.img_path)
+                if hasattr(result, 'pil_image') and result.pil_image:
+                    try:
+                        img = result.pil_image.copy()
+                        orig_size = f"{img.width}x{img.height}"
+                        img.thumbnail((130, 95))
+                        img_tk = ImageTk.PhotoImage(img)
+                        preview_label.config(image=img_tk, text="")
+                        preview_label.image = img_tk
+                        size_label.config(text=f"Size: {orig_size}")
+                    except Exception as e:
+                        log(f"[UI] Preview error: {e}")
+            
+            overlay = CaptureOverlay(self.root, target_hwnd=target_hwnd)
+            if emu_bounds:
+                overlay._constrain_bounds = emu_bounds
+            overlay.capture_region(on_crop)
+        
+        # Action buttons - compact uniform style
+        def create_img_btn(parent, text, cmd, color=None):
+            bg = color or S.BTN_SECONDARY
+            hover = S.BG_TERTIARY if not color else adjust_btn_color(color, 0.2)
+            btn = tk.Button(parent, text=text, command=cmd, width=10,
+                           bg=bg, fg=S.FG_PRIMARY, activebackground=hover,
+                           activeforeground=S.FG_PRIMARY, relief="flat", cursor="hand2", bd=0,
+                           font=(S.FONT_FAMILY, S.FONT_SIZE_XS), highlightthickness=0)
+            def on_enter(e): btn.config(bg=hover)
+            def on_leave(e): btn.config(bg=bg)
+            btn.bind("<Enter>", on_enter)
+            btn.bind("<Leave>", on_leave)
+            return btn
+        
+        def adjust_btn_color(hex_color, factor):
+            r, g, b = int(hex_color[1:3], 16), int(hex_color[3:5], 16), int(hex_color[5:7], 16)
+            r = min(255, int(r + (255 - r) * factor))
+            g = min(255, int(g + (255 - g) * factor))
+            b = min(255, int(b + (255 - b) * factor))
+            return f"#{r:02x}{g:02x}{b:02x}"
+        
+        btn_browse = create_img_btn(btn_frame, "📂 Browse", browse_image)
+        btn_browse.pack(anchor="w", pady=1)
+        
+        btn_files = create_img_btn(btn_frame, "📁 Files", load_from_files)
+        btn_files.pack(anchor="w", pady=1)
+        
+        btn_crop = create_img_btn(btn_frame, "✂️ Crop", crop_screen, S.ACCENT_BLUE)
+        btn_crop.pack(anchor="w", pady=1)
+        
+        # Screen info
+        target_name = getattr(self, '_capture_target_name', 'Screen (Full)')
+        target_hwnd = getattr(self, '_capture_target_hwnd', None)
+        if target_hwnd and self.workers:
+            for w in self.workers:
+                if w.hwnd == target_hwnd:
+                    screen_text = f"🖥️ {target_name} ({w.res_width}x{w.res_height})"
+                    break
+            else:
+                screen_text = f"🖥️ {target_name}"
+        else:
+            screen_text = "🖥️ Full Screen"
+        
+        screen_info_var = tk.StringVar(value=screen_text)
+        tk.Label(btn_frame, textvariable=screen_info_var, font=(S.FONT_FAMILY, S.FONT_SIZE_SM), 
+                fg=S.ACCENT_BLUE, bg=S.BG_CARD).pack(anchor="w", pady=(5, 0))
+        
+        # Size info
+        size_label = tk.Label(btn_frame, text="Size: --", font=(S.FONT_FAMILY, S.FONT_SIZE_SM), 
+                             fg=S.FG_MUTED, bg=S.BG_CARD)
+        size_label.pack(anchor="w")
+        
+        # Right side: Threshold/Tolerance settings
+        right_frame = tk.Frame(top_row, bg=S.BG_CARD)
+        right_frame.pack(side="left", fill="both", expand=True, padx=(S.PAD_MD, 0))
+        
+        # === MATCHING THRESHOLD (using proper OpenCV threshold 0.0-1.0) ===
+        thresh_section = tk.LabelFrame(right_frame, text=" 🎯 Matching Threshold ", 
+                                       font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                       bg=S.BG_CARD, fg=S.FG_ACCENT,
+                                       padx=S.PAD_MD, pady=S.PAD_SM)
+        thresh_section.pack(fill="x", pady=(0, S.PAD_SM))
+        
+        # Threshold value display
+        thresh_val = value.get("threshold", 0.8)
+        thresh_var = tk.DoubleVar(value=thresh_val)
         widgets["threshold"] = thresh_var
         
-        timeout_frame = tk.Frame(parent)
-        timeout_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(timeout_frame, text="Timeout (ms):", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        # Slider row
+        slider_row = tk.Frame(thresh_section, bg=S.BG_CARD)
+        slider_row.pack(fill="x")
+        
+        tk.Label(slider_row, text="Strict", font=(S.FONT_FAMILY, S.FONT_SIZE_SM), 
+                fg=S.FG_MUTED, bg=S.BG_CARD).pack(side="left")
+        
+        thresh_slider = ttk.Scale(slider_row, from_=0.5, to=1.0, orient="horizontal",
+                                  variable=thresh_var, length=150)
+        thresh_slider.pack(side="left", padx=5, fill="x", expand=True)
+        
+        tk.Label(slider_row, text="Loose", font=(S.FONT_FAMILY, S.FONT_SIZE_SM), 
+                fg=S.FG_MUTED, bg=S.BG_CARD).pack(side="left")
+        
+        # Value display and entry
+        value_row = tk.Frame(thresh_section, bg=S.BG_CARD)
+        value_row.pack(fill="x", pady=(S.PAD_SM, 0))
+        
+        tk.Label(value_row, text="Value:", font=(S.FONT_FAMILY, S.FONT_SIZE_MD), 
+                fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left")
+        thresh_entry = tk.Entry(value_row, textvariable=thresh_var, width=6, 
+                               font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                               bg=S.BG_INPUT, fg=S.FG_PRIMARY, insertbackground=S.FG_PRIMARY,
+                               relief="flat", highlightthickness=1, highlightbackground=S.BORDER_COLOR)
+        thresh_entry.pack(side="left", padx=5)
+        
+        # Preset buttons
+        def set_threshold(val):
+            thresh_var.set(val)
+        
+        preset_frame = tk.Frame(value_row, bg=S.BG_CARD)
+        preset_frame.pack(side="left", padx=S.PAD_MD)
+        for label, val in [("Low", 0.6), ("Med", 0.75), ("High", 0.85), ("Exact", 0.95)]:
+            btn = tk.Button(preset_frame, text=label, command=lambda v=val: set_threshold(v),
+                           width=4, font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                           bg=S.BTN_SECONDARY, fg=S.FG_PRIMARY, relief="flat", cursor="hand2")
+            btn.pack(side="left", padx=1)
+        
+        # Auto Set Threshold button - finds optimal threshold
+        def auto_set_threshold():
+            """Auto-detect best threshold using multiple OpenCV methods"""
+            template_path = path_var.get()
+            if not template_path or not os.path.exists(template_path):
+                messagebox.showwarning("Set Threshold", "Please load a template image first.")
+                return
+            
+            try:
+                import cv2
+                import numpy as np
+                from PIL import ImageGrab
+                
+                # Capture current screen
+                screen = ImageGrab.grab()
+                screen_np = np.array(screen)
+                screen_bgr = cv2.cvtColor(screen_np, cv2.COLOR_RGB2BGR)
+                screen_gray = cv2.cvtColor(screen_bgr, cv2.COLOR_BGR2GRAY)
+                
+                # Load template
+                template = cv2.imread(template_path)
+                if template is None:
+                    messagebox.showerror("Error", "Cannot read template image")
+                    return
+                template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+                
+                h, w = template_gray.shape
+                
+                # Try multiple OpenCV matching methods for best result
+                methods = [
+                    (cv2.TM_CCOEFF_NORMED, "CCOEFF_NORMED", True),   # Higher is better
+                    (cv2.TM_CCORR_NORMED, "CCORR_NORMED", True),     # Higher is better
+                    (cv2.TM_SQDIFF_NORMED, "SQDIFF_NORMED", False),  # Lower is better
+                ]
+                
+                best_confidence = 0
+                best_method_name = ""
+                best_loc = (0, 0)
+                
+                for method, name, higher_better in methods:
+                    result = cv2.matchTemplate(screen_gray, template_gray, method)
+                    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+                    
+                    if higher_better:
+                        conf = max_val
+                        loc = max_loc
+                    else:
+                        conf = 1.0 - min_val  # Invert for comparison
+                        loc = min_loc
+                    
+                    if conf > best_confidence:
+                        best_confidence = conf
+                        best_method_name = name
+                        best_loc = loc
+                
+                if best_confidence < 0.3:
+                    messagebox.showwarning("⚠️ No Match Found", 
+                        f"Template not found on current screen.\n"
+                        f"Best confidence: {best_confidence:.1%}\n\n"
+                        f"Tips:\n"
+                        f"• Make sure the target is visible on screen\n"
+                        f"• Try cropping a smaller, unique area\n"
+                        f"• Avoid areas with dynamic content")
+                    return
+                
+                # Calculate optimal threshold (slightly below found confidence for safety margin)
+                # Use 95% of detected confidence as safe threshold
+                optimal_threshold = round(best_confidence * 0.95, 2)
+                optimal_threshold = max(0.5, min(0.98, optimal_threshold))  # Clamp to valid range
+                
+                cx, cy = best_loc[0] + w//2, best_loc[1] + h//2
+                
+                # Ask user to apply
+                result = messagebox.askyesno("🎯 Optimal Threshold Found!",
+                    f"Analysis Results:\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"Best Match: {best_confidence:.1%}\n"
+                    f"Method: {best_method_name}\n"
+                    f"Position: ({cx}, {cy})\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n\n"
+                    f"Recommended Threshold: {optimal_threshold}\n"
+                    f"(5% safety margin from detected)\n\n"
+                    f"Apply this threshold?")
+                
+                if result:
+                    thresh_var.set(optimal_threshold)
+                    messagebox.showinfo("✅ Threshold Set", 
+                        f"Threshold set to {optimal_threshold}\n\n"
+                        f"This should reliably match your template.")
+                        
+            except ImportError:
+                messagebox.showerror("Error", "OpenCV not installed.\nRun: pip install opencv-python")
+            except Exception as e:
+                messagebox.showerror("Error", f"Auto-detect failed: {e}")
+        
+        tk.Button(value_row, text="🎯 Set", command=auto_set_threshold, 
+                 font=(S.FONT_FAMILY, S.FONT_SIZE_SM), bg=S.ACCENT_ORANGE, fg=S.FG_PRIMARY,
+                 relief="flat", cursor="hand2", width=6).pack(side="right")
+        
+        # Threshold explanation
+        tk.Label(thresh_section, text="💡 Click 'Set' to auto-detect optimal threshold from current screen",
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM), fg=S.FG_MUTED, bg=S.BG_CARD).pack(anchor="w")
+        
+        # Initial preview
+        if path_var.get() and os.path.exists(path_var.get()):
+            update_preview()
+        
+        # ==================== IF IMAGE IS FOUND ====================
+        found_frame = tk.LabelFrame(parent, text=" ✅ If Image is FOUND ", 
+                                    font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                    bg=S.BG_CARD, fg=S.ACCENT_GREEN,
+                                    padx=S.PAD_MD, pady=S.PAD_MD)
+        found_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Mouse action row
+        mouse_row = tk.Frame(found_frame, bg=S.BG_CARD)
+        mouse_row.pack(fill="x", pady=2)
+        
+        mouse_action_var = tk.BooleanVar(value=value.get("mouse_action_enabled", True))
+        tk.Checkbutton(mouse_row, text="Mouse action:", variable=mouse_action_var,
+                      font=(S.FONT_FAMILY, S.FONT_SIZE_MD), bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                      selectcolor=S.BG_INPUT, activebackground=S.BG_CARD).pack(side="left")
+        widgets["mouse_action_enabled"] = mouse_action_var
+        
+        # Mouse type
+        mouse_type_var = tk.StringVar(value=value.get("mouse_type", "Left click"))
+        mouse_type_combo = ttk.Combobox(mouse_row, textvariable=mouse_type_var, width=12,
+                                        values=["Positioning", "Left click", "Right click", 
+                                               "Double click", "Middle click"],
+                                        state="readonly")
+        mouse_type_combo.pack(side="left", padx=3)
+        widgets["mouse_type"] = mouse_type_var
+        
+        # Position
+        tk.Label(mouse_row, text="at", font=(S.FONT_FAMILY, S.FONT_SIZE_MD), 
+                fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left", padx=3)
+        position_var = tk.StringVar(value=value.get("click_position", "Centered"))
+        position_combo = ttk.Combobox(mouse_row, textvariable=position_var, width=10,
+                                      values=["Centered", "Top left", "Top right", 
+                                             "Bottom left", "Bottom right", "Random"],
+                                      state="readonly")
+        position_combo.pack(side="left", padx=3)
+        widgets["click_position"] = position_var
+        
+        # Save coordinates row
+        save_row = tk.Frame(found_frame, bg=S.BG_CARD)
+        save_row.pack(fill="x", pady=2)
+        
+        save_xy_var = tk.BooleanVar(value=value.get("save_xy_enabled", False))
+        tk.Checkbutton(save_row, text="Save coordinates:", variable=save_xy_var,
+                      font=(S.FONT_FAMILY, S.FONT_SIZE_MD), bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                      selectcolor=S.BG_INPUT, activebackground=S.BG_CARD).pack(side="left")
+        widgets["save_xy_enabled"] = save_xy_var
+        
+        tk.Label(save_row, text="X →", font=(S.FONT_FAMILY, S.FONT_SIZE_MD), 
+                fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left", padx=(10, 2))
+        save_x_var = tk.StringVar(value=value.get("save_x_var", "$foundX"))
+        save_x_entry = tk.Entry(save_row, textvariable=save_x_var, width=10, 
+                               font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                               bg=S.BG_INPUT, fg=S.FG_PRIMARY, insertbackground=S.FG_PRIMARY,
+                               relief="flat", highlightthickness=1, highlightbackground=S.BORDER_COLOR)
+        save_x_entry.pack(side="left")
+        widgets["save_x_var"] = save_x_var
+        
+        tk.Label(save_row, text="Y →", font=(S.FONT_FAMILY, S.FONT_SIZE_MD), 
+                fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left", padx=(10, 2))
+        save_y_var = tk.StringVar(value=value.get("save_y_var", "$foundY"))
+        save_y_entry = tk.Entry(save_row, textvariable=save_y_var, width=10, 
+                               font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                               bg=S.BG_INPUT, fg=S.FG_PRIMARY, insertbackground=S.FG_PRIMARY,
+                               relief="flat", highlightthickness=1, highlightbackground=S.BORDER_COLOR)
+        save_y_entry.pack(side="left")
+        widgets["save_y_var"] = save_y_var
+        
+        # Go to row (with label support)
+        goto_found_row = tk.Frame(found_frame, bg=S.BG_CARD)
+        goto_found_row.pack(fill="x", pady=2)
+        
+        tk.Label(goto_found_row, text="Then go to:", font=(S.FONT_FAMILY, S.FONT_SIZE_MD), 
+                fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left")
+        
+        # Get existing labels from actions - check both value dict and label field
+        label_list = ["Next", "Previous", "Start", "End", "Exit macro"]
+        for action in self.actions:
+            if action.action == "LABEL":
+                # Try to get label name from value dict first, then label field
+                label_name = ""
+                if isinstance(action.value, dict):
+                    label_name = action.value.get("name", "")
+                if not label_name and action.label:
+                    label_name = action.label
+                if label_name and f"→ {label_name}" not in label_list:
+                    label_list.append(f"→ {label_name}")
+        
+        goto_found_var = tk.StringVar(value=value.get("goto_if_found", "Next"))
+        goto_found_combo = ttk.Combobox(goto_found_row, textvariable=goto_found_var, width=25,
+                                        values=label_list, state="readonly")
+        goto_found_combo.pack(side="left", padx=5)
+        widgets["goto_if_found"] = goto_found_var
+        
+        # Custom label entry (for labels not yet created)
+        tk.Label(goto_found_row, text="or label:", font=(S.FONT_FAMILY, S.FONT_SIZE_SM), 
+                fg=S.FG_MUTED, bg=S.BG_CARD).pack(side="left", padx=(10, 2))
+        goto_found_label_var = tk.StringVar(value=value.get("goto_found_label", ""))
+        goto_found_label_entry = tk.Entry(goto_found_row, textvariable=goto_found_label_var, width=12, 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                bg=S.BG_INPUT, fg=S.FG_PRIMARY, insertbackground=S.FG_PRIMARY,
+                relief="flat", highlightthickness=1, highlightbackground=S.BORDER_COLOR)
+        goto_found_label_entry.pack(side="left")
+        widgets["goto_found_label"] = goto_found_label_var
+        
+        # Hidden compatibility var
+        click_type_var = tk.StringVar(value=value.get("click_type", "left"))
+        widgets["click_type"] = click_type_var
+        
+        # ==================== IF IMAGE IS NOT FOUND ====================
+        notfound_frame = tk.LabelFrame(parent, text=" ❌ If Image is NOT FOUND ", 
+                                       font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                       bg=S.BG_CARD, fg=S.ACCENT_RED,
+                                       padx=S.PAD_MD, pady=S.PAD_MD)
+        notfound_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Retry settings row
+        retry_row = tk.Frame(notfound_frame, bg=S.BG_CARD)
+        retry_row.pack(fill="x", pady=2)
+        
+        tk.Label(retry_row, text="Keep searching for", font=(S.FONT_FAMILY, S.FONT_SIZE_MD), 
+                fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left")
+        
+        retry_seconds_var = tk.IntVar(value=value.get("retry_seconds", 30))
+        retry_spinbox = tk.Spinbox(retry_row, from_=1, to=999, textvariable=retry_seconds_var,
+                                   width=5, font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                                   bg=S.BG_INPUT, fg=S.FG_PRIMARY, buttonbackground=S.BTN_SECONDARY,
+                                   relief="flat", highlightthickness=1, highlightbackground=S.BORDER_COLOR)
+        retry_spinbox.pack(side="left", padx=5)
+        widgets["retry_seconds"] = retry_seconds_var
+        
+        tk.Label(retry_row, text="seconds, then:", font=(S.FONT_FAMILY, S.FONT_SIZE_MD), 
+                fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left")
+        
+        # Hidden compatibility vars
+        retry_var = tk.BooleanVar(value=True)
+        widgets["retry_enabled"] = retry_var
+        max_retries_var = tk.IntVar(value=value.get("max_retries", 999))
+        widgets["max_retries"] = max_retries_var
         timeout_var = tk.IntVar(value=value.get("timeout_ms", 5000))
-        tk.Entry(timeout_frame, textvariable=timeout_var, width=10).pack(side="left")
         widgets["timeout_ms"] = timeout_var
+        
+        # Go to row (with label support)
+        goto_notfound_row = tk.Frame(notfound_frame, bg=S.BG_CARD)
+        goto_notfound_row.pack(fill="x", pady=2)
+        
+        tk.Label(goto_notfound_row, text="Go to:", font=(S.FONT_FAMILY, S.FONT_SIZE_MD), 
+                fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left")
+        
+        goto_notfound_var = tk.StringVar(value=value.get("goto_if_not_found", "Next"))
+        goto_notfound_combo = ttk.Combobox(goto_notfound_row, textvariable=goto_notfound_var, width=25,
+                                           values=label_list, state="readonly")
+        goto_notfound_combo.pack(side="left", padx=5)
+        widgets["goto_if_not_found"] = goto_notfound_var
+        
+        # Custom label entry (for labels not yet created)
+        tk.Label(goto_notfound_row, text="or label:", font=(S.FONT_FAMILY, S.FONT_SIZE_SM), 
+                fg=S.FG_MUTED, bg=S.BG_CARD).pack(side="left", padx=(10, 2))
+        goto_notfound_label_var = tk.StringVar(value=value.get("goto_notfound_label", ""))
+        goto_notfound_label_entry = tk.Entry(goto_notfound_row, textvariable=goto_notfound_label_var, width=12, 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                bg=S.BG_INPUT, fg=S.FG_PRIMARY, insertbackground=S.FG_PRIMARY,
+                relief="flat", highlightthickness=1, highlightbackground=S.BORDER_COLOR)
+        goto_notfound_label_entry.pack(side="left")
+        widgets["goto_notfound_label"] = goto_notfound_label_var
     
     def _render_capture_image_config(self, parent, widgets, value, dialog=None):
-        """Render CAPTURE_IMAGE config (spec B2-2)"""
+        """Render CAPTURE_IMAGE config (spec B2-2) - Dark theme"""
+        S = ModernStyle
+        parent.configure(bg=S.BG_CARD)
+        
         if not IMAGE_ACTIONS_AVAILABLE:
             tk.Label(parent, text="⚠ OpenCV not installed. Install with: pip install opencv-python",
-                    fg="red", font=("Arial", 9)).pack(padx=10, pady=10)
+                    fg=S.ACCENT_RED, bg=S.BG_CARD, font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(padx=10, pady=10)
         
-        path_frame = tk.Frame(parent)
-        path_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(path_frame, text="Save path:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        path_frame = tk.Frame(parent, bg=S.BG_CARD)
+        path_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        tk.Label(path_frame, text="Save path:", font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left", padx=(0, 5))
         path_var = tk.StringVar(value=value.get("save_path", ""))
-        tk.Entry(path_frame, textvariable=path_var, width=25).pack(side="left")
+        tk.Entry(path_frame, textvariable=path_var, width=25,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD), bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                insertbackground=S.FG_PRIMARY, relief="flat",
+                highlightthickness=1, highlightbackground=S.BORDER_COLOR).pack(side="left")
         widgets["save_path"] = path_var
         
         def browse_save():
@@ -3240,13 +5111,16 @@ class MainUI:
             )
             if fp:
                 path_var.set(fp)
-        tk.Button(path_frame, text="...", command=browse_save).pack(side="left", padx=5)
+        tk.Button(path_frame, text="...", command=browse_save,
+                 bg=S.BTN_SECONDARY, fg=S.FG_PRIMARY, relief="flat", cursor="hand2").pack(side="left", padx=5)
         
-        tk.Label(parent, text="(Leave empty for auto-generated filename)", fg="gray", font=("Arial", 8)).pack(anchor="w", padx=10)
+        tk.Label(parent, text="(Leave empty for auto-generated filename)", 
+                fg=S.FG_MUTED, bg=S.BG_CARD, font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(anchor="w", padx=S.PAD_MD)
         
-        format_frame = tk.Frame(parent)
-        format_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(format_frame, text="Format:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        format_frame = tk.Frame(parent, bg=S.BG_CARD)
+        format_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        tk.Label(format_frame, text="Format:", font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left", padx=(0, 5))
         format_var = tk.StringVar(value=value.get("format", "png"))
         ttk.Combobox(format_frame, textvariable=format_var, 
                     values=["png", "jpg", "bmp"],
@@ -3254,8 +5128,10 @@ class MainUI:
         widgets["format"] = format_var
         
         # Optional region
-        region_frame = tk.LabelFrame(parent, text="Region (optional)")
-        region_frame.pack(fill="x", padx=10, pady=5)
+        region_frame = tk.LabelFrame(parent, text="Region (optional)", 
+                                     font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                     bg=S.BG_CARD, fg=S.FG_ACCENT)
+        region_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
         
         region = value.get("region", (0, 0, 0, 0)) or (0, 0, 0, 0)
         x1_var = tk.IntVar(value=region[0])
@@ -3263,11 +5139,12 @@ class MainUI:
         x2_var = tk.IntVar(value=region[2])
         y2_var = tk.IntVar(value=region[3])
         
-        row = tk.Frame(region_frame)
+        row = tk.Frame(region_frame, bg=S.BG_CARD)
         row.pack(fill="x", padx=5, pady=2)
-        tk.Label(row, text="X1:").pack(side="left")
-        tk.Entry(row, textvariable=x1_var, width=5).pack(side="left", padx=2)
-        tk.Label(row, text="Y1:").pack(side="left")
+        tk.Label(row, text="X1:", fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left")
+        tk.Entry(row, textvariable=x1_var, width=5, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                relief="flat", highlightthickness=1, highlightbackground=S.BORDER_COLOR).pack(side="left", padx=2)
+        tk.Label(row, text="Y1:", fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left")
         tk.Entry(row, textvariable=y1_var, width=5).pack(side="left", padx=2)
         tk.Label(row, text="X2:").pack(side="left")
         tk.Entry(row, textvariable=x2_var, width=5).pack(side="left", padx=2)
@@ -5153,13 +7030,15 @@ class MainUI:
     # ================= STATUS =================
 
     def _auto_refresh_status(self):
+        S = ModernStyle  # For zebra striping
+        
         # Clear existing items
         for item in self.worker_tree.get_children():
             self.worker_tree.delete(item)
 
         running = self.launcher.get_running_workers()
 
-        for w in self.workers:
+        for idx, w in enumerate(self.workers):
             # Determine status from worker state
             if hasattr(w, 'paused') and w.paused:
                 status = "PAUSED"
@@ -5189,8 +7068,19 @@ class MainUI:
             else:
                 actions_text = "[▶ ⏸ ⏹]"
 
+            # Determine row tag for zebra striping + status
+            row_tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
+            status_tags = {
+                "RUNNING": "running",
+                "PAUSED": "warning",
+                "NOT READY": "error",
+            }
+            tags = [row_tag]
+            if status in status_tags:
+                tags.append(status_tags[status])
+
             # Insert row with new column order: ID, Name, Worker, Status, Actions
-            item_id = self.worker_tree.insert("", tk.END, values=(w.id, name, worker_id_text, status, actions_text))
+            item_id = self.worker_tree.insert("", tk.END, values=(w.id, name, worker_id_text, status, actions_text), tags=tags)
             self.worker_tree_items[w.id] = item_id
 
         self.root.after(self.REFRESH_MS, self._auto_refresh_status)
@@ -5244,22 +7134,31 @@ class MainUI:
         self.btn_stop.config(text=f"⏹ Stop ({stop_key})" if stop_key else "⏹ Stop", width=12)
     
     def _open_settings_dialog(self):
-        """Open settings dialog for hotkey binding"""
+        """Open settings dialog for hotkey binding - Dark theme"""
+        S = ModernStyle
+        
         dialog = tk.Toplevel(self.root)
         dialog.title("⚙ Settings - Hotkey Binding")
         dialog.geometry("450x500")
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.resizable(False, False)
+        dialog.configure(bg=S.BG_PRIMARY)
         
-        # Title
-        tk.Label(dialog, text="Hotkey Settings", font=("Arial", 12, "bold")).pack(pady=10)
+        # Header
+        header = tk.Frame(dialog, bg=S.BG_SECONDARY, height=55)
+        header.pack(fill="x")
+        header.pack_propagate(False)
+        tk.Label(header, text="⚙ Hotkey Settings", font=(S.FONT_FAMILY, S.FONT_SIZE_XXL, "bold"),
+                bg=S.BG_SECONDARY, fg=S.FG_PRIMARY).pack(side="left", padx=S.PAD_XL, pady=S.PAD_LG)
+        
         tk.Label(dialog, text="Click button then press key to bind", 
-                font=("Arial", 9), fg="gray").pack()
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM), fg=S.FG_MUTED, bg=S.BG_PRIMARY).pack(pady=S.PAD_MD)
         
         # Hotkey entries frame
-        hotkey_frame = tk.LabelFrame(dialog, text="Hotkeys", font=("Arial", 10))
-        hotkey_frame.pack(fill="x", padx=20, pady=15)
+        hotkey_frame = tk.LabelFrame(dialog, text=" Hotkeys ", font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                     bg=S.BG_CARD, fg=S.FG_ACCENT)
+        hotkey_frame.pack(fill="x", padx=S.PAD_XL, pady=S.PAD_LG)
         
         hotkey_vars = {}
         hotkey_buttons = {}
@@ -5272,17 +7171,20 @@ class MainUI:
         ]
         
         for key, label, current_value in hotkeys:
-            row = tk.Frame(hotkey_frame)
-            row.pack(fill="x", padx=10, pady=8)
+            row = tk.Frame(hotkey_frame, bg=S.BG_CARD)
+            row.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
             
-            tk.Label(row, text=label, font=("Arial", 10), width=12, anchor="w").pack(side="left")
+            tk.Label(row, text=label, font=(S.FONT_FAMILY, S.FONT_SIZE_MD), width=12, anchor="w",
+                    bg=S.BG_CARD, fg=S.FG_PRIMARY).pack(side="left")
             
             var = tk.StringVar(value=current_value)
             hotkey_vars[key] = var
             
             # Entry to show current hotkey
-            entry = tk.Entry(row, textvariable=var, width=15, font=("Arial", 10), 
-                           state="readonly", justify="center")
+            entry = tk.Entry(row, textvariable=var, width=15, font=(S.FONT_FAMILY, S.FONT_SIZE_MD), 
+                           state="readonly", justify="center",
+                           bg=S.BG_INPUT, fg=S.FG_PRIMARY, readonlybackground=S.BG_INPUT,
+                           relief="flat", highlightthickness=1, highlightbackground=S.BORDER_COLOR)
             entry.pack(side="left", padx=5)
             
             # Bind button
@@ -5292,7 +7194,8 @@ class MainUI:
                 return bind_hotkey
             
             btn = tk.Button(row, text="🎯 Bind", command=create_bind_callback(key, var, entry),
-                          bg="#2196F3", fg="white", font=("Arial", 8))
+                          bg=S.ACCENT_BLUE, fg=S.FG_PRIMARY, font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                          relief="flat", cursor="hand2")
             btn.pack(side="left", padx=5)
             hotkey_buttons[key] = btn
             
@@ -5302,18 +7205,19 @@ class MainUI:
                     v.set("")
                 return unbind_hotkey
             
-            tk.Button(row, text="🚫 Unbind", command=create_unbind_callback(var),
-                     bg="#FF5722", fg="white", font=("Arial", 8)).pack(side="left", padx=2)
+            tk.Button(row, text="🚫", command=create_unbind_callback(var),
+                     bg=S.ACCENT_RED, fg=S.FG_PRIMARY, font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                     relief="flat", cursor="hand2", width=3).pack(side="left", padx=2)
         
         # Info
-        info_frame = tk.Frame(dialog)
-        info_frame.pack(fill="x", padx=20, pady=10)
+        info_frame = tk.Frame(dialog, bg=S.BG_PRIMARY)
+        info_frame.pack(fill="x", padx=S.PAD_XL, pady=S.PAD_MD)
         tk.Label(info_frame, text="💡 Tip: Use F1-F12, or combinations like Ctrl+Shift+R",
-                font=("Arial", 8), fg="#666").pack()
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM), fg=S.FG_MUTED, bg=S.BG_PRIMARY).pack()
         
         # Buttons
-        btn_frame = tk.Frame(dialog)
-        btn_frame.pack(fill="x", padx=20, pady=20)
+        btn_frame = tk.Frame(dialog, bg=S.BG_PRIMARY)
+        btn_frame.pack(fill="x", padx=S.PAD_XL, pady=S.PAD_XL)
         
         def save_and_close():
             # Update settings
@@ -5331,16 +7235,21 @@ class MainUI:
             hotkey_vars["stop"].set("F12")
         
         tk.Button(btn_frame, text="✓ Save", command=save_and_close,
-                 bg="#4CAF50", fg="white", font=("Arial", 10, "bold"), width=10).pack(side="left", padx=5)
+                 bg=S.ACCENT_GREEN, fg=S.FG_PRIMARY, font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"), 
+                 width=10, relief="flat", cursor="hand2").pack(side="left", padx=5)
         tk.Button(btn_frame, text="Reset Defaults", command=reset_defaults,
-                 bg="#FF9800", fg="white", font=("Arial", 9), width=12).pack(side="left", padx=5)
+                 bg=S.ACCENT_ORANGE, fg=S.FG_PRIMARY, font=(S.FONT_FAMILY, S.FONT_SIZE_SM), 
+                 width=12, relief="flat", cursor="hand2").pack(side="left", padx=5)
         tk.Button(btn_frame, text="Cancel", command=dialog.destroy,
-                 bg="#9E9E9E", fg="white", font=("Arial", 9), width=10).pack(side="left", padx=5)
+                 bg=S.BTN_SECONDARY, fg=S.FG_PRIMARY, font=(S.FONT_FAMILY, S.FONT_SIZE_SM), 
+                 width=10, relief="flat", cursor="hand2").pack(side="left", padx=5)
     
     def _capture_hotkey(self, key_name, var, entry, parent_dialog, all_hotkey_vars=None):
         """Capture a hotkey press"""
         # IMPORTANT: Temporarily unregister global hotkeys to prevent them from triggering
         self._unregister_global_hotkeys()
+        
+        S = ModernStyle
         
         capture_dialog = tk.Toplevel(parent_dialog)
         capture_dialog.title(f"Bind Hotkey for {key_name.title()}")
@@ -5348,17 +7257,20 @@ class MainUI:
         capture_dialog.transient(parent_dialog)
         capture_dialog.grab_set()
         capture_dialog.resizable(False, False)
+        capture_dialog.configure(bg=S.BG_SECONDARY)
         
         # Center on parent
         capture_dialog.geometry(f"+{parent_dialog.winfo_x() + 50}+{parent_dialog.winfo_y() + 100}")
         
         tk.Label(capture_dialog, text="Press any key or combination...", 
-                font=("Arial", 11)).pack(pady=15)
+                font=(S.FONT_FAMILY, S.FONT_SIZE_LG), bg=S.BG_SECONDARY, fg=S.FG_PRIMARY).pack(pady=15)
         
-        status_label = tk.Label(capture_dialog, text="Waiting...", font=("Arial", 10), fg="blue")
+        status_label = tk.Label(capture_dialog, text="Waiting...", 
+                               font=(S.FONT_FAMILY, S.FONT_SIZE_MD), fg=S.ACCENT_BLUE, bg=S.BG_SECONDARY)
         status_label.pack()
         
-        conflict_label = tk.Label(capture_dialog, text="", font=("Arial", 9), fg="orange")
+        conflict_label = tk.Label(capture_dialog, text="", font=(S.FONT_FAMILY, S.FONT_SIZE_SM), 
+                                 fg=S.ACCENT_ORANGE, bg=S.BG_SECONDARY)
         conflict_label.pack()
         
         captured_key = [None]
@@ -5397,7 +7309,7 @@ class MainUI:
                 parts.append(key)
             
             captured_key[0] = "+".join(parts)
-            status_label.config(text=f"Captured: {captured_key[0]}", fg="green")
+            status_label.config(text=f"Captured: {captured_key[0]}", fg=S.ACCENT_GREEN)
             
             # Check for conflicts with other hotkeys
             conflict_action = None
@@ -5408,7 +7320,7 @@ class MainUI:
                         break
             
             if conflict_action:
-                conflict_label.config(text=f"⚠️ Already bound to '{conflict_action.title()}'", fg="orange")
+                conflict_label.config(text=f"⚠️ Already bound to '{conflict_action.title()}'", fg=S.ACCENT_ORANGE)
             else:
                 conflict_label.config(text="")
             

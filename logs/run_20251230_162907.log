@@ -1,7 +1,0 @@
-2025-12-30 16:29:07,792 | INFO    | === AUTO TOOL STARTED ===
-2025-12-30 16:29:07,792 | INFO    | Starting LDPlayer window discovery
-2025-12-30 16:29:07,793 | INFO    | Found 1 LDPlayer windows
-2025-12-30 16:29:07,893 | INFO    | Detected window: LDPlayer | WAIT
-2025-12-30 16:29:07,893 | INFO    | === DISCOVERY RESULT ===
-2025-12-30 16:29:07,894 | INFO    | 1. LDPlayer | WAIT | rect=(689, 93, 580, 835)
-2025-12-30 16:29:07,894 | INFO    | === AUTO TOOL FINISHED ===
