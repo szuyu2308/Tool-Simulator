@@ -185,3 +185,29 @@ class WorkerAssignmentManager:
             lines.append(f"  {ldplayer_id} → Worker {worker_id}")
         
         return "\n".join(lines)
+    
+    def cleanup_stale_assignments(self, current_hwnds: list[str]) -> int:
+        """
+        Xóa assignments cho các hwnd không còn tồn tại
+        Returns: số lượng assignments đã xóa
+        """
+        current_set = set(str(h) for h in current_hwnds)
+        stale_ids = []
+        
+        for ldplayer_id in list(self.assignments.keys()):
+            if ldplayer_id not in current_set:
+                stale_ids.append(ldplayer_id)
+        
+        removed = 0
+        for stale_id in stale_ids:
+            worker_id = self.assignments.pop(stale_id, None)
+            if worker_id is not None:
+                self.reverse_map.pop(worker_id, None)
+                removed += 1
+                log(f"[WorkerMgr] Cleaned up stale assignment: {stale_id} (was Worker {worker_id})")
+        
+        if removed > 0:
+            self.save()
+            log(f"[WorkerMgr] Removed {removed} stale assignments")
+        
+        return removed

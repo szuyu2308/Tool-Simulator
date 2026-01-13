@@ -18,10 +18,15 @@
 #     main()
 
 from ui.main_ui import MainUI
-from initialize_workers import initialize_workers_from_ldplayer
 
-# Auto-detect and initialize workers from LDPlayer instances
-workers = initialize_workers_from_ldplayer()
+def initialize_workers_fast():
+    """No auto-scan - return empty list. User must use Set Worker dialog."""
+    print("[APP] Starting in standalone mode")
+    print("[APP] Use 'Set Worker' button to assign LDPlayer instances")
+    return []
+
+# No auto-scan - workers start empty
+workers = initialize_workers_fast()
 
 ui = MainUI(workers)
 ui.root.mainloop()

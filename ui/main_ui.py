@@ -866,10 +866,143 @@ class MainUI:
 
         self._build_ui()
         self._load_macros()
+        self._load_worker_actions()  # Load saved worker actions
         self._auto_refresh_status()
 
         # Register global hotkeys on startup
         self._register_global_hotkeys()
+    
+    # ================= WORKER ACTIONS PERSISTENCE =================
+    
+    def _load_worker_actions(self):
+        """Load saved worker actions from file"""
+        config_file = "data/worker_actions.json"
+        if not os.path.exists(config_file):
+            return
+        
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            
+            # Check for embedded images
+            images = data.get("images", {})
+            worker_data = data.get("workers", {})
+            
+            if images:
+                # Extract images to temp folder
+                import base64
+                import tempfile
+                temp_dir = os.path.join(tempfile.gettempdir(), "macro_images", "worker_actions")
+                os.makedirs(temp_dir, exist_ok=True)
+                
+                for img_key, img_b64 in images.items():
+                    try:
+                        img_data = base64.b64decode(img_b64)
+                        img_path = os.path.join(temp_dir, img_key)
+                        with open(img_path, "wb") as f:
+                            f.write(img_data)
+                    except Exception as e:
+                        log(f"[UI] Failed to extract worker action image {img_key}: {e}")
+            
+            # Load actions for each worker
+            for worker_id_str, actions_data in worker_data.items():
+                worker_id = int(worker_id_str)
+                actions = []
+                
+                for action_data in actions_data:
+                    # Update embedded image paths
+                    if images:
+                        if action_data.get("action") == "FIND_IMAGE":
+                            path = action_data.get("value", {}).get("template_path", "")
+                            if path.startswith("@embedded:"):
+                                img_key = path.replace("@embedded:", "")
+                                action_data["value"]["template_path"] = os.path.join(temp_dir, img_key)
+                        
+                        if action_data.get("action") == "WAIT_SCREEN_CHANGE":
+                            path = action_data.get("value", {}).get("reference_image", "")
+                            if path.startswith("@embedded:"):
+                                img_key = path.replace("@embedded:", "")
+                                action_data["value"]["reference_image"] = os.path.join(temp_dir, img_key)
+                    
+                    actions.append(Action.from_dict(action_data))
+                
+                if actions:
+                    self._worker_actions[worker_id] = actions
+            
+            if self._worker_actions:
+                log(f"[UI] Loaded worker actions for {len(self._worker_actions)} workers")
+                
+        except Exception as e:
+            log(f"[UI] Failed to load worker actions: {e}")
+    
+    def _save_worker_actions(self):
+        """Save worker actions to file with embedded images"""
+        config_file = "data/worker_actions.json"
+        
+        if not self._worker_actions:
+            # Delete file if no worker actions
+            if os.path.exists(config_file):
+                os.remove(config_file)
+            return
+        
+        import base64
+        
+        try:
+            worker_data = {}
+            images_embedded = {}
+            image_count = 0
+            
+            for worker_id, actions in self._worker_actions.items():
+                actions_data = []
+                
+                for action in actions:
+                    action_dict = action.to_dict()
+                    
+                    # Embed FIND_IMAGE templates
+                    if action.action == "FIND_IMAGE" and action.value.get("template_path"):
+                        old_path = action.value["template_path"]
+                        if os.path.exists(old_path) and not old_path.startswith("@embedded:"):
+                            with open(old_path, "rb") as img_file:
+                                img_data = base64.b64encode(img_file.read()).decode('utf-8')
+                            
+                            filename = os.path.basename(old_path)
+                            img_key = f"w{worker_id}_img_{image_count:03d}_{filename}"
+                            images_embedded[img_key] = img_data
+                            action_dict["value"]["template_path"] = f"@embedded:{img_key}"
+                            image_count += 1
+                    
+                    # Embed WAIT_SCREEN_CHANGE reference
+                    if action.action == "WAIT_SCREEN_CHANGE" and action.value.get("reference_image"):
+                        old_path = action.value["reference_image"]
+                        if os.path.exists(old_path) and not old_path.startswith("@embedded:"):
+                            with open(old_path, "rb") as img_file:
+                                img_data = base64.b64encode(img_file.read()).decode('utf-8')
+                            
+                            filename = os.path.basename(old_path)
+                            img_key = f"w{worker_id}_img_{image_count:03d}_{filename}"
+                            images_embedded[img_key] = img_data
+                            action_dict["value"]["reference_image"] = f"@embedded:{img_key}"
+                            image_count += 1
+                    
+                    actions_data.append(action_dict)
+                
+                worker_data[str(worker_id)] = actions_data
+            
+            # Save to file
+            os.makedirs(os.path.dirname(config_file), exist_ok=True)
+            data = {
+                "version": "1.0",
+                "workers": worker_data,
+                "images": images_embedded
+            }
+            
+            with open(config_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            
+            log(f"[UI] Saved worker actions: {len(self._worker_actions)} workers, {image_count} images")
+            
+        except Exception as e:
+            log(f"[UI] Failed to save worker actions: {e}")
 
     # Khi chọn vùng, lưu lại vùng crop
     def on_region_selected(self, region):
@@ -1092,8 +1225,6 @@ class MainUI:
         action_buttons_row2 = [
             ("💾 Save", self._save_actions, S.BTN_PRIMARY, 7),
             ("📂 Load", self._load_actions, S.BTN_SECONDARY, 7),
-            ("📋 Copy", self._copy_selected_actions, S.BTN_SECONDARY, 7),
-            ("📥 Paste", self._paste_actions, S.BTN_SECONDARY, 7),
         ]
         
         for text, cmd, color, w in action_buttons_row2:
@@ -1138,6 +1269,9 @@ class MainUI:
         self.action_tree.bind("<Double-1>", self._on_action_double_click)
         self.action_tree.bind("<Button-3>", self._on_action_right_click)
         self.action_tree.bind("<Control-a>", self._select_all_actions)
+        self.action_tree.bind("<Control-c>", self._copy_selected_actions_key)
+        self.action_tree.bind("<Control-v>", self._paste_actions_key)
+        self.action_tree.bind("<Control-x>", self._cut_selected_actions_key)
         self.action_tree.bind("<Delete>", self._delete_selected_actions)
         self.action_tree.bind("<BackSpace>", self._delete_selected_actions)
         
@@ -1154,8 +1288,178 @@ class MainUI:
         
         # Setup global hotkeys
         self._setup_global_hotkeys()
-
-    # ================= WORKER ACTIONS =================
+    
+    def _build_playback_log_panel(self, parent, S):
+        """Build the playback log panel showing current action execution"""
+        # Create frame at bottom of window
+        log_frame = S.create_section_frame(parent, "Playback Log", icon="📊")
+        log_frame.pack(side="bottom", fill="x", padx=S.PAD_XS, pady=(S.PAD_XS, 0))
+        log_frame.configure(height=150)
+        log_frame.pack_propagate(False)
+        
+        # Container for log listbox
+        log_container = tk.Frame(log_frame, bg=S.BG_CARD)
+        log_container.pack(fill="both", expand=True, padx=S.PAD_XS, pady=S.PAD_XS)
+        
+        # Header row
+        header_frame = tk.Frame(log_container, bg=S.BG_TERTIARY)
+        header_frame.pack(fill="x")
+        
+        # Column headers
+        tk.Label(header_frame, text="#", width=4, anchor="center",
+                bg=S.BG_TERTIARY, fg=S.FG_MUTED, font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold")
+        ).pack(side="left", padx=2)
+        tk.Label(header_frame, text="Action", width=12, anchor="w",
+                bg=S.BG_TERTIARY, fg=S.FG_MUTED, font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold")
+        ).pack(side="left", padx=2)
+        tk.Label(header_frame, text="Label", width=10, anchor="w",
+                bg=S.BG_TERTIARY, fg=S.FG_MUTED, font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold")
+        ).pack(side="left", padx=2)
+        tk.Label(header_frame, text="Status", width=12, anchor="center",
+                bg=S.BG_TERTIARY, fg=S.FG_MUTED, font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold")
+        ).pack(side="left", fill="x", expand=True, padx=2)
+        
+        # Scrollable frame for action rows
+        canvas_frame = tk.Frame(log_container, bg=S.BG_SECONDARY)
+        canvas_frame.pack(fill="both", expand=True)
+        
+        # Canvas for scrolling
+        self._playback_log_canvas = tk.Canvas(canvas_frame, bg=S.BG_SECONDARY, 
+                                               highlightthickness=0, height=90)
+        scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", 
+                                  command=self._playback_log_canvas.yview)
+        
+        self._playback_log_inner = tk.Frame(self._playback_log_canvas, bg=S.BG_SECONDARY)
+        
+        self._playback_log_canvas.create_window((0, 0), window=self._playback_log_inner, anchor="nw")
+        self._playback_log_inner.bind("<Configure>", 
+            lambda e: self._playback_log_canvas.configure(scrollregion=self._playback_log_canvas.bbox("all")))
+        
+        self._playback_log_canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Enable mouse wheel scrolling
+        def _on_mousewheel(event):
+            self._playback_log_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        self._playback_log_canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        # Store row widgets for highlighting
+        self._playback_log_rows = []
+        self._playback_log_style = S
+        self._current_highlighted_row = -1
+    
+    def _populate_playback_log(self):
+        """Populate playback log with current actions"""
+        S = self._playback_log_style
+        
+        # Clear existing rows
+        for widget in self._playback_log_inner.winfo_children():
+            widget.destroy()
+        self._playback_log_rows = []
+        self._current_highlighted_row = -1
+        
+        # Add rows for each action
+        for idx, action in enumerate(self.actions):
+            row_frame = tk.Frame(self._playback_log_inner, bg=S.BG_SECONDARY)
+            row_frame.pack(fill="x", pady=1)
+            
+            # Index
+            idx_label = tk.Label(row_frame, text=str(idx), width=4, anchor="center",
+                                bg=S.BG_SECONDARY, fg=S.FG_MUTED, 
+                                font=(S.FONT_FAMILY, S.FONT_SIZE_SM))
+            idx_label.pack(side="left", padx=2)
+            
+            # Action type
+            action_label = tk.Label(row_frame, text=action.action, width=12, anchor="w",
+                                   bg=S.BG_SECONDARY, fg=S.FG_PRIMARY,
+                                   font=(S.FONT_FAMILY, S.FONT_SIZE_SM))
+            action_label.pack(side="left", padx=2)
+            
+            # Label
+            label_text = action.label if action.label else "-"
+            label_lbl = tk.Label(row_frame, text=label_text, width=10, anchor="w",
+                                bg=S.BG_SECONDARY, fg=S.ACCENT_BLUE,
+                                font=(S.FONT_FAMILY, S.FONT_SIZE_SM))
+            label_lbl.pack(side="left", padx=2)
+            
+            # Status
+            status_label = tk.Label(row_frame, text="⏳", width=12, anchor="center",
+                                   bg=S.BG_SECONDARY, fg=S.FG_MUTED,
+                                   font=(S.FONT_FAMILY, S.FONT_SIZE_SM))
+            status_label.pack(side="left", fill="x", expand=True, padx=2)
+            
+            # Store row data
+            self._playback_log_rows.append({
+                "frame": row_frame,
+                "idx": idx_label,
+                "action": action_label,
+                "label": label_lbl,
+                "status": status_label
+            })
+    
+    def _highlight_playback_row(self, index: int, status: str = "running"):
+        """Highlight the currently executing action row
+        
+        Args:
+            index: Action index to highlight
+            status: 'running', 'done', 'error', 'skipped'
+        """
+        if not hasattr(self, '_playback_log_rows') or not self._playback_log_rows:
+            return
+        
+        S = self._playback_log_style
+        
+        # Define colors for different states
+        colors = {
+            "running": {"bg": "#1B5E20", "fg": "#FFFFFF", "status": "▶ Running", "status_fg": S.ACCENT_GREEN},
+            "done": {"bg": S.BG_SECONDARY, "fg": S.FG_MUTED, "status": "✓ Done", "status_fg": S.ACCENT_GREEN},
+            "error": {"bg": "#4A1010", "fg": "#FF8A80", "status": "✗ Error", "status_fg": S.ACCENT_RED},
+            "skipped": {"bg": S.BG_SECONDARY, "fg": S.FG_MUTED, "status": "⊘ Skip", "status_fg": S.ACCENT_ORANGE},
+            "pending": {"bg": S.BG_SECONDARY, "fg": S.FG_MUTED, "status": "⏳", "status_fg": S.FG_MUTED}
+        }
+        
+        state = colors.get(status, colors["pending"])
+        
+        # Update previous highlighted row to done (if different)
+        if self._current_highlighted_row >= 0 and self._current_highlighted_row != index:
+            if self._current_highlighted_row < len(self._playback_log_rows):
+                prev_row = self._playback_log_rows[self._current_highlighted_row]
+                done = colors["done"]
+                prev_row["frame"].configure(bg=done["bg"])
+                for widget in ["idx", "action", "label"]:
+                    prev_row[widget].configure(bg=done["bg"], fg=done["fg"])
+                prev_row["status"].configure(bg=done["bg"], fg=done["status_fg"], text=done["status"])
+        
+        # Highlight current row
+        if 0 <= index < len(self._playback_log_rows):
+            row = self._playback_log_rows[index]
+            row["frame"].configure(bg=state["bg"])
+            for widget in ["idx", "action", "label"]:
+                row[widget].configure(bg=state["bg"], fg=state["fg"])
+            row["status"].configure(bg=state["bg"], fg=state["status_fg"], text=state["status"])
+            
+            self._current_highlighted_row = index
+            
+            # Auto-scroll to visible
+            self._playback_log_canvas.update_idletasks()
+            row_y = row["frame"].winfo_y()
+            canvas_height = self._playback_log_canvas.winfo_height()
+            self._playback_log_canvas.yview_moveto(max(0, (row_y - canvas_height/2) / 
+                                                       max(1, self._playback_log_inner.winfo_height())))
+    
+    def _clear_playback_log_highlight(self):
+        """Clear all highlights and reset to pending state"""
+        if not hasattr(self, '_playback_log_rows'):
+            return
+        
+        S = self._playback_log_style
+        for row in self._playback_log_rows:
+            row["frame"].configure(bg=S.BG_SECONDARY)
+            for widget in ["idx", "action", "label"]:
+                row[widget].configure(bg=S.BG_SECONDARY, fg=S.FG_MUTED)
+            row["status"].configure(bg=S.BG_SECONDARY, fg=S.FG_MUTED, text="⏳")
+        
+        self._current_highlighted_row = -1
     
     def _on_worker_tree_click(self, event):
         """Handle click on worker tree for per-row actions"""
@@ -1294,13 +1598,12 @@ class MainUI:
             if 0 <= idx < len(self.actions):
                 self._open_add_action_dialog(edit_index=idx)
     
-    def _copy_selected_actions(self):
+    def _copy_selected_actions(self, event=None):
         """Copy selected actions to clipboard"""
         import json
         selection = self.action_tree.selection()
         if not selection:
-            messagebox.showinfo("Copy", "Please select actions to copy")
-            return
+            return "break"
         
         copied = []
         for item in selection:
@@ -1312,37 +1615,72 @@ class MainUI:
         
         if copied:
             self._clipboard_actions = copied
-            self.root.clipboard_clear()
-            self.root.clipboard_append(json.dumps(copied))
-            messagebox.showinfo("Copied", f"Copied {len(copied)} action(s)")
+            try:
+                self.root.clipboard_clear()
+                self.root.clipboard_append(json.dumps(copied))
+            except:
+                pass
+            log(f"[UI] Copied {len(copied)} action(s)")
+        return "break"
     
-    def _paste_actions(self):
+    def _copy_selected_actions_key(self, event=None):
+        """Keyboard handler for Ctrl+C"""
+        return self._copy_selected_actions(event)
+    
+    def _cut_selected_actions(self, event=None):
+        """Cut selected actions (copy then delete)"""
+        self._copy_selected_actions(event)
+        self._delete_selected_actions(event)
+        return "break"
+    
+    def _cut_selected_actions_key(self, event=None):
+        """Keyboard handler for Ctrl+X"""
+        return self._cut_selected_actions(event)
+    
+    def _paste_actions(self, event=None):
         """Paste actions from clipboard"""
         import json
         
+        # Get insert position (after last selected item, or at end)
+        insert_idx = len(self.actions)
+        selection = self.action_tree.selection()
+        if selection:
+            last_item = selection[-1]
+            values = self.action_tree.item(last_item, "values")
+            if values:
+                insert_idx = int(values[0])  # Insert after selected
+        
+        pasted_count = 0
+        
         # Try internal clipboard first
         if hasattr(self, '_clipboard_actions') and self._clipboard_actions:
-            for action_dict in self._clipboard_actions:
+            for i, action_dict in enumerate(self._clipboard_actions):
                 action = Action.from_dict(action_dict)
                 action.id = str(uuid.uuid4())[:8]  # New ID
-                self.actions.append(action)
-            self._refresh_action_tree()
-            messagebox.showinfo("Pasted", f"Pasted {len(self._clipboard_actions)} action(s)")
-            return
+                self.actions.insert(insert_idx + i, action)
+                pasted_count += 1
+        else:
+            # Try system clipboard
+            try:
+                data = self.root.clipboard_get()
+                actions_data = json.loads(data)
+                if isinstance(actions_data, list):
+                    for i, action_dict in enumerate(actions_data):
+                        action = Action.from_dict(action_dict)
+                        action.id = str(uuid.uuid4())[:8]
+                        self.actions.insert(insert_idx + i, action)
+                        pasted_count += 1
+            except:
+                pass
         
-        # Try system clipboard
-        try:
-            data = self.root.clipboard_get()
-            actions_data = json.loads(data)
-            if isinstance(actions_data, list):
-                for action_dict in actions_data:
-                    action = Action.from_dict(action_dict)
-                    action.id = str(uuid.uuid4())[:8]
-                    self.actions.append(action)
-                self._refresh_action_tree()
-                messagebox.showinfo("Pasted", f"Pasted {len(actions_data)} action(s)")
-        except:
-            messagebox.showwarning("Paste", "No valid actions in clipboard")
+        if pasted_count > 0:
+            self._refresh_action_list()
+            log(f"[UI] Pasted {pasted_count} action(s)")
+        return "break"
+    
+    def _paste_actions_key(self, event=None):
+        """Keyboard handler for Ctrl+V"""
+        return self._paste_actions(event)
     
     def _find_worker(self, worker_id: int):
         """Find worker by ID"""
@@ -1352,18 +1690,36 @@ class MainUI:
         return None
 
     def _edit_worker_actions(self, worker_id: int):
-        """Open dialog to edit custom actions for a specific worker"""
+        """Open dialog to edit custom actions for a specific worker - Modern UI"""
+        S = ModernStyle
+        
         dialog = tk.Toplevel(self.root)
         dialog.title(f"Edit Actions - Worker {worker_id}")
-        dialog.geometry("600x500")
+        dialog.geometry("700x550")
         dialog.transient(self.root)
         dialog.grab_set()
+        dialog.configure(bg=S.BG_PRIMARY)
         
-        # Frame for action list
-        list_frame = ttk.LabelFrame(dialog, text=f"Custom Actions for Worker {worker_id}")
-        list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        # ===== HEADER =====
+        header_frame = tk.Frame(dialog, bg=S.BG_SECONDARY, height=50)
+        header_frame.pack(fill="x")
+        header_frame.pack_propagate(False)
+        
+        tk.Label(header_frame, text=f"✏️ Custom Actions - Worker {worker_id}", 
+                 font=(S.FONT_FAMILY, S.FONT_SIZE_LG, "bold"),
+                 bg=S.BG_SECONDARY, fg=S.FG_PRIMARY).pack(pady=S.PAD_MD)
+        
+        # ===== ACTION BUTTONS =====
+        btn_frame = tk.Frame(dialog, bg=S.BG_PRIMARY)
+        btn_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
         
         # Treeview for actions
+        list_frame = tk.LabelFrame(dialog, text=" 📋 Action List ", 
+                                   font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                   bg=S.BG_CARD, fg=S.FG_ACCENT,
+                                   padx=S.PAD_SM, pady=S.PAD_SM)
+        list_frame.pack(fill="both", expand=True, padx=S.PAD_MD, pady=S.PAD_SM)
+        
         columns = ("index", "type", "target", "value")
         tree = ttk.Treeview(list_frame, columns=columns, show="headings", height=15)
         tree.heading("index", text="#")
@@ -1371,8 +1727,8 @@ class MainUI:
         tree.heading("target", text="Target")
         tree.heading("value", text="Value")
         tree.column("index", width=40)
-        tree.column("type", width=100)
-        tree.column("target", width=200)
+        tree.column("type", width=120)
+        tree.column("target", width=250)
         tree.column("value", width=200)
         
         scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=tree.yview)
@@ -1385,88 +1741,214 @@ class MainUI:
             tree.delete(*tree.get_children())
             actions = self._worker_actions.get(worker_id, [])
             for i, action in enumerate(actions):
-                target = getattr(action, 'target', getattr(action, 'image', ''))
-                value = getattr(action, 'value', getattr(action, 'timeout', ''))
-                tree.insert("", tk.END, values=(i+1, action.type, target, value))
-        
-        refresh_tree()
-        
-        # Buttons frame
-        btn_frame = ttk.Frame(dialog)
-        btn_frame.pack(fill=tk.X, padx=10, pady=5)
+                action_type = action.action if hasattr(action, 'action') else getattr(action, 'type', 'Unknown')
+                target = ""
+                value = ""
+                
+                # Get target/value based on action type
+                if hasattr(action, 'value') and isinstance(action.value, dict):
+                    if action_type == "FIND_IMAGE":
+                        target = action.value.get("template_path", "")[:40]
+                        value = f"conf={action.value.get('confidence', 0.8)}"
+                    elif action_type == "CLICK":
+                        target = f"({action.value.get('x', 0)}, {action.value.get('y', 0)})"
+                        value = action.value.get("button", "left")
+                    elif action_type in ("WAIT_TIME", "DELAY"):
+                        value = f"{action.value.get('delay_ms', 0)}ms"
+                    elif action_type == "KEY_PRESS":
+                        target = action.value.get("key", "")
+                    elif action_type == "LABEL":
+                        target = action.value.get("name", "")
+                    elif action_type == "GOTO":
+                        target = action.value.get("target", "")
+                    else:
+                        target = str(action.value)[:40]
+                
+                tree.insert("", tk.END, values=(i+1, action_type, target, value))
+            
+            # Update count label
+            count_label.config(text=f"Total: {len(actions)} actions")
         
         def copy_from_global():
             """Copy global action list to this worker"""
-            if messagebox.askyesno("Confirm", "Sao chép danh sách actions chung sang Worker này?"):
-                self._worker_actions[worker_id] = list(self.actions)  # Copy list
+            if not self.actions:
+                messagebox.showwarning("Warning", "Global action list is empty")
+                return
+            if messagebox.askyesno("Confirm", f"Sao chép {len(self.actions)} actions từ global list?"):
+                self._worker_actions[worker_id] = [Action.from_dict(a.to_dict()) for a in self.actions]
                 refresh_tree()
-                messagebox.showinfo("Done", f"Đã sao chép {len(self.actions)} actions")
+                messagebox.showinfo("Done", f"✅ Đã sao chép {len(self.actions)} actions")
         
-        def add_from_file():
-            """Load actions from a JSON file"""
+        def load_from_file():
+            """Load actions from .macro or .json file"""
             file_path = filedialog.askopenfilename(
                 title="Select Macro File",
-                filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+                initialdir="data/macros",
+                filetypes=[
+                    ("Macro files", "*.macro"),
+                    ("JSON files", "*.json"),
+                    ("All files", "*.*")
+                ]
             )
-            if file_path:
-                try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
+            if not file_path:
+                return
+            
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                
+                # Check for embedded format
+                fmt = data.get("format", "")
+                images = data.get("images", {})
+                actions_data = data.get('actions', data) if isinstance(data, dict) else data
+                
+                if fmt == "embedded" and images:
+                    # Extract embedded images
+                    import base64
+                    import tempfile
                     
-                    # Parse actions from file
-                    loaded_actions = []
-                    action_data = data.get('actions', data) if isinstance(data, dict) else data
-                    if isinstance(action_data, list):
-                        for item in action_data:
-                            if isinstance(item, dict):
-                                action = Action.from_dict(item)
-                                loaded_actions.append(action)
+                    macro_name = os.path.splitext(os.path.basename(file_path))[0]
+                    temp_dir = os.path.join(tempfile.gettempdir(), "macro_images", f"worker_{worker_id}_{macro_name}")
+                    os.makedirs(temp_dir, exist_ok=True)
                     
-                    if loaded_actions:
-                        if worker_id not in self._worker_actions:
-                            self._worker_actions[worker_id] = []
-                        self._worker_actions[worker_id].extend(loaded_actions)
-                        refresh_tree()
-                        messagebox.showinfo("Done", f"Đã thêm {len(loaded_actions)} actions từ file")
-                except Exception as e:
-                    messagebox.showerror("Error", f"Lỗi đọc file: {e}")
+                    for img_key, img_b64 in images.items():
+                        try:
+                            img_data = base64.b64decode(img_b64)
+                            img_path = os.path.join(temp_dir, img_key)
+                            with open(img_path, "wb") as f:
+                                f.write(img_data)
+                        except Exception as e:
+                            log(f"[UI] Failed to extract image {img_key}: {e}")
+                    
+                    # Update action paths
+                    for action_data in actions_data:
+                        if action_data.get("action") == "FIND_IMAGE":
+                            template_path = action_data.get("value", {}).get("template_path", "")
+                            if template_path.startswith("@embedded:"):
+                                img_key = template_path.replace("@embedded:", "")
+                                action_data["value"]["template_path"] = os.path.join(temp_dir, img_key)
+                        
+                        if action_data.get("action") == "WAIT_SCREEN_CHANGE":
+                            ref_path = action_data.get("value", {}).get("reference_image", "")
+                            if ref_path.startswith("@embedded:"):
+                                img_key = ref_path.replace("@embedded:", "")
+                                action_data["value"]["reference_image"] = os.path.join(temp_dir, img_key)
+                
+                # Parse actions
+                loaded_actions = []
+                if isinstance(actions_data, list):
+                    for item in actions_data:
+                        if isinstance(item, dict):
+                            action = Action.from_dict(item)
+                            loaded_actions.append(action)
+                
+                if loaded_actions:
+                    # Ask: Replace or Append?
+                    existing = self._worker_actions.get(worker_id, [])
+                    if existing:
+                        choice = messagebox.askyesnocancel(
+                            "Load Actions",
+                            f"Worker {worker_id} đã có {len(existing)} actions.\n\n"
+                            f"YES = Thay thế bằng {len(loaded_actions)} actions mới\n"
+                            f"NO = Thêm vào cuối (append)\n"
+                            f"CANCEL = Hủy"
+                        )
+                        if choice is None:
+                            return
+                        elif choice:
+                            self._worker_actions[worker_id] = loaded_actions
+                        else:
+                            self._worker_actions[worker_id].extend(loaded_actions)
+                    else:
+                        self._worker_actions[worker_id] = loaded_actions
+                    
+                    refresh_tree()
+                    messagebox.showinfo("Done", f"✅ Loaded {len(loaded_actions)} actions")
+                else:
+                    messagebox.showwarning("Warning", "No actions found in file")
+                    
+            except Exception as e:
+                messagebox.showerror("Error", f"Lỗi đọc file: {e}")
         
         def clear_actions():
             """Clear all custom actions for this worker"""
-            if messagebox.askyesno("Confirm", "Xóa tất cả custom actions của Worker này?"):
+            if messagebox.askyesno("Confirm", f"Xóa tất cả {len(self._worker_actions.get(worker_id, []))} custom actions?"):
                 self._worker_actions[worker_id] = []
                 refresh_tree()
         
         def remove_selected():
             """Remove selected action"""
             selection = tree.selection()
-            if selection:
-                indices = [int(tree.item(item)["values"][0]) - 1 for item in selection]
-                indices.sort(reverse=True)  # Remove from end first
-                actions = self._worker_actions.get(worker_id, [])
-                for idx in indices:
-                    if 0 <= idx < len(actions):
-                        del actions[idx]
+            if not selection:
+                messagebox.showwarning("Warning", "Chưa chọn action nào")
+                return
+            indices = [int(tree.item(item)["values"][0]) - 1 for item in selection]
+            indices.sort(reverse=True)
+            actions = self._worker_actions.get(worker_id, [])
+            for idx in indices:
+                if 0 <= idx < len(actions):
+                    del actions[idx]
+            refresh_tree()
+        
+        def use_global():
+            """Set worker to use global actions (remove custom)"""
+            if messagebox.askyesno("Confirm", "Worker sẽ dùng global action list thay vì custom?"):
+                if worker_id in self._worker_actions:
+                    del self._worker_actions[worker_id]
                 refresh_tree()
+                messagebox.showinfo("Info", "Worker sẽ dùng Global Action List khi playback")
         
-        ttk.Button(btn_frame, text="📋 Copy từ Global", command=copy_from_global).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="📁 Load từ File", command=add_from_file).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="🗑️ Xóa Selected", command=remove_selected).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="❌ Clear All", command=clear_actions).pack(side=tk.LEFT, padx=2)
+        # Buttons
+        tk.Button(btn_frame, text="📋 Copy từ Global", command=copy_from_global,
+                 bg=S.ACCENT_BLUE, fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                 relief="flat", cursor="hand2").pack(side="left", padx=2)
+        tk.Button(btn_frame, text="📁 Load File", command=load_from_file,
+                 bg=S.ACCENT_GREEN, fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                 relief="flat", cursor="hand2").pack(side="left", padx=2)
+        tk.Button(btn_frame, text="🗑️ Remove", command=remove_selected,
+                 bg=S.ACCENT_ORANGE, fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                 relief="flat", cursor="hand2").pack(side="left", padx=2)
+        tk.Button(btn_frame, text="❌ Clear All", command=clear_actions,
+                 bg=S.ACCENT_RED, fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                 relief="flat", cursor="hand2").pack(side="left", padx=2)
+        tk.Button(btn_frame, text="🔄 Use Global", command=use_global,
+                 bg=S.BTN_SECONDARY, fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                 relief="flat", cursor="hand2").pack(side="left", padx=2)
         
-        # Info label
-        info_label = ttk.Label(dialog, text="Worker có custom actions sẽ chạy actions riêng thay vì global list", 
-                               foreground="gray")
-        info_label.pack(pady=5)
+        # ===== INFO & COUNT =====
+        info_frame = tk.Frame(dialog, bg=S.BG_PRIMARY)
+        info_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_XS)
         
-        # Close button
-        ttk.Button(dialog, text="Close", command=dialog.destroy).pack(pady=10)
+        count_label = tk.Label(info_frame, text="Total: 0 actions", 
+                              bg=S.BG_PRIMARY, fg=S.FG_PRIMARY,
+                              font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold"))
+        count_label.pack(side="left")
+        
+        tk.Label(info_frame, text="💡 Worker có custom actions sẽ chạy riêng, không dùng global list",
+                bg=S.BG_PRIMARY, fg=S.FG_MUTED,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="right")
+        
+        # ===== CLOSE BUTTON =====
+        close_frame = tk.Frame(dialog, bg=S.BG_PRIMARY)
+        close_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        def close_and_save():
+            self._save_worker_actions()  # Auto-save when closing
+            dialog.destroy()
+        
+        tk.Button(close_frame, text="✓ Save & Close", command=close_and_save,
+                 bg=S.BTN_PRIMARY, fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                 relief="flat", cursor="hand2", width=15).pack()
+        
+        # Initial load
+        refresh_tree()
     
     def _clear_worker_actions(self, worker_id: int):
         """Clear custom actions for a specific worker"""
         if messagebox.askyesno("Confirm", f"Xóa custom actions của Worker {worker_id}?"):
             if worker_id in self._worker_actions:
                 del self._worker_actions[worker_id]
+            self._save_worker_actions()  # Auto-save
             log(f"[UI] Cleared custom actions for Worker {worker_id}")
 
     # ================= RECORD/PLAY/PAUSE/STOP (per spec 1.1, 2, 3) =================
@@ -2260,14 +2742,34 @@ class MainUI:
         if all_done and self._is_playing:
             self.root.after(0, self._on_playback_complete)
     
+    def _get_worker_for_hwnd(self, hwnd):
+        """Get worker object by hwnd for scale factor lookup"""
+        if not hwnd:
+            return None
+        for w in self.workers:
+            if w.hwnd == hwnd:
+                return w
+        return None
+    
     def _playback_loop(self):
         """Main playback loop running in thread"""
         import ctypes
         from ctypes import wintypes
         
-        # Get target worker
+        # Get target worker - try to find any available hwnd
         target_worker = self.workers[0] if self.workers else None
         target_hwnd = target_worker.hwnd if target_worker else None
+        
+        # If no hwnd from worker, try to find any LDPlayer window for emulator-mode actions
+        if not target_hwnd:
+            try:
+                from initialize_workers import detect_ldplayer_windows
+                ldplayer_wins = detect_ldplayer_windows()
+                if ldplayer_wins:
+                    target_hwnd = ldplayer_wins[0]['hwnd']
+                    log(f"[UI] Auto-detected LDPlayer hwnd={target_hwnd} for emulator-mode actions")
+            except:
+                pass
         
         log(f"[UI] Playback loop: {len(self.actions)} actions, target_hwnd={target_hwnd}")
         
@@ -2286,19 +2788,29 @@ class MainUI:
             action = self.actions[self._current_action_index]
             log(f"[UI] Executing action {self._current_action_index}: {action.action} = {action.value}")
             
+            # Update mini playback log - highlight current row
+            self.root.after(0, lambda idx=self._current_action_index: self._highlight_mini_log_row(idx, "running"))
+            
             # Skip disabled actions
             if not action.enabled:
+                self.root.after(0, lambda idx=self._current_action_index: self._highlight_mini_log_row(idx, "skipped"))
                 self._current_action_index += 1
                 continue
             
             # Execute action
+            action_success = True
             try:
                 self._execute_action(action, target_hwnd)
             except Exception as e:
                 log(f"[UI] Action error: {e}")
                 import traceback
                 log(f"[UI] Traceback: {traceback.format_exc()}")
+                action_success = False
                 # Per spec 3.4 - skip on error
+            
+            # Mark action as done or error
+            status = "done" if action_success else "error"
+            self.root.after(0, lambda idx=self._current_action_index, s=status: self._highlight_mini_log_row(idx, s))
             
             self._current_action_index += 1
         
@@ -2520,51 +3032,104 @@ class MainUI:
             x, y = v.get("x", 0), v.get("y", 0)
             btn = v.get("button", "left")
             hold_ms = v.get("hold_ms", 0)
-            screen_coords = v.get("screen_coords", False)
+            use_current_pos = v.get("use_current_pos", False)
             
-            # Convert client coords to screen if we have target window AND not already screen coords
-            if target_hwnd and not screen_coords:
-                pt = wintypes.POINT(x, y)
-                ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt))
-                x, y = pt.x, pt.y
-            # Nếu screen_coords=True thì x,y đã là screen coords, dùng trực tiếp
+            # Determine effective hwnd for this action
+            # - Only use emulator mode when EXPLICITLY set to "emulator"
+            # - Default is always screen mode (no coordinate conversion)
+            target_mode = v.get("target_mode", "screen")  # Default: screen
             
-            # Move cursor
-            ctypes.windll.user32.SetCursorPos(x, y)
-            time.sleep(0.02)
+            # Only use hwnd conversion when explicitly set to emulator mode
+            effective_hwnd = target_hwnd if target_mode == "emulator" else None
             
-            # Click based on button type
-            if btn == "left":
-                ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)  # LEFTDOWN
+            # If use_current_pos is True, get current mouse position
+            if use_current_pos:
+                cursor_pt = wintypes.POINT()
+                ctypes.windll.user32.GetCursorPos(ctypes.byref(cursor_pt))
+                screen_x, screen_y = cursor_pt.x, cursor_pt.y
+                log(f"[CLICK] Using current mouse position: ({screen_x},{screen_y})")
+            # Convert client coords to screen coords if we have target window
+            elif effective_hwnd:
+                pt = wintypes.POINT(int(x), int(y))
+                ctypes.windll.user32.ClientToScreen(effective_hwnd, ctypes.byref(pt))
+                screen_x, screen_y = pt.x, pt.y
+                log(f"[CLICK] Converting client({x},{y}) -> screen({screen_x},{screen_y}) for hwnd={effective_hwnd}")
+            else:
+                screen_x, screen_y = int(x), int(y)
+            
+            # Move cursor to position (skip if using current pos)
+            if not use_current_pos:
+                ctypes.windll.user32.SetCursorPos(screen_x, screen_y)
                 time.sleep(0.02)
-                ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)  # LEFTUP
-            elif btn == "right":
-                ctypes.windll.user32.mouse_event(0x0008, 0, 0, 0, 0)  # RIGHTDOWN
-                time.sleep(0.02)
-                ctypes.windll.user32.mouse_event(0x0010, 0, 0, 0, 0)  # RIGHTUP
-            elif btn == "middle":
-                ctypes.windll.user32.mouse_event(0x0020, 0, 0, 0, 0)  # MIDDLEDOWN
-                time.sleep(0.02)
-                ctypes.windll.user32.mouse_event(0x0040, 0, 0, 0, 0)  # MIDDLEUP
-            elif btn == "double":
-                # Double click left
-                ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)  # LEFTDOWN
-                time.sleep(0.02)
-                ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)  # LEFTUP
-                time.sleep(0.05)
-                ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)  # LEFTDOWN
-                time.sleep(0.02)
-                ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)  # LEFTUP
-            elif btn == "hold_left":
-                # Hold left button for specified duration
-                ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)  # LEFTDOWN
-                time.sleep(hold_ms / 1000.0 if hold_ms > 0 else 0.5)
-                ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)  # LEFTUP
-            elif btn == "hold_right":
-                # Hold right button for specified duration
-                ctypes.windll.user32.mouse_event(0x0008, 0, 0, 0, 0)  # RIGHTDOWN
-                time.sleep(hold_ms / 1000.0 if hold_ms > 0 else 0.5)
-                ctypes.windll.user32.mouse_event(0x0010, 0, 0, 0, 0)  # RIGHTUP
+            
+            # Calculate hold time (use hold_ms for any button if specified)
+            hold_time = hold_ms / 1000.0 if hold_ms > 0 else 0.02
+            
+            # For emulator mode with hwnd, use PostMessage for better compatibility
+            if effective_hwnd and use_current_pos:
+                # Convert screen coords to client coords for PostMessage
+                client_pt = wintypes.POINT(screen_x, screen_y)
+                ctypes.windll.user32.ScreenToClient(effective_hwnd, ctypes.byref(client_pt))
+                client_x, client_y = client_pt.x, client_pt.y
+                lparam = client_y << 16 | (client_x & 0xFFFF)
+                
+                WM_LBUTTONDOWN = 0x0201
+                WM_LBUTTONUP = 0x0202
+                WM_RBUTTONDOWN = 0x0204
+                WM_RBUTTONUP = 0x0205
+                MK_LBUTTON = 0x0001
+                MK_RBUTTON = 0x0002
+                
+                log(f"[CLICK] PostMessage to hwnd={effective_hwnd}, client({client_x},{client_y}), hold={hold_time}s")
+                
+                if btn in ("left", "hold_left"):
+                    ctypes.windll.user32.PostMessageW(effective_hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lparam)
+                    time.sleep(hold_time)
+                    ctypes.windll.user32.PostMessageW(effective_hwnd, WM_LBUTTONUP, 0, lparam)
+                elif btn in ("right", "hold_right"):
+                    ctypes.windll.user32.PostMessageW(effective_hwnd, WM_RBUTTONDOWN, MK_RBUTTON, lparam)
+                    time.sleep(hold_time)
+                    ctypes.windll.user32.PostMessageW(effective_hwnd, WM_RBUTTONUP, 0, lparam)
+                elif btn == "double":
+                    ctypes.windll.user32.PostMessageW(effective_hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lparam)
+                    time.sleep(0.02)
+                    ctypes.windll.user32.PostMessageW(effective_hwnd, WM_LBUTTONUP, 0, lparam)
+                    time.sleep(0.05)
+                    ctypes.windll.user32.PostMessageW(effective_hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lparam)
+                    time.sleep(0.02)
+                    ctypes.windll.user32.PostMessageW(effective_hwnd, WM_LBUTTONUP, 0, lparam)
+            else:
+                # Standard mouse_event for screen mode
+                if btn == "left":
+                    ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)  # LEFTDOWN
+                    time.sleep(hold_time)
+                    ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)  # LEFTUP
+                elif btn == "right":
+                    ctypes.windll.user32.mouse_event(0x0008, 0, 0, 0, 0)  # RIGHTDOWN
+                    time.sleep(hold_time)
+                    ctypes.windll.user32.mouse_event(0x0010, 0, 0, 0, 0)  # RIGHTUP
+                elif btn == "middle":
+                    ctypes.windll.user32.mouse_event(0x0020, 0, 0, 0, 0)  # MIDDLEDOWN
+                    time.sleep(0.02)
+                    ctypes.windll.user32.mouse_event(0x0040, 0, 0, 0, 0)  # MIDDLEUP
+                elif btn == "double":
+                    ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)
+                    time.sleep(0.02)
+                    ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)
+                    time.sleep(0.05)
+                    ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)
+                    time.sleep(0.02)
+                    ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)
+                elif btn == "hold_left":
+                    ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)
+                    time.sleep(hold_time)
+                    ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)
+                elif btn == "hold_right":
+                    ctypes.windll.user32.mouse_event(0x0008, 0, 0, 0, 0)
+                    time.sleep(hold_time)
+                    ctypes.windll.user32.mouse_event(0x0010, 0, 0, 0, 0)
+            
+            log(f"[CLICK] {btn} at screen({screen_x},{screen_y})" + (f" [hwnd={effective_hwnd}]" if effective_hwnd else "") + (" [current_pos]" if use_current_pos else ""))
         
         elif action.action == "KEY_PRESS":
             key = v.get("key", "")
@@ -2578,7 +3143,11 @@ class MainUI:
             amount = v.get("amount", 1)
             speed = v.get("speed", 50)  # ms delay giữa các tick
             x, y = v.get("x", 0), v.get("y", 0)
-            screen_coords = v.get("screen_coords", False)
+            use_current_pos = v.get("use_current_pos", False)
+            
+            # Only use emulator mode when explicitly set
+            target_mode = v.get("target_mode", "screen")
+            effective_hwnd = target_hwnd if target_mode == "emulator" else None
             
             # Backward compat: nếu có delta cũ thì dùng delta
             if "delta" in v:
@@ -2586,22 +3155,32 @@ class MainUI:
             else:
                 delta = 120 if direction == "up" else -120
             
-            # Move cursor to position
-            if target_hwnd and not screen_coords:
-                pt = wintypes.POINT(x, y)
-                ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt))
-                ctypes.windll.user32.SetCursorPos(pt.x, pt.y)
+            # If use_current_pos is True, get current mouse position
+            if use_current_pos:
+                cursor_pt = wintypes.POINT()
+                ctypes.windll.user32.GetCursorPos(ctypes.byref(cursor_pt))
+                screen_x, screen_y = cursor_pt.x, cursor_pt.y
+                log(f"[WHEEL] Using current mouse position: ({screen_x},{screen_y})")
+            # Convert client coords to screen coords if we have target window
+            elif effective_hwnd:
+                pt = wintypes.POINT(int(x), int(y))
+                ctypes.windll.user32.ClientToScreen(effective_hwnd, ctypes.byref(pt))
+                screen_x, screen_y = pt.x, pt.y
             else:
-                # Screen coords - dùng trực tiếp
-                ctypes.windll.user32.SetCursorPos(x, y)
+                screen_x, screen_y = int(x), int(y)
             
-            # Scroll nhiều lần với delay
+            # Move cursor and scroll (skip move if using current pos)
+            if not use_current_pos:
+                ctypes.windll.user32.SetCursorPos(screen_x, screen_y)
+            
             for _ in range(amount):
                 if self._playback_stop_event.is_set():
                     break
-                ctypes.windll.user32.mouse_event(0x0800, 0, 0, delta, 0)  # WHEEL
+                ctypes.windll.user32.mouse_event(0x0800, 0, 0, delta, 0)
                 if speed > 0:
                     time.sleep(speed / 1000.0)
+            
+            log(f"[WHEEL] {direction} x{amount} at screen({screen_x},{screen_y})" + (f" [hwnd={effective_hwnd}]" if effective_hwnd else "") + (" [current_pos]" if use_current_pos else ""))
         
         elif action.action == "COMBOKEY":
             keys = v.get("keys", [])
@@ -2687,14 +3266,91 @@ class MainUI:
         
         elif action.action == "WAIT_SCREEN_CHANGE":
             from core.wait_actions import WaitScreenChange
+            import time as time_module
+            
             region = v.get("region", (0, 0, 100, 100))
+            timeout_seconds = v.get("timeout_seconds", v.get("timeout_ms", 30000) // 1000)
+            
+            log(f"[WAIT_SCREEN_CHANGE] Starting, timeout={timeout_seconds}s, region={region}")
+            
             wait = WaitScreenChange(
                 region=tuple(region) if isinstance(region, list) else region,
                 threshold=v.get("threshold", 0.05),
-                timeout_ms=v.get("timeout_ms", 30000),
+                timeout_ms=timeout_seconds * 1000,
                 target_hwnd=target_hwnd or 0
             )
-            wait.wait(self._playback_stop_event)
+            
+            # Wait for screen change - returns WaitResult object
+            result = wait.wait(self._playback_stop_event)
+            change_found = result.success if result else False
+            
+            # Initialize vars storage
+            if not hasattr(self, '_action_vars'):
+                self._action_vars = {}
+            
+            if change_found:
+                log(f"[WAIT_SCREEN_CHANGE] Change detected in region {region}")
+                
+                # Calculate center of monitored region for positioning
+                x1, y1, x2, y2 = region
+                center_x = (x1 + x2) // 2
+                center_y = (y1 + y2) // 2
+                
+                # Save coordinates if enabled
+                if v.get("save_xy_enabled", False):
+                    x_var = v.get("save_x_var", "$changeX")
+                    y_var = v.get("save_y_var", "$changeY")
+                    if x_var:
+                        self._action_vars[x_var.strip("$")] = center_x
+                    if y_var:
+                        self._action_vars[y_var.strip("$")] = center_y
+                
+                # Perform mouse action if enabled
+                if v.get("mouse_action_enabled", False):
+                    mouse_type = v.get("mouse_type", "Positioning")
+                    
+                    # Use screen coordinates directly
+                    screen_x, screen_y = center_x, center_y
+                    
+                    # Move cursor
+                    ctypes.windll.user32.SetCursorPos(screen_x, screen_y)
+                    time_module.sleep(0.05)
+                    
+                    if mouse_type != "Positioning":
+                        if mouse_type == "Left click":
+                            ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)
+                            time_module.sleep(0.02)
+                            ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)
+                        elif mouse_type == "Right click":
+                            ctypes.windll.user32.mouse_event(0x0008, 0, 0, 0, 0)
+                            time_module.sleep(0.02)
+                            ctypes.windll.user32.mouse_event(0x0010, 0, 0, 0, 0)
+                        elif mouse_type == "Double click":
+                            for _ in range(2):
+                                ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)
+                                time_module.sleep(0.02)
+                                ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)
+                                time_module.sleep(0.05)
+                        elif mouse_type == "Middle click":
+                            ctypes.windll.user32.mouse_event(0x0020, 0, 0, 0, 0)
+                            time_module.sleep(0.02)
+                            ctypes.windll.user32.mouse_event(0x0040, 0, 0, 0, 0)
+                    
+                    log(f"[WAIT_SCREEN_CHANGE] {mouse_type} at ({screen_x}, {screen_y})")
+                
+                # Handle goto if found
+                goto_target = v.get("goto_if_found", "Next")
+                if goto_target and goto_target.startswith("→ "):
+                    goto_target = goto_target[2:]
+                self._handle_goto(goto_target)
+            else:
+                log(f"[WAIT_SCREEN_CHANGE] No change after {timeout_seconds}s")
+                
+                # Handle goto if not found
+                goto_target = v.get("goto_if_not_found", "End")
+                if goto_target and goto_target.startswith("→ "):
+                    goto_target = goto_target[2:]
+                self._handle_goto(goto_target)
         
         elif action.action == "WAIT_COMBOKEY":
             from core.wait_actions import WaitHotkey
@@ -2718,10 +3374,13 @@ class MainUI:
             if IMAGE_ACTIONS_AVAILABLE:
                 from core.image_actions import FindImage
                 import time as time_module
+                import ctypes.wintypes
                 
                 template_path = v.get("template_path", "")
                 threshold = v.get("threshold", 0.8)
                 retry_seconds = v.get("retry_seconds", 30)
+                
+                log(f"[FIND_IMAGE] Starting search, retry_seconds={retry_seconds}, threshold={threshold}")
                 
                 # Initialize vars storage
                 if not hasattr(self, '_action_vars'):
@@ -2731,10 +3390,14 @@ class MainUI:
                 found = False
                 match = None
                 start_time = time_module.time()
+                attempt = 0
                 
                 while not found and (time_module.time() - start_time) < retry_seconds:
                     if self._playback_stop_event and self._playback_stop_event.is_set():
                         break
+                    
+                    attempt += 1
+                    elapsed = time_module.time() - start_time
                     
                     finder = FindImage(
                         template_path=template_path,
@@ -2746,6 +3409,7 @@ class MainUI:
                     found = match.found if match else False
                     
                     if not found:
+                        log(f"[FIND_IMAGE] Attempt {attempt}: not found ({elapsed:.1f}s / {retry_seconds}s)")
                         time_module.sleep(0.5)  # Wait before retry
                 
                 # Store result
@@ -2785,38 +3449,91 @@ class MainUI:
                     if v.get("mouse_action_enabled", True):
                         mouse_type = v.get("mouse_type", "Left click")
                         
-                        # Convert to screen coordinates
-                        screen_x, screen_y = click_x, click_y
+                        # When target_hwnd is set, use worker InputManager to click
                         if target_hwnd:
-                            pt = wintypes.POINT(click_x, click_y)
-                            ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt))
-                            screen_x, screen_y = pt.x, pt.y
-                        
-                        # Move cursor
-                        ctypes.windll.user32.SetCursorPos(screen_x, screen_y)
-                        time_module.sleep(0.05)
-                        
-                        if mouse_type != "Positioning":
-                            if mouse_type == "Left click":
-                                ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)  # LEFTDOWN
-                                time_module.sleep(0.02)
-                                ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)  # LEFTUP
-                            elif mouse_type == "Right click":
-                                ctypes.windll.user32.mouse_event(0x0008, 0, 0, 0, 0)  # RIGHTDOWN
-                                time_module.sleep(0.02)
-                                ctypes.windll.user32.mouse_event(0x0010, 0, 0, 0, 0)  # RIGHTUP
-                            elif mouse_type == "Double click":
-                                for _ in range(2):
-                                    ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)
-                                    time_module.sleep(0.02)
-                                    ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)
-                                    time_module.sleep(0.05)
-                            elif mouse_type == "Middle click":
-                                ctypes.windll.user32.mouse_event(0x0020, 0, 0, 0, 0)  # MIDDLEDOWN
-                                time_module.sleep(0.02)
-                                ctypes.windll.user32.mouse_event(0x0040, 0, 0, 0, 0)  # MIDDLEUP
-                        
-                        log(f"[FIND_IMAGE] {mouse_type} at ({screen_x}, {screen_y})")
+                            # FindImage returns coordinates in CLIENT coords (screenshot pixels)
+                            # These are the actual pixel positions in the window
+                            # NO SCALING needed - InputManager converts client -> screen coords
+                            # Emulator will handle client -> resolution conversion internally
+                            client_click_x, client_click_y = click_x, click_y
+                            
+                            # Get worker to use InputManager
+                            worker = self._get_worker_for_hwnd(target_hwnd)
+                            
+                            log(f"[FIND_IMAGE] Click at client coords ({client_click_x}, {client_click_y})")
+                            
+                            # Use worker's InputManager for reliable click (uses SendInput internally)
+                            if worker and hasattr(worker, '_input_manager'):
+                                from core.input import ButtonType
+                                
+                                # Delay before click
+                                time_module.sleep(0.3)
+                                
+                                if mouse_type != "Positioning":
+                                    button_type = ButtonType.LEFT
+                                    if mouse_type == "Right click":
+                                        button_type = ButtonType.RIGHT
+                                    elif mouse_type == "Middle click":
+                                        button_type = ButtonType.MIDDLE
+                                    elif mouse_type == "Double click":
+                                        button_type = ButtonType.DOUBLE
+                                    
+                                    # Click using InputManager with CLIENT coords
+                                    # InputManager will convert to screen coords automatically
+                                    success = worker._input_manager.click(
+                                        client_x=client_click_x,
+                                        client_y=client_click_y,
+                                        button=button_type,
+                                        humanize_delay_min=50,
+                                        humanize_delay_max=150,
+                                        wheel_delta=0
+                                    )
+                                    
+                                    if success:
+                                        log(f"[FIND_IMAGE] {mouse_type} at client ({client_click_x}, {client_click_y}) via InputManager")
+                                    else:
+                                        log(f"[FIND_IMAGE] Failed to click at ({client_click_x}, {client_click_y})")
+                                
+                                # Save last position for next actions
+                                pt = ctypes.wintypes.POINT(int(client_click_x), int(client_click_y))
+                                ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt))
+                                self._action_vars["last_screen_x"] = pt.x
+                                self._action_vars["last_screen_y"] = pt.y
+                            else:
+                                log(f"[FIND_IMAGE] Worker or InputManager not available for hwnd={target_hwnd}")
+                        else:
+                            # Full screen mode - use SetCursorPos + mouse_event
+                            screen_x, screen_y = int(click_x), int(click_y)
+                            
+                            # Move cursor
+                            ctypes.windll.user32.SetCursorPos(screen_x, screen_y)
+                            time_module.sleep(1.0)  # Tăng từ 0.05s lên 1.0s để đảm bảo cursor đã di chuyển
+                            
+                            # Save screen position for next action with use_current_pos
+                            self._action_vars["last_screen_x"] = screen_x
+                            self._action_vars["last_screen_y"] = screen_y
+                            
+                            if mouse_type != "Positioning":
+                                if mouse_type == "Left click":
+                                    ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)  # LEFTDOWN
+                                    time_module.sleep(0.1)  # Tăng từ 0.02s lên 0.1s
+                                    ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)  # LEFTUP
+                                elif mouse_type == "Right click":
+                                    ctypes.windll.user32.mouse_event(0x0008, 0, 0, 0, 0)  # RIGHTDOWN
+                                    time_module.sleep(0.1)  # Tăng từ 0.02s lên 0.1s
+                                    ctypes.windll.user32.mouse_event(0x0010, 0, 0, 0, 0)  # RIGHTUP
+                                elif mouse_type == "Double click":
+                                    for _ in range(2):
+                                        ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)
+                                        time_module.sleep(0.1)  # Tăng từ 0.02s lên 0.1s
+                                        ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)
+                                        time_module.sleep(0.1)  # Tăng từ 0.05s lên 0.1s
+                                elif mouse_type == "Middle click":
+                                    ctypes.windll.user32.mouse_event(0x0020, 0, 0, 0, 0)  # MIDDLEDOWN
+                                    time_module.sleep(0.1)  # Tăng từ 0.02s lên 0.1s
+                                    ctypes.windll.user32.mouse_event(0x0040, 0, 0, 0, 0)  # MIDDLEUP
+                            
+                            log(f"[FIND_IMAGE] {mouse_type} at screen ({screen_x}, {screen_y})")
                     
                     # Handle goto if found
                     goto_target = v.get("goto_found_label", "").strip()
@@ -2864,47 +3581,68 @@ class MainUI:
             x2, y2 = v.get("x2", 0), v.get("y2", 0)
             button = v.get("button", "left")
             duration_ms = v.get("duration_ms", 500)
+            use_current_start = v.get("use_current_start", False)
             
-            # Convert to screen coords
-            if target_hwnd:
-                pt1 = wintypes.POINT(x1, y1)
-                pt2 = wintypes.POINT(x2, y2)
-                ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt1))
-                ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt2))
-                x1, y1 = pt1.x, pt1.y
-                x2, y2 = pt2.x, pt2.y
+            # Only use emulator mode when explicitly set
+            target_mode = v.get("target_mode", "screen")
+            effective_hwnd = target_hwnd if target_mode == "emulator" else None
+            
+            # If use_current_start, get current mouse position as start
+            if use_current_start:
+                cursor_pt = wintypes.POINT()
+                ctypes.windll.user32.GetCursorPos(ctypes.byref(cursor_pt))
+                screen_x1, screen_y1 = cursor_pt.x, cursor_pt.y
+                log(f"[DRAG] Using current mouse position as start: ({screen_x1},{screen_y1})")
+                
+                # End position still needs conversion if emulator mode
+                if effective_hwnd:
+                    pt2 = wintypes.POINT(int(x2), int(y2))
+                    ctypes.windll.user32.ClientToScreen(effective_hwnd, ctypes.byref(pt2))
+                    screen_x2, screen_y2 = pt2.x, pt2.y
+                else:
+                    screen_x2, screen_y2 = int(x2), int(y2)
+            # Convert client coords to screen coords if we have target window
+            elif effective_hwnd:
+                pt1 = wintypes.POINT(int(x1), int(y1))
+                pt2 = wintypes.POINT(int(x2), int(y2))
+                ctypes.windll.user32.ClientToScreen(effective_hwnd, ctypes.byref(pt1))
+                ctypes.windll.user32.ClientToScreen(effective_hwnd, ctypes.byref(pt2))
+                screen_x1, screen_y1 = pt1.x, pt1.y
+                screen_x2, screen_y2 = pt2.x, pt2.y
+            else:
+                screen_x1, screen_y1 = int(x1), int(y1)
+                screen_x2, screen_y2 = int(x2), int(y2)
             
             # Mouse button flags
             if button == "right":
-                down_flag, up_flag = 0x0008, 0x0010  # RIGHTDOWN, RIGHTUP
+                down_flag, up_flag = 0x0008, 0x0010
             else:
-                down_flag, up_flag = 0x0002, 0x0004  # LEFTDOWN, LEFTUP
+                down_flag, up_flag = 0x0002, 0x0004
             
-            # Move to start position
-            ctypes.windll.user32.SetCursorPos(x1, y1)
-            time.sleep(0.02)
-            
-            # Press mouse button
+            # Move to start and press (skip if using current start)
+            if not use_current_start:
+                ctypes.windll.user32.SetCursorPos(screen_x1, screen_y1)
+                time.sleep(0.02)
             ctypes.windll.user32.mouse_event(down_flag, 0, 0, 0, 0)
             time.sleep(0.02)
             
-            # Smooth interpolation from start to end
-            steps = max(10, duration_ms // 20)  # At least 10 steps
+            # Smooth interpolation
+            steps = max(10, duration_ms // 20)
             step_delay = duration_ms / steps / 1000.0
             
             for i in range(1, steps + 1):
                 t = i / steps
-                curr_x = int(x1 + t * (x2 - x1))
-                curr_y = int(y1 + t * (y2 - y1))
+                curr_x = int(screen_x1 + t * (screen_x2 - screen_x1))
+                curr_y = int(screen_y1 + t * (screen_y2 - screen_y1))
                 ctypes.windll.user32.SetCursorPos(curr_x, curr_y)
                 time.sleep(step_delay)
             
-            # Ensure final position
-            ctypes.windll.user32.SetCursorPos(x2, y2)
+            # Release at end
+            ctypes.windll.user32.SetCursorPos(screen_x2, screen_y2)
             time.sleep(0.02)
-            
-            # Release mouse button
             ctypes.windll.user32.mouse_event(up_flag, 0, 0, 0, 0)
+            
+            log(f"[DRAG] ({screen_x1},{screen_y1})->({screen_x2},{screen_y2}) in {duration_ms}ms" + (f" [hwnd={effective_hwnd}]" if effective_hwnd else "") + (" [current_start]" if use_current_start else ""))
         
         elif action.action == "TEXT":
             text = v.get("text", "")
@@ -2947,16 +3685,27 @@ class MainUI:
         else:
             # Find label by name
             label_name = target.replace("→ ", "").strip()
+            log(f"[GOTO] Looking for label: '{label_name}'")
+            
+            # Debug: list all labels (from LABEL actions AND action.label field)
+            available_labels = []
             for idx, act in enumerate(self.actions):
+                act_label = ""
+                # Check LABEL action's value.name
                 if act.action == "LABEL":
                     act_label = act.value.get("name", "") if isinstance(act.value, dict) else ""
-                    if not act_label and act.label:
-                        act_label = act.label
+                # Also check action.label field (any action can have a label)
+                if not act_label and act.label:
+                    act_label = act.label
+                    
+                if act_label:
+                    available_labels.append((idx, act_label))
                     if act_label == label_name:
                         self._current_action_index = idx - 1  # -1 because loop will +1
                         log(f"[GOTO] Jumping to label '{label_name}' at index {idx}")
                         return
-            log(f"[GOTO] Warning: Label '{label_name}' not found")
+            
+            log(f"[GOTO] Warning: Label '{label_name}' not found. Available labels: {available_labels}")
     
     def _on_playback_complete(self):
         """Called when playback completes"""
@@ -3068,51 +3817,61 @@ class MainUI:
             self._open_add_action_dialog(edit_index=idx)
     
     def _on_action_right_click(self, event):
-        """Handle right-click on action row - supports multi-select"""
+        """Handle right-click on action row - supports multi-select with Copy/Paste"""
         item = self.action_tree.identify_row(event.y)
         if item:
             # If clicked item not in selection, set it as only selection
             # Otherwise keep multi-selection
             if item not in self.action_tree.selection():
                 self.action_tree.selection_set(item)
-            
-            selection = self.action_tree.selection()
-            count = len(selection)
-            
-            menu = tk.Menu(self.root, tearoff=0)
-            
-            if count == 1:
-                # Single item - show full menu
-                values = self.action_tree.item(item, "values")
-                idx = int(values[0]) - 1
-                menu.add_command(label="✏ Edit", command=lambda: self._open_add_action_dialog(edit_index=idx))
-                menu.add_command(label="✓/✗ Toggle Enable", command=lambda: self._toggle_action_enabled(idx))
-                menu.add_separator()
-                menu.add_command(label="🗑 Delete", command=lambda: self._delete_action_at(idx))
-                menu.add_separator()
-                menu.add_command(label="⬆ Move Up", command=lambda: self._move_action(idx, -1))
-                menu.add_command(label="⬇ Move Down", command=lambda: self._move_action(idx, 1))
-            else:
-                # Multiple items - show bulk actions
-                menu.add_command(label=f"🗑 Delete {count} selected", command=self._delete_selected_actions)
-                menu.add_separator()
-                menu.add_command(label="📦 Group Selected", command=self._group_selected_actions)
-                menu.add_separator()
-                menu.add_command(label="✓ Enable All Selected", command=self._enable_selected_actions)
-                menu.add_command(label="✗ Disable All Selected", command=self._disable_selected_actions)
-            
-            # Check if selection is a GROUP to show Ungroup option
-            if count == 1:
-                values = self.action_tree.item(item, "values")
-                idx = int(values[0]) - 1
-                if 0 <= idx < len(self.actions) and self.actions[idx].action == "GROUP":
-                    menu.add_separator()
-                    menu.add_command(label="📤 Ungroup", command=lambda: self._ungroup_action(idx))
-            
+        
+        selection = self.action_tree.selection()
+        count = len(selection)
+        
+        menu = tk.Menu(self.root, tearoff=0)
+        
+        # Copy/Paste always available
+        has_clipboard = hasattr(self, '_clipboard_actions') and self._clipboard_actions
+        
+        if count >= 1:
+            menu.add_command(label=f"📋 Copy ({count})" if count > 1 else "📋 Copy", 
+                           command=self._copy_selected_actions, accelerator="Ctrl+C")
+            menu.add_command(label="✂ Cut", command=self._cut_selected_actions, accelerator="Ctrl+X")
+        
+        paste_label = f"📥 Paste ({len(self._clipboard_actions)})" if has_clipboard else "📥 Paste"
+        menu.add_command(label=paste_label, command=self._paste_actions, 
+                        state="normal" if has_clipboard else "disabled", accelerator="Ctrl+V")
+        menu.add_separator()
+        
+        if count == 1 and item:
+            # Single item - show full menu
+            values = self.action_tree.item(item, "values")
+            idx = int(values[0]) - 1
+            menu.add_command(label="✏ Edit", command=lambda: self._open_add_action_dialog(edit_index=idx))
+            menu.add_command(label="✓/✗ Toggle Enable", command=lambda: self._toggle_action_enabled(idx))
             menu.add_separator()
-            menu.add_command(label="✓ Select All (Ctrl+A)", command=self._select_all_actions)
+            menu.add_command(label="🗑 Delete", command=lambda: self._delete_action_at(idx), accelerator="Del")
+            menu.add_separator()
+            menu.add_command(label="⬆ Move Up", command=lambda: self._move_action(idx, -1))
+            menu.add_command(label="⬇ Move Down", command=lambda: self._move_action(idx, 1))
             
-            menu.tk_popup(event.x_root, event.y_root)
+            # Check if GROUP to show Ungroup option
+            if 0 <= idx < len(self.actions) and self.actions[idx].action == "GROUP":
+                menu.add_separator()
+                menu.add_command(label="📤 Ungroup", command=lambda: self._ungroup_action(idx))
+        elif count > 1:
+            # Multiple items - show bulk actions
+            menu.add_command(label=f"🗑 Delete {count} selected", command=self._delete_selected_actions, accelerator="Del")
+            menu.add_separator()
+            menu.add_command(label="📦 Group Selected", command=self._group_selected_actions)
+            menu.add_separator()
+            menu.add_command(label="✓ Enable All Selected", command=self._enable_selected_actions)
+            menu.add_command(label="✗ Disable All Selected", command=self._disable_selected_actions)
+        
+        menu.add_separator()
+        menu.add_command(label="✓ Select All", command=self._select_all_actions, accelerator="Ctrl+A")
+        
+        menu.tk_popup(event.x_root, event.y_root)
     
     def _toggle_action_enabled(self, idx: int):
         """Toggle enabled state of action"""
@@ -3379,135 +4138,103 @@ class MainUI:
         log(f"[UI] Ungrouped {len(grouped_actions)} actions")
     
     def _save_actions(self):
-        """Save actions to macro folder (portable - includes all template images)"""
+        """Save actions to single .macro file (Base64 embedded images)"""
         if not self.actions:
             messagebox.showwarning("Warning", "No actions to save")
             return
         
-        # Ask for macro name
-        macro_name = simpledialog.askstring("Save Macro", "Nhập tên macro:", 
-                                            initialvalue="my_macro")
-        if not macro_name:
+        # Ask for save location
+        filepath = filedialog.asksaveasfilename(
+            title="Save Macro",
+            initialdir="data/macros",
+            defaultextension=".macro",
+            filetypes=[("Macro files", "*.macro"), ("JSON files", "*.json"), ("All files", "*.*")]
+        )
+        if not filepath:
             return
         
-        # Sanitize name for folder
-        import re
-        safe_name = re.sub(r'[<>:"/\\|?*]', '_', macro_name)
-        
-        # Create macro folder
-        macro_dir = os.path.join("data", "macros", safe_name)
-        templates_dir = os.path.join(macro_dir, "templates")
-        os.makedirs(templates_dir, exist_ok=True)
+        import base64
         
         try:
-            # Copy all template images to macro folder and update paths
+            # Build actions data with embedded images
             actions_data = []
+            images_embedded = {}
+            image_count = 0
+            
             for action in self.actions:
                 action_dict = action.to_dict()
                 
-                # Handle FIND_IMAGE - copy template to macro folder
+                # Handle FIND_IMAGE - embed template as base64
                 if action.action == "FIND_IMAGE" and action.value.get("template_path"):
                     old_path = action.value["template_path"]
                     if os.path.exists(old_path):
-                        # Copy to templates folder
-                        import shutil
+                        # Read image and encode to base64
+                        with open(old_path, "rb") as img_file:
+                            img_data = base64.b64encode(img_file.read()).decode('utf-8')
+                        
+                        # Generate unique key
                         filename = os.path.basename(old_path)
-                        new_path = os.path.join(templates_dir, filename)
-                        if old_path != new_path:  # Avoid copying to same location
-                            shutil.copy2(old_path, new_path)
-                        # Update path to relative
-                        action_dict["value"]["template_path"] = f"templates/{filename}"
+                        img_key = f"img_{image_count:03d}_{filename}"
+                        images_embedded[img_key] = img_data
+                        
+                        # Update reference in action
+                        action_dict["value"]["template_path"] = f"@embedded:{img_key}"
+                        image_count += 1
+                
+                # Handle WAIT_SCREEN_CHANGE - embed reference image
+                if action.action == "WAIT_SCREEN_CHANGE" and action.value.get("reference_image"):
+                    old_path = action.value["reference_image"]
+                    if os.path.exists(old_path):
+                        with open(old_path, "rb") as img_file:
+                            img_data = base64.b64encode(img_file.read()).decode('utf-8')
+                        
+                        filename = os.path.basename(old_path)
+                        img_key = f"img_{image_count:03d}_{filename}"
+                        images_embedded[img_key] = img_data
+                        action_dict["value"]["reference_image"] = f"@embedded:{img_key}"
+                        image_count += 1
                 
                 actions_data.append(action_dict)
             
-            # Save macro config
+            # Save single file
             data = {
-                "version": "2.0",
-                "name": macro_name,
-                "target_window_match": None,
-                "actions": actions_data
+                "version": "2.1",
+                "format": "embedded",
+                "name": os.path.splitext(os.path.basename(filepath))[0],
+                "created": __import__('datetime').datetime.now().isoformat(),
+                "actions": actions_data,
+                "images": images_embedded  # All images embedded here
             }
             
-            config_path = os.path.join(macro_dir, "macro.json")
-            with open(config_path, "w", encoding="utf-8") as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             
-            # Count templates
-            template_count = len([f for f in os.listdir(templates_dir) if f.endswith(('.png', '.jpg', '.bmp'))]) if os.path.exists(templates_dir) else 0
+            # Calculate file size
+            file_size = os.path.getsize(filepath)
+            size_str = f"{file_size/1024:.1f} KB" if file_size < 1024*1024 else f"{file_size/1024/1024:.1f} MB"
             
             messagebox.showinfo("Success", 
-                f"✅ Đã lưu macro '{macro_name}'\n"
-                f"📁 Folder: {macro_dir}\n"
+                f"✅ Đã lưu macro thành công!\n\n"
+                f"📄 File: {os.path.basename(filepath)}\n"
                 f"📝 Actions: {len(self.actions)}\n"
-                f"🖼️ Templates: {template_count}\n\n"
-                f"💡 Copy cả folder '{safe_name}' để mang đi máy khác!")
-            log(f"[UI] Saved macro to folder: {macro_dir}")
+                f"🖼️ Images: {image_count} (embedded)\n"
+                f"💾 Size: {size_str}\n\n"
+                f"💡 Chỉ cần 1 file này để share/backup!")
+            log(f"[UI] Saved macro to: {filepath}")
             
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save: {e}")
     
     def _load_actions(self):
-        """Load actions from macro folder or JSON file"""
-        # Ask user to choose folder or file
-        choice = messagebox.askyesnocancel(
-            "Load Macro",
-            "Chọn cách load:\n\n"
-            "YES = Load từ Macro Folder (portable)\n"
-            "NO = Load từ file JSON đơn lẻ\n"
-            "CANCEL = Hủy"
-        )
-        
-        if choice is None:  # Cancel
-            return
-        
-        if choice:  # Yes - Load from folder
-            self._load_macro_folder()
-        else:  # No - Load from single JSON
-            self._load_single_json()
-    
-    def _load_macro_folder(self):
-        """Load macro from folder (portable format)"""
-        folder = filedialog.askdirectory(
-            title="Chọn Macro Folder",
-            initialdir="data/macros"
-        )
-        if not folder:
-            return
-        
-        config_path = os.path.join(folder, "macro.json")
-        if not os.path.exists(config_path):
-            messagebox.showerror("Error", f"Không tìm thấy macro.json trong folder:\n{folder}")
-            return
-        
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            
-            # Update template paths to absolute
-            actions_data = data.get("actions", [])
-            for action_data in actions_data:
-                if action_data.get("action") == "FIND_IMAGE":
-                    template_path = action_data.get("value", {}).get("template_path", "")
-                    if template_path and not os.path.isabs(template_path):
-                        # Convert relative to absolute
-                        abs_path = os.path.join(folder, template_path)
-                        action_data["value"]["template_path"] = abs_path
-            
-            self.actions = [Action.from_dict(a) for a in actions_data]
-            self._refresh_action_list()
-            
-            macro_name = data.get("name", os.path.basename(folder))
-            messagebox.showinfo("Success", f"✅ Loaded macro '{macro_name}'\n📝 Actions: {len(self.actions)}")
-            log(f"[UI] Loaded macro from folder: {folder}")
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to load: {e}")
-    
-    def _load_single_json(self):
-        """Load actions from single JSON file (legacy format)"""
+        """Load actions from .macro file or legacy formats"""
         filepath = filedialog.askopenfilename(
-            title="Load Actions",
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+            title="Load Macro",
+            initialdir="data/macros",
+            filetypes=[
+                ("Macro files", "*.macro"),
+                ("JSON files", "*.json"),
+                ("All files", "*.*")
+            ]
         )
         if not filepath:
             return
@@ -3516,12 +4243,90 @@ class MainUI:
             with open(filepath, "r", encoding="utf-8") as f:
                 data = json.load(f)
             
-            self.actions = [Action.from_dict(a) for a in data.get("actions", [])]
-            self._refresh_action_list()
-            messagebox.showinfo("Success", f"Loaded {len(self.actions)} actions")
-            log(f"[UI] Loaded actions from: {filepath}")
+            # Check format version
+            fmt = data.get("format", "")
+            images = data.get("images", {})
+            actions_data = data.get("actions", [])
+            
+            if fmt == "embedded" and images:
+                # New format - extract embedded images to temp
+                self._load_embedded_macro(filepath, data)
+            else:
+                # Legacy format - load directly
+                self._load_legacy_macro(filepath, data)
+                
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load: {e}")
+    
+    def _load_embedded_macro(self, filepath, data):
+        """Load macro with embedded base64 images"""
+        import base64
+        import tempfile
+        
+        images = data.get("images", {})
+        actions_data = data.get("actions", [])
+        
+        # Create temp folder for extracted images
+        macro_name = os.path.splitext(os.path.basename(filepath))[0]
+        temp_dir = os.path.join(tempfile.gettempdir(), "macro_images", macro_name)
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        # Extract images
+        for img_key, img_b64 in images.items():
+            try:
+                img_data = base64.b64decode(img_b64)
+                img_path = os.path.join(temp_dir, img_key)
+                with open(img_path, "wb") as f:
+                    f.write(img_data)
+            except Exception as e:
+                log(f"[UI] Failed to extract image {img_key}: {e}")
+        
+        # Update action paths to extracted images
+        for action_data in actions_data:
+            # Handle FIND_IMAGE
+            if action_data.get("action") == "FIND_IMAGE":
+                template_path = action_data.get("value", {}).get("template_path", "")
+                if template_path.startswith("@embedded:"):
+                    img_key = template_path.replace("@embedded:", "")
+                    action_data["value"]["template_path"] = os.path.join(temp_dir, img_key)
+            
+            # Handle WAIT_SCREEN_CHANGE
+            if action_data.get("action") == "WAIT_SCREEN_CHANGE":
+                ref_path = action_data.get("value", {}).get("reference_image", "")
+                if ref_path.startswith("@embedded:"):
+                    img_key = ref_path.replace("@embedded:", "")
+                    action_data["value"]["reference_image"] = os.path.join(temp_dir, img_key)
+        
+        self.actions = [Action.from_dict(a) for a in actions_data]
+        self._refresh_action_list()
+        
+        macro_name = data.get("name", os.path.basename(filepath))
+        image_count = len(images)
+        messagebox.showinfo("Success", 
+            f"✅ Loaded macro '{macro_name}'\n"
+            f"📝 Actions: {len(self.actions)}\n"
+            f"🖼️ Images: {image_count} (extracted)")
+        log(f"[UI] Loaded embedded macro: {filepath}")
+    
+    def _load_legacy_macro(self, filepath, data):
+        """Load legacy format macro (folder-based or simple JSON)"""
+        actions_data = data.get("actions", [])
+        folder = os.path.dirname(filepath)
+        
+        # Update template paths to absolute if relative
+        for action_data in actions_data:
+            if action_data.get("action") == "FIND_IMAGE":
+                template_path = action_data.get("value", {}).get("template_path", "")
+                if template_path and not os.path.isabs(template_path):
+                    abs_path = os.path.join(folder, template_path)
+                    action_data["value"]["template_path"] = abs_path
+        
+        self.actions = [Action.from_dict(a) for a in actions_data]
+        self._refresh_action_list()
+        
+        macro_name = data.get("name", os.path.basename(filepath))
+        messagebox.showinfo("Success", f"✅ Loaded macro '{macro_name}'\n📝 Actions: {len(self.actions)}")
+        log(f"[UI] Loaded legacy macro: {filepath}")
 
     # ================= ADD ACTION DIALOG (per spec 5 - V2 expanded) =================
     
@@ -3878,9 +4683,82 @@ class MainUI:
         cancel_btn = S.create_modern_button(btn_container, "✖ Cancel", cancel_dialog, "danger", width=12)
         cancel_btn.pack(side="left", padx=S.PAD_SM, pady=S.PAD_SM)
     
+    def _create_target_dropdown(self, parent, widgets, value, S):
+        """Create target dropdown (Screen/Emulator) for mouse actions
+        
+        Saves target_mode ("screen" or "emulator") instead of specific hwnd.
+        When playback, uses worker's hwnd if target_mode == "emulator".
+        This allows actions to work on any emulator, not just the one used during recording.
+        """
+        target_frame = tk.Frame(parent, bg=S.BG_CARD)
+        target_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        tk.Label(target_frame, text="🎯 Target:", bg=S.BG_CARD, fg=S.FG_ACCENT,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold")).pack(side="left", padx=(0, S.PAD_SM))
+        
+        # Only 2 options: Screen or Emulator (will use current worker at runtime)
+        targets = [
+            ("📺 Full Screen", "screen"),
+            ("🎮 Emulator (Worker)", "emulator")
+        ]
+        
+        # Get current target_mode from value (default: "screen" for backward compat)
+        saved_mode = value.get("target_mode", "screen")
+        # Backward compat: if old action has target_hwnd but no target_mode
+        if "target_hwnd" in value and value.get("target_hwnd") and "target_mode" not in value:
+            saved_mode = "emulator"
+        
+        current_name = "📺 Full Screen"
+        for name, mode in targets:
+            if mode == saved_mode:
+                current_name = name
+                break
+        
+        target_var = tk.StringVar(value=current_name)
+        target_mode_var = tk.StringVar(value=saved_mode)
+        
+        # Combobox with target names
+        target_names = [t[0] for t in targets]
+        target_combo = ttk.Combobox(target_frame, textvariable=target_var, 
+                                    values=target_names, state="readonly", width=25)
+        target_combo.pack(side="left", padx=S.PAD_XS)
+        
+        def on_target_change(event=None):
+            selected_name = target_var.get()
+            for name, mode in targets:
+                if name == selected_name:
+                    target_mode_var.set(mode)
+                    break
+        
+        target_combo.bind("<<ComboboxSelected>>", on_target_change)
+        
+        # Store mode var for saving
+        widgets["target_mode"] = target_mode_var
+        widgets["_target_var"] = target_var
+        
+        # Info label
+        info_label = tk.Label(target_frame, text="", bg=S.BG_CARD, fg=S.FG_MUTED,
+                             font=(S.FONT_FAMILY, S.FONT_SIZE_XS))
+        info_label.pack(side="left", padx=S.PAD_SM)
+        
+        def update_info(*args):
+            mode = target_mode_var.get()
+            if mode == "emulator":
+                info_label.config(text="(Chạy trên Worker hiện tại)", fg=S.ACCENT_GREEN)
+            else:
+                info_label.config(text="", fg=S.FG_MUTED)
+        
+        target_mode_var.trace_add("write", update_info)
+        update_info()
+        
+        return target_mode_var
+    
     def _render_click_action_config(self, parent, widgets, value, dialog=None):
         """Render Click action config (per spec 5.2) - V2 with improved capture"""
         S = ModernStyle
+        
+        # Target dropdown (Screen/Emulator)
+        target_mode_var = self._create_target_dropdown(parent, widgets, value, S)
         
         # Button type
         btn_frame = tk.Frame(parent, bg=S.BG_CARD)
@@ -3907,25 +4785,53 @@ class MainUI:
         # Position
         pos_frame = tk.Frame(parent, bg=S.BG_CARD)
         pos_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
-        tk.Label(pos_frame, text="Position:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
-                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(0, S.PAD_SM))
         
+        # Checkbox: Use current mouse position (for use after FIND_IMAGE Positioning)
+        use_current_var = tk.BooleanVar(value=value.get("use_current_pos", False))
+        use_current_cb = tk.Checkbutton(pos_frame, text="🎯 Use current mouse position", 
+                                        variable=use_current_var,
+                                        bg=S.BG_CARD, fg=S.ACCENT_BLUE, selectcolor=S.BG_INPUT,
+                                        activebackground=S.BG_CARD, activeforeground=S.ACCENT_BLUE,
+                                        font=(S.FONT_FAMILY, S.FONT_SIZE_SM))
+        use_current_cb.pack(side="left", padx=(0, S.PAD_MD))
+        widgets["use_current_pos"] = use_current_var
+        
+        # Coordinates frame (disabled when use_current_pos is checked)
+        coords_frame = tk.Frame(pos_frame, bg=S.BG_CARD)
+        coords_frame.pack(side="left")
+        
+        tk.Label(coords_frame, text="X:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(0, S.PAD_XS))
         x_var = tk.IntVar(value=value.get("x", 0))
-        tk.Label(pos_frame, text="X:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
-                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(S.PAD_MD, S.PAD_XS))
-        S.create_entry(pos_frame, textvariable=x_var, width=6).pack(side="left", padx=S.PAD_XS)
+        x_entry = S.create_entry(coords_frame, textvariable=x_var, width=6)
+        x_entry.pack(side="left", padx=S.PAD_XS)
         widgets["x"] = x_var
         
+        tk.Label(coords_frame, text="Y:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(S.PAD_SM, S.PAD_XS))
         y_var = tk.IntVar(value=value.get("y", 0))
-        tk.Label(pos_frame, text="Y:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
-                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(S.PAD_MD, S.PAD_XS))
-        S.create_entry(pos_frame, textvariable=y_var, width=6).pack(side="left", padx=S.PAD_XS)
+        y_entry = S.create_entry(coords_frame, textvariable=y_var, width=6)
+        y_entry.pack(side="left", padx=S.PAD_XS)
         widgets["y"] = y_var
         
-        # Capture button - Win11 style
-        capture_btn = S.create_modern_button(pos_frame, "📍 Capture", 
-                               lambda: self._capture_click_with_hold(x_var, y_var, hold_var, btn_var),
-                               "accent", width=10)
+        # Toggle coordinate entries based on checkbox
+        def toggle_coords(*args):
+            state = "disabled" if use_current_var.get() else "normal"
+            x_entry.config(state=state)
+            y_entry.config(state=state)
+        
+        use_current_var.trace_add("write", toggle_coords)
+        toggle_coords()  # Initial state
+        
+        # Capture button - gets current worker hwnd for emulator mode
+        def do_capture():
+            hwnd = None
+            if target_mode_var.get() == "emulator":
+                # For capture, prompt to select emulator or use first available worker
+                hwnd = self._get_emulator_hwnd_for_capture()
+            self._capture_click_with_hold_target(x_var, y_var, hold_var, btn_var, hwnd)
+        
+        capture_btn = S.create_modern_button(pos_frame, "📍 Capture", do_capture, "accent", width=10)
         capture_btn.pack(side="left", padx=S.PAD_MD)
         
         # Status label for capture feedback
@@ -3938,10 +4844,12 @@ class MainUI:
         # Hint text
         def update_hint(*args):
             btn = btn_var.get()
+            target = widgets.get("_target_var", tk.StringVar(value="Full Screen")).get()
+            target_info = f" trong {target}" if target != "Full Screen" else ""
             if btn in ("hold_left", "hold_right"):
-                status_label.config(text="💡 Capture: Click vị trí rồi GIỮ chuột - thời gian giữ sẽ được đo", fg="blue")
+                status_label.config(text=f"💡 Capture: Click vị trí rồi GIỮ chuột{target_info}", fg=S.ACCENT_BLUE)
             else:
-                status_label.config(text="💡 Capture: Click vị trí cần thao tác", fg="gray")
+                status_label.config(text=f"💡 Capture: Click vị trí cần thao tác{target_info}", fg=S.FG_MUTED)
         
         btn_var.trace_add("write", update_hint)
         update_hint()  # Initial update
@@ -4179,49 +5087,92 @@ class MainUI:
     
     def _render_wheel_action_config(self, parent, widgets, value):
         """Render Wheel action config (per spec B3 - V2 improved)"""
+        S = ModernStyle
+        parent.configure(bg=S.BG_CARD)
+        
+        # Target dropdown (Screen/Emulator)
+        target_mode_var = self._create_target_dropdown(parent, widgets, value, S)
+        
         # Direction
-        dir_frame = tk.Frame(parent)
-        dir_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(dir_frame, text="Direction:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        dir_frame = tk.Frame(parent, bg=S.BG_CARD)
+        dir_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        tk.Label(dir_frame, text="Direction:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(0, S.PAD_SM))
         dir_var = tk.StringVar(value=value.get("direction", "up"))
         ttk.Combobox(dir_frame, textvariable=dir_var, values=["up", "down"], 
                     state="readonly", width=8).pack(side="left")
         widgets["direction"] = dir_var
         
         # Amount (số lần scroll)
-        amount_frame = tk.Frame(parent)
-        amount_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(amount_frame, text="Amount:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        amount_frame = tk.Frame(parent, bg=S.BG_CARD)
+        amount_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        tk.Label(amount_frame, text="Amount:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(0, S.PAD_SM))
         amount_var = tk.IntVar(value=value.get("amount", 3))
-        tk.Entry(amount_frame, textvariable=amount_var, width=6).pack(side="left")
-        tk.Label(amount_frame, text="(số lần scroll)", fg="gray", font=("Arial", 8)).pack(side="left", padx=5)
+        S.create_entry(amount_frame, textvariable=amount_var, width=6).pack(side="left")
+        tk.Label(amount_frame, text="(số lần scroll)", bg=S.BG_CARD, fg=S.FG_MUTED,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_XS)).pack(side="left", padx=S.PAD_SM)
         widgets["amount"] = amount_var
         
         # Speed (delay giữa các tick)
-        speed_frame = tk.Frame(parent)
-        speed_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(speed_frame, text="Speed (ms):", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        speed_frame = tk.Frame(parent, bg=S.BG_CARD)
+        speed_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        tk.Label(speed_frame, text="Speed (ms):", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(0, S.PAD_SM))
         speed_var = tk.IntVar(value=value.get("speed", 50))
-        tk.Entry(speed_frame, textvariable=speed_var, width=6).pack(side="left")
-        tk.Label(speed_frame, text="(delay giữa mỗi tick)", fg="gray", font=("Arial", 8)).pack(side="left", padx=5)
+        S.create_entry(speed_frame, textvariable=speed_var, width=6).pack(side="left")
+        tk.Label(speed_frame, text="(delay giữa mỗi tick)", bg=S.BG_CARD, fg=S.FG_MUTED,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_XS)).pack(side="left", padx=S.PAD_SM)
         widgets["speed"] = speed_var
         
         # Position
-        pos_frame = tk.Frame(parent)
-        pos_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(pos_frame, text="Position:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        pos_frame = tk.Frame(parent, bg=S.BG_CARD)
+        pos_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Checkbox: Use current mouse position
+        use_current_var = tk.BooleanVar(value=value.get("use_current_pos", False))
+        use_current_cb = tk.Checkbutton(pos_frame, text="🎯 Use current position", 
+                                        variable=use_current_var,
+                                        bg=S.BG_CARD, fg=S.ACCENT_BLUE, selectcolor=S.BG_INPUT,
+                                        activebackground=S.BG_CARD, activeforeground=S.ACCENT_BLUE,
+                                        font=(S.FONT_FAMILY, S.FONT_SIZE_SM))
+        use_current_cb.pack(side="left", padx=(0, S.PAD_SM))
+        widgets["use_current_pos"] = use_current_var
+        
         x_var = tk.IntVar(value=value.get("x", 0))
         y_var = tk.IntVar(value=value.get("y", 0))
-        tk.Label(pos_frame, text="X:").pack(side="left")
-        tk.Entry(pos_frame, textvariable=x_var, width=8).pack(side="left", padx=2)
-        tk.Label(pos_frame, text="Y:").pack(side="left", padx=(10, 0))
-        tk.Entry(pos_frame, textvariable=y_var, width=8).pack(side="left", padx=2)
+        
+        coords_frame = tk.Frame(pos_frame, bg=S.BG_CARD)
+        coords_frame.pack(side="left")
+        
+        tk.Label(coords_frame, text="X:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        x_entry = S.create_entry(coords_frame, textvariable=x_var, width=8)
+        x_entry.pack(side="left", padx=2)
+        tk.Label(coords_frame, text="Y:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(S.PAD_MD, 0))
+        y_entry = S.create_entry(coords_frame, textvariable=y_var, width=8)
+        y_entry.pack(side="left", padx=2)
         widgets["x"] = x_var
         widgets["y"] = y_var
         
-        # Capture button
-        tk.Button(pos_frame, text="📍", command=lambda: self._capture_position(x_var, y_var),
-                 bg="#2196F3", fg="white", font=("Arial", 8)).pack(side="left", padx=5)
+        # Toggle coordinate entries
+        def toggle_coords(*args):
+            state = "disabled" if use_current_var.get() else "normal"
+            x_entry.config(state=state)
+            y_entry.config(state=state)
+        
+        use_current_var.trace_add("write", toggle_coords)
+        toggle_coords()
+        
+        # Capture button with target support
+        def do_capture():
+            hwnd = None
+            if target_mode_var.get() == "emulator":
+                hwnd = self._get_emulator_hwnd_for_capture()
+            self._capture_position_target(x_var, y_var, hwnd)
+        
+        S.create_modern_button(pos_frame, "📍", do_capture, "accent", width=3).pack(side="left", padx=S.PAD_SM)
     
     def _render_text_action_config(self, parent, widgets, value):
         """Render Text action config"""
@@ -4268,13 +5219,24 @@ class MainUI:
     
     def _get_action_value_from_widgets(self, action_type: str, widgets: dict) -> dict:
         """Extract action value from config widgets"""
+        # Helper to get target_mode if present (screen/emulator)
+        def get_target_mode():
+            if "target_mode" in widgets:
+                return widgets["target_mode"].get()
+            return "screen"  # Default
+        
         if action_type == "CLICK":
-            return {
+            result = {
                 "button": widgets["button"].get(),
                 "x": widgets["x"].get(),
                 "y": widgets["y"].get(),
-                "hold_ms": widgets["hold_ms"].get()
+                "hold_ms": widgets["hold_ms"].get(),
+                "use_current_pos": widgets.get("use_current_pos", tk.BooleanVar(value=False)).get()
             }
+            mode = get_target_mode()
+            if mode == "emulator":
+                result["target_mode"] = "emulator"
+            return result
         elif action_type == "WAIT":
             return {"ms": widgets["ms"].get()}
         elif action_type == "KEY_PRESS":
@@ -4289,22 +5251,32 @@ class MainUI:
                 "order": widgets["order"].get()
             }
         elif action_type == "WHEEL":
-            return {
+            result = {
                 "direction": widgets["direction"].get(),
                 "amount": widgets["amount"].get(),
                 "speed": widgets["speed"].get(),
                 "x": widgets["x"].get(),
-                "y": widgets["y"].get()
+                "y": widgets["y"].get(),
+                "use_current_pos": widgets.get("use_current_pos", tk.BooleanVar(value=False)).get()
             }
+            mode = get_target_mode()
+            if mode == "emulator":
+                result["target_mode"] = "emulator"
+            return result
         elif action_type == "DRAG":
-            return {
+            result = {
                 "button": widgets["button"].get(),
                 "duration_ms": widgets["duration_ms"].get(),
                 "x1": widgets["x1"].get(),
                 "y1": widgets["y1"].get(),
                 "x2": widgets["x2"].get(),
-                "y2": widgets["y2"].get()
+                "y2": widgets["y2"].get(),
+                "use_current_start": widgets.get("use_current_start", tk.BooleanVar(value=False)).get()
             }
+            mode = get_target_mode()
+            if mode == "emulator":
+                result["target_mode"] = "emulator"
+            return result
         elif action_type == "TEXT":
             return {
                 "text": widgets["text"].get("1.0", tk.END).strip(),
@@ -4330,7 +5302,17 @@ class MainUI:
                 "region": (widgets["x1"].get(), widgets["y1"].get(), 
                           widgets["x2"].get(), widgets["y2"].get()),
                 "threshold": widgets["threshold"].get(),
-                "timeout_ms": widgets["timeout_ms"].get()
+                "timeout_ms": widgets["timeout_ms"].get(),
+                # If Change Found options
+                "mouse_action_enabled": widgets.get("mouse_action_enabled", tk.BooleanVar(value=False)).get(),
+                "mouse_type": widgets.get("mouse_type", tk.StringVar(value="Positioning")).get(),
+                "save_xy_enabled": widgets.get("save_xy_enabled", tk.BooleanVar(value=False)).get(),
+                "save_x_var": widgets.get("save_x_var", tk.StringVar()).get(),
+                "save_y_var": widgets.get("save_y_var", tk.StringVar()).get(),
+                "goto_if_found": widgets.get("goto_if_found", tk.StringVar(value="Next")).get(),
+                # No Change Found options
+                "timeout_seconds": widgets.get("timeout_seconds", tk.IntVar(value=120)).get(),
+                "goto_if_not_found": widgets.get("goto_if_not_found", tk.StringVar(value="End")).get(),
             }
         elif action_type == "WAIT_COMBOKEY":
             return {
@@ -4374,14 +5356,24 @@ class MainUI:
         elif action_type == "LABEL":
             return {"name": widgets["name"].get()}
         elif action_type == "GOTO":
-            return {"target": widgets["target"].get()}
+            target = widgets["target"].get()
+            custom = widgets.get("custom_target", tk.StringVar(value="")).get()
+            # If custom target is set, use it instead
+            if custom and custom.strip():
+                target = f"→ {custom.strip()}"
+            return {"target": target}
         elif action_type == "REPEAT":
             return {
                 "count": widgets["count"].get(),
+                "start_label": widgets.get("start_label", tk.StringVar(value="")).get(),
                 "end_label": widgets.get("end_label", tk.StringVar(value="")).get()
             }
         elif action_type == "EMBED_MACRO":
-            return {"macro_name": widgets["macro_name"].get()}
+            return {
+                "macro_name": widgets["macro_name"].get(),
+                "continue_on_error": widgets.get("continue_on_error", tk.BooleanVar(value=True)).get(),
+                "inherit_variables": widgets.get("inherit_variables", tk.BooleanVar(value=True)).get()
+            }
         elif action_type == "GROUP":
             return {
                 "name": widgets["name"].get(),
@@ -4469,50 +5461,221 @@ class MainUI:
         widgets["timeout_ms"] = timeout_var
     
     def _render_wait_screen_change_config(self, parent, widgets, value, dialog=None):
-        """Render WAIT_SCREEN_CHANGE config (spec B1-3)"""
+        """Render WAIT_SCREEN_CHANGE config - Modern UI with If Change Found / No Change Found"""
+        S = ModernStyle
+        parent.configure(bg=S.BG_CARD)
+        
         region = value.get("region", (0, 0, 100, 100))
         
-        region_frame = tk.LabelFrame(parent, text="Monitor Region")
-        region_frame.pack(fill="x", padx=10, pady=5)
+        # ==================== MONITOR REGION ====================
+        region_frame = tk.LabelFrame(parent, text=" 📐 Monitor Region ", 
+                                     font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                     bg=S.BG_CARD, fg=S.FG_ACCENT,
+                                     padx=S.PAD_MD, pady=S.PAD_SM)
+        region_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Info about search area
+        target_name = getattr(self, '_capture_target_name', 'Full Screen')
+        info_label = tk.Label(region_frame, 
+                             text=f"🖥️ Search area: {target_name} (from Screen setting)",
+                             font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                             bg=S.BG_CARD, fg=S.ACCENT_BLUE)
+        info_label.pack(anchor="w", pady=(0, S.PAD_SM))
+        
+        # Region coords
+        coords_row = tk.Frame(region_frame, bg=S.BG_CARD)
+        coords_row.pack(fill="x", pady=2)
         
         x1_var = tk.IntVar(value=region[0] if len(region) > 0 else 0)
         y1_var = tk.IntVar(value=region[1] if len(region) > 1 else 0)
         x2_var = tk.IntVar(value=region[2] if len(region) > 2 else 100)
         y2_var = tk.IntVar(value=region[3] if len(region) > 3 else 100)
         
-        row1 = tk.Frame(region_frame)
-        row1.pack(fill="x", padx=5, pady=2)
-        tk.Label(row1, text="X1:").pack(side="left")
-        tk.Entry(row1, textvariable=x1_var, width=6).pack(side="left", padx=2)
-        tk.Label(row1, text="Y1:").pack(side="left")
-        tk.Entry(row1, textvariable=y1_var, width=6).pack(side="left", padx=2)
+        tk.Label(coords_row, text="X1:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        tk.Entry(coords_row, textvariable=x1_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=2)
+        tk.Label(coords_row, text="Y1:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(S.PAD_SM, 0))
+        tk.Entry(coords_row, textvariable=y1_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=2)
+        tk.Label(coords_row, text="X2:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(S.PAD_SM, 0))
+        tk.Entry(coords_row, textvariable=x2_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=2)
+        tk.Label(coords_row, text="Y2:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(S.PAD_SM, 0))
+        tk.Entry(coords_row, textvariable=y2_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=2)
         
-        row2 = tk.Frame(region_frame)
-        row2.pack(fill="x", padx=5, pady=2)
-        tk.Label(row2, text="X2:").pack(side="left")
-        tk.Entry(row2, textvariable=x2_var, width=6).pack(side="left", padx=2)
-        tk.Label(row2, text="Y2:").pack(side="left")
-        tk.Entry(row2, textvariable=y2_var, width=6).pack(side="left", padx=2)
+        # Capture region button
+        def capture_region():
+            from core.capture_utils import CaptureOverlay
+            target_hwnd = getattr(self, '_capture_target_hwnd', None)
+            
+            def on_capture(result):
+                if result.success:
+                    x1_var.set(result.x)
+                    y1_var.set(result.y)
+                    x2_var.set(result.x2)
+                    y2_var.set(result.y2)
+            
+            overlay = CaptureOverlay(self.root, target_hwnd=target_hwnd)
+            overlay.capture_region(on_capture)
+        
+        tk.Button(coords_row, text="📍 Capture", command=capture_region,
+                 bg=S.ACCENT_BLUE, fg=S.FG_PRIMARY, relief="flat", cursor="hand2",
+                 font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=S.PAD_MD)
         
         widgets["x1"] = x1_var
         widgets["y1"] = y1_var
         widgets["x2"] = x2_var
         widgets["y2"] = y2_var
         
-        thresh_frame = tk.Frame(parent)
-        thresh_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(thresh_frame, text="Change threshold:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        # Threshold
+        thresh_row = tk.Frame(region_frame, bg=S.BG_CARD)
+        thresh_row.pack(fill="x", pady=S.PAD_XS)
+        tk.Label(thresh_row, text="Change threshold:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
         thresh_var = tk.DoubleVar(value=value.get("threshold", 0.05))
-        tk.Entry(thresh_frame, textvariable=thresh_var, width=8).pack(side="left")
-        tk.Label(thresh_frame, text="(0.0-1.0)", fg="gray").pack(side="left", padx=5)
+        tk.Entry(thresh_row, textvariable=thresh_var, width=8, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=S.PAD_SM)
+        tk.Label(thresh_row, text="(0.0-1.0, lower = more sensitive)", bg=S.BG_CARD, fg=S.FG_MUTED,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_XS)).pack(side="left")
         widgets["threshold"] = thresh_var
         
-        timeout_frame = tk.Frame(parent)
-        timeout_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(timeout_frame, text="Timeout (ms):", font=("Arial", 9)).pack(side="left", padx=(0, 5))
-        timeout_var = tk.IntVar(value=value.get("timeout_ms", 30000))
-        tk.Entry(timeout_frame, textvariable=timeout_var, width=10).pack(side="left")
-        widgets["timeout_ms"] = timeout_var
+        # ==================== IF CHANGE FOUND ====================
+        found_frame = tk.LabelFrame(parent, text=" ✅ If Change Found ", 
+                                    font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                    bg=S.BG_CARD, fg=S.ACCENT_GREEN,
+                                    padx=S.PAD_MD, pady=S.PAD_MD)
+        found_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Mouse action row
+        mouse_row = tk.Frame(found_frame, bg=S.BG_CARD)
+        mouse_row.pack(fill="x", pady=2)
+        
+        mouse_action_var = tk.BooleanVar(value=value.get("mouse_action_enabled", False))
+        tk.Checkbutton(mouse_row, text="Mouse action:", variable=mouse_action_var,
+                      font=(S.FONT_FAMILY, S.FONT_SIZE_MD), bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                      selectcolor=S.BG_INPUT, activebackground=S.BG_CARD).pack(side="left")
+        widgets["mouse_action_enabled"] = mouse_action_var
+        
+        mouse_type_var = tk.StringVar(value=value.get("mouse_type", "Positioning"))
+        mouse_type_combo = ttk.Combobox(mouse_row, textvariable=mouse_type_var, width=12,
+                                        values=["Positioning", "Left click", "Right click", 
+                                               "Double click", "Middle click"],
+                                        state="readonly")
+        mouse_type_combo.pack(side="left", padx=3)
+        widgets["mouse_type"] = mouse_type_var
+        
+        # Save coordinates row
+        save_row = tk.Frame(found_frame, bg=S.BG_CARD)
+        save_row.pack(fill="x", pady=2)
+        
+        save_xy_var = tk.BooleanVar(value=value.get("save_xy_enabled", False))
+        tk.Checkbutton(save_row, text="Save X to:", variable=save_xy_var,
+                      font=(S.FONT_FAMILY, S.FONT_SIZE_MD), bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                      selectcolor=S.BG_INPUT, activebackground=S.BG_CARD).pack(side="left")
+        widgets["save_xy_enabled"] = save_xy_var
+        
+        # Variable dropdowns for X and Y
+        var_list = ["$changeX", "$changeY", "$foundX", "$foundY", "$customVar"]
+        
+        save_x_var = tk.StringVar(value=value.get("save_x_var", ""))
+        save_x_combo = ttk.Combobox(save_row, textvariable=save_x_var, width=12, values=var_list)
+        save_x_combo.pack(side="left", padx=3)
+        widgets["save_x_var"] = save_x_var
+        
+        tk.Label(save_row, text="and Y to:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(side="left", padx=(S.PAD_SM, 0))
+        
+        save_y_var = tk.StringVar(value=value.get("save_y_var", ""))
+        save_y_combo = ttk.Combobox(save_row, textvariable=save_y_var, width=12, values=var_list)
+        save_y_combo.pack(side="left", padx=3)
+        widgets["save_y_var"] = save_y_var
+        
+        # Go to row
+        goto_found_row = tk.Frame(found_frame, bg=S.BG_CARD)
+        goto_found_row.pack(fill="x", pady=2)
+        
+        tk.Label(goto_found_row, text="Go to", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(side="left")
+        
+        # Function to get all labels from current actions
+        def get_label_list():
+            labels = ["Next", "Previous", "Start", "End", "Exit macro"]
+            for action in self.actions:
+                label_name = ""
+                if action.action == "LABEL":
+                    if isinstance(action.value, dict):
+                        label_name = action.value.get("name", "")
+                if not label_name and action.label:
+                    label_name = action.label
+                if label_name and f"→ {label_name}" not in labels:
+                    labels.append(f"→ {label_name}")
+            return labels
+        
+        goto_found_var = tk.StringVar(value=value.get("goto_if_found", "Next"))
+        goto_found_combo = ttk.Combobox(goto_found_row, textvariable=goto_found_var, width=25,
+                                        values=get_label_list(), state="readonly")
+        goto_found_combo.pack(side="left", padx=S.PAD_SM)
+        widgets["goto_if_found"] = goto_found_var
+        
+        # Refresh labels when dropdown opens
+        goto_found_combo.bind("<Button-1>", lambda e: goto_found_combo.configure(values=get_label_list()))
+        
+        # ==================== NO CHANGE FOUND ====================
+        notfound_frame = tk.LabelFrame(parent, text=" ❌ No Change Found ", 
+                                       font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                       bg=S.BG_CARD, fg=S.ACCENT_RED,
+                                       padx=S.PAD_MD, pady=S.PAD_MD)
+        notfound_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Continue waiting row
+        wait_row = tk.Frame(notfound_frame, bg=S.BG_CARD)
+        wait_row.pack(fill="x", pady=2)
+        
+        tk.Label(wait_row, text="Continue waiting", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(side="left")
+        
+        timeout_var = tk.IntVar(value=value.get("timeout_seconds", 120))
+        timeout_entry = tk.Entry(wait_row, textvariable=timeout_var, width=6, 
+                                bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                                insertbackground=S.FG_PRIMARY, relief="flat")
+        timeout_entry.pack(side="left", padx=S.PAD_SM)
+        widgets["timeout_seconds"] = timeout_var
+        
+        # Also store as timeout_ms for compatibility
+        timeout_ms_var = tk.IntVar(value=value.get("timeout_ms", 120000))
+        widgets["timeout_ms"] = timeout_ms_var
+        
+        # Sync timeout_seconds to timeout_ms
+        def on_timeout_change(*args):
+            try:
+                timeout_ms_var.set(timeout_var.get() * 1000)
+            except:
+                pass
+        timeout_var.trace_add("write", on_timeout_change)
+        
+        tk.Label(wait_row, text="seconds and then", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(side="left")
+        
+        # Go to row
+        goto_notfound_row = tk.Frame(notfound_frame, bg=S.BG_CARD)
+        goto_notfound_row.pack(fill="x", pady=2)
+        
+        tk.Label(goto_notfound_row, text="Go to", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(side="left")
+        
+        goto_notfound_var = tk.StringVar(value=value.get("goto_if_not_found", "End"))
+        goto_notfound_combo = ttk.Combobox(goto_notfound_row, textvariable=goto_notfound_var, width=25,
+                                           values=get_label_list(), state="readonly")
+        goto_notfound_combo.pack(side="left", padx=S.PAD_SM)
+        widgets["goto_if_not_found"] = goto_notfound_var
+        
+        # Refresh labels when dropdown opens
+        goto_notfound_combo.bind("<Button-1>", lambda e: goto_notfound_combo.configure(values=get_label_list()))
     
     def _render_wait_combokey_config(self, parent, widgets, value):
         """Render WAIT_COMBOKEY config (spec B1-4)"""
@@ -4652,53 +5815,122 @@ class MainUI:
         def crop_screen():
             """Crop from screen/emulator"""
             from core.capture_utils import CaptureOverlay
+            import ctypes
+            
+            # Safety: Force reset if a previous capture got stuck
+            if CaptureOverlay._is_active:
+                log("[UI] Warning: Previous capture was stuck, forcing reset")
+                CaptureOverlay.force_reset()
             
             target_hwnd = getattr(self, '_capture_target_hwnd', None)
             target_name = getattr(self, '_capture_target_name', 'Screen (Full)')
             
             emu_bounds = None
             emu_resolution = None
-            if target_hwnd and self.workers:
-                for w in self.workers:
-                    if w.hwnd == target_hwnd:
-                        emu_bounds = (w.client_x, w.client_y, 
-                                     w.client_x + w.client_w, w.client_y + w.client_h)
-                        emu_resolution = (w.res_width, w.res_height)
-                        break
+            
+            # Get bounds directly from hwnd using Windows API
+            if target_hwnd:
+                try:
+                    user32 = ctypes.windll.user32
+                    
+                    class RECT(ctypes.Structure):
+                        _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
+                                   ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
+                    
+                    class POINT(ctypes.Structure):
+                        _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+                    
+                    rect = RECT()
+                    user32.GetClientRect(target_hwnd, ctypes.byref(rect))
+                    
+                    pt = POINT(0, 0)
+                    user32.ClientToScreen(target_hwnd, ctypes.byref(pt))
+                    
+                    client_w = rect.right - rect.left
+                    client_h = rect.bottom - rect.top
+                    
+                    emu_bounds = (pt.x, pt.y, pt.x + client_w, pt.y + client_h)
+                    
+                    # Try to get resolution from worker if available
+                    for w in self.workers:
+                        if w.hwnd == target_hwnd:
+                            emu_resolution = (w.res_width, w.res_height)
+                            break
+                    
+                    # Fallback to client size as resolution
+                    if not emu_resolution:
+                        emu_resolution = (client_w, client_h)
+                    
+                    log(f"[UI] Crop target bounds: {emu_bounds}, resolution: {emu_resolution}")
+                except Exception as e:
+                    log(f"[UI] Failed to get hwnd bounds: {e}")
             
             def on_crop(result):
                 if not result.success:
                     return
                 
-                if emu_bounds and emu_resolution:
-                    emu_x, emu_y, emu_x2, emu_y2 = emu_bounds
+                # Helper to check if widget still exists
+                def widget_exists(w):
+                    try:
+                        return w.winfo_exists()
+                    except:
+                        return False
+                
+                # If we have emulator target, result.x/y are already CLIENT coordinates
+                # because CaptureOverlay converts via ScreenToClient when target_hwnd is set
+                if target_hwnd and emu_resolution:
                     res_w, res_h = emu_resolution
+                    emu_x, emu_y, emu_x2, emu_y2 = emu_bounds
+                    client_w = emu_x2 - emu_x
+                    client_h = emu_y2 - emu_y
                     
-                    if (result.x >= emu_x and result.y >= emu_y and 
-                        result.x2 <= emu_x2 and result.y2 <= emu_y2):
-                        local_x1 = int((result.x - emu_x) * res_w / (emu_x2 - emu_x))
-                        local_y1 = int((result.y - emu_y) * res_h / (emu_y2 - emu_y))
-                        local_x2 = int((result.x2 - emu_x) * res_w / (emu_x2 - emu_x))
-                        local_y2 = int((result.y2 - emu_y) * res_h / (emu_y2 - emu_y))
+                    # result.x/y/x2/y2 are already client coords (0,0 relative to window)
+                    # Just need to scale to resolution if different from client size
+                    if result.client_coords:
+                        # Scale from client coords to resolution
+                        local_x1 = int(result.x * res_w / client_w) if client_w > 0 else result.x
+                        local_y1 = int(result.y * res_h / client_h) if client_h > 0 else result.y
+                        local_x2 = int(result.x2 * res_w / client_w) if client_w > 0 else result.x2
+                        local_y2 = int(result.y2 * res_h / client_h) if client_h > 0 else result.y2
+                    else:
+                        # Screen coords - convert manually
+                        local_x1 = int((result.x - emu_x) * res_w / client_w) if client_w > 0 else 0
+                        local_y1 = int((result.y - emu_y) * res_h / client_h) if client_h > 0 else 0
+                        local_x2 = int((result.x2 - emu_x) * res_w / client_w) if client_w > 0 else 0
+                        local_y2 = int((result.y2 - emu_y) * res_h / client_h) if client_h > 0 else 0
+                    
+                    # Clamp to valid range
+                    local_x1 = max(0, min(res_w, local_x1))
+                    local_y1 = max(0, min(res_h, local_y1))
+                    local_x2 = max(0, min(res_w, local_x2))
+                    local_y2 = max(0, min(res_h, local_y2))
+                    
+                    # Update vars only if they still exist
+                    try:
                         crop_region_var.set(f"{local_x1},{local_y1},{local_x2},{local_y2}")
                         screen_info_var.set(f"📍 Region: ({local_x1},{local_y1})-({local_x2},{local_y2})")
-                    else:
-                        messagebox.showwarning("Crop", f"Selection outside emulator!\nPlease crop within: {target_name}")
-                        return
+                    except:
+                        pass
                 
                 if hasattr(result, 'img_path') and result.img_path:
-                    path_var.set(result.img_path)
+                    try:
+                        path_var.set(result.img_path)
+                    except:
+                        pass
+                        
                 if hasattr(result, 'pil_image') and result.pil_image:
                     try:
-                        img = result.pil_image.copy()
-                        orig_size = f"{img.width}x{img.height}"
-                        img.thumbnail((130, 95))
-                        img_tk = ImageTk.PhotoImage(img)
-                        preview_label.config(image=img_tk, text="")
-                        preview_label.image = img_tk
-                        size_label.config(text=f"Size: {orig_size}")
+                        if widget_exists(preview_label):
+                            img = result.pil_image.copy()
+                            orig_size = f"{img.width}x{img.height}"
+                            img.thumbnail((130, 95))
+                            img_tk = ImageTk.PhotoImage(img)
+                            preview_label.config(image=img_tk, text="")
+                            preview_label.image = img_tk
+                        if widget_exists(size_label):
+                            size_label.config(text=f"Size: {orig_size}")
                     except Exception as e:
-                        log(f"[UI] Preview error: {e}")
+                        log(f"[UI] Preview update skipped: {e}")
             
             overlay = CaptureOverlay(self.root, target_hwnd=target_hwnd)
             if emu_bounds:
@@ -4992,24 +6224,34 @@ class MainUI:
         tk.Label(goto_found_row, text="Then go to:", font=(S.FONT_FAMILY, S.FONT_SIZE_MD), 
                 fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left")
         
-        # Get existing labels from actions - check both value dict and label field
-        label_list = ["Next", "Previous", "Start", "End", "Exit macro"]
-        for action in self.actions:
-            if action.action == "LABEL":
-                # Try to get label name from value dict first, then label field
+        # Function to get all labels from current actions
+        # Includes: LABEL action names + any action with a non-empty label field
+        def get_label_list():
+            labels = ["Next", "Previous", "Start", "End", "Exit macro"]
+            for action in self.actions:
                 label_name = ""
-                if isinstance(action.value, dict):
-                    label_name = action.value.get("name", "")
+                # Check LABEL action type
+                if action.action == "LABEL":
+                    if isinstance(action.value, dict):
+                        label_name = action.value.get("name", "")
+                # Also check the label field of ANY action (comment column)
                 if not label_name and action.label:
                     label_name = action.label
-                if label_name and f"→ {label_name}" not in label_list:
-                    label_list.append(f"→ {label_name}")
+                # Add to list if valid
+                if label_name and f"→ {label_name}" not in labels:
+                    labels.append(f"→ {label_name}")
+            return labels
         
         goto_found_var = tk.StringVar(value=value.get("goto_if_found", "Next"))
         goto_found_combo = ttk.Combobox(goto_found_row, textvariable=goto_found_var, width=25,
-                                        values=label_list, state="readonly")
+                                        values=get_label_list(), state="readonly")
         goto_found_combo.pack(side="left", padx=5)
         widgets["goto_if_found"] = goto_found_var
+        
+        # Refresh labels when dropdown opens
+        def on_combo_click(event):
+            goto_found_combo['values'] = get_label_list()
+        goto_found_combo.bind("<Button-1>", on_combo_click)
         
         # Custom label entry (for labels not yet created)
         tk.Label(goto_found_row, text="or label:", font=(S.FONT_FAMILY, S.FONT_SIZE_SM), 
@@ -5068,9 +6310,14 @@ class MainUI:
         
         goto_notfound_var = tk.StringVar(value=value.get("goto_if_not_found", "Next"))
         goto_notfound_combo = ttk.Combobox(goto_notfound_row, textvariable=goto_notfound_var, width=25,
-                                           values=label_list, state="readonly")
+                                           values=get_label_list(), state="readonly")
         goto_notfound_combo.pack(side="left", padx=5)
         widgets["goto_if_not_found"] = goto_notfound_var
+        
+        # Refresh labels when dropdown opens
+        def on_notfound_combo_click(event):
+            goto_notfound_combo['values'] = get_label_list()
+        goto_notfound_combo.bind("<Button-1>", on_notfound_combo_click)
         
         # Custom label entry (for labels not yet created)
         tk.Label(goto_notfound_row, text="or label:", font=(S.FONT_FAMILY, S.FONT_SIZE_SM), 
@@ -5157,69 +6404,331 @@ class MainUI:
         widgets["y2"] = y2_var
     
     def _render_label_config(self, parent, widgets, value):
-        """Render LABEL config (spec B4-1)"""
-        name_frame = tk.Frame(parent)
-        name_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(name_frame, text="Label name:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        """Render LABEL config - Modern UI"""
+        S = ModernStyle
+        parent.configure(bg=S.BG_CARD)
+        
+        # ==================== LABEL SETTINGS ====================
+        label_frame = tk.LabelFrame(parent, text=" 🏷️ Label Settings ", 
+                                    font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                    bg=S.BG_CARD, fg=S.FG_ACCENT,
+                                    padx=S.PAD_MD, pady=S.PAD_MD)
+        label_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Label name
+        name_row = tk.Frame(label_frame, bg=S.BG_CARD)
+        name_row.pack(fill="x", pady=S.PAD_XS)
+        
+        tk.Label(name_row, text="Label name:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(side="left")
+        
         name_var = tk.StringVar(value=value.get("name", ""))
-        tk.Entry(name_frame, textvariable=name_var, width=25).pack(side="left")
+        name_entry = tk.Entry(name_row, textvariable=name_var, width=25,
+                             bg=S.BG_INPUT, fg=S.FG_PRIMARY, insertbackground=S.FG_PRIMARY,
+                             font=(S.FONT_FAMILY, S.FONT_SIZE_MD), relief="flat")
+        name_entry.pack(side="left", padx=S.PAD_SM)
         widgets["name"] = name_var
         
-        tk.Label(parent, text="Labels are markers for Goto and Repeat actions", 
-                fg="gray", font=("Arial", 8)).pack(anchor="w", padx=10)
+        # Show existing labels for reference
+        existing_labels = []
+        for action in self.actions:
+            if action.action == "LABEL":
+                lbl_name = ""
+                if isinstance(action.value, dict):
+                    lbl_name = action.value.get("name", "")
+                if not lbl_name and action.label:
+                    lbl_name = action.label
+                if lbl_name and lbl_name not in existing_labels:
+                    existing_labels.append(lbl_name)
+        
+        if existing_labels:
+            ref_frame = tk.Frame(label_frame, bg=S.BG_CARD)
+            ref_frame.pack(fill="x", pady=(S.PAD_SM, 0))
+            tk.Label(ref_frame, text="📋 Existing labels:", bg=S.BG_CARD, fg=S.FG_MUTED,
+                    font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+            tk.Label(ref_frame, text=", ".join(existing_labels), bg=S.BG_CARD, fg=S.ACCENT_CYAN,
+                    font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=S.PAD_XS)
+        
+        # Info
+        tk.Label(label_frame, text="💡 Labels are markers for GOTO, REPEAT, and conditional jumps",
+                bg=S.BG_CARD, fg=S.FG_MUTED,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(anchor="w", pady=(S.PAD_SM, 0))
     
     def _render_goto_config(self, parent, widgets, value):
-        """Render GOTO config (spec B4-2)"""
-        target_frame = tk.Frame(parent)
-        target_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(target_frame, text="Target label:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
-        target_var = tk.StringVar(value=value.get("target", ""))
-        tk.Entry(target_frame, textvariable=target_var, width=25).pack(side="left")
+        """Render GOTO config - Modern UI with label dropdown"""
+        S = ModernStyle
+        parent.configure(bg=S.BG_CARD)
+        
+        # ==================== GOTO SETTINGS ====================
+        goto_frame = tk.LabelFrame(parent, text=" 🔀 Go To Settings ", 
+                                   font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                   bg=S.BG_CARD, fg=S.FG_ACCENT,
+                                   padx=S.PAD_MD, pady=S.PAD_MD)
+        goto_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Function to get all labels
+        def get_label_list():
+            labels = ["Next", "Previous", "Start", "End", "Exit macro"]
+            for action in self.actions:
+                lbl_name = ""
+                if action.action == "LABEL":
+                    if isinstance(action.value, dict):
+                        lbl_name = action.value.get("name", "")
+                if not lbl_name and action.label:
+                    lbl_name = action.label
+                if lbl_name and f"→ {lbl_name}" not in labels:
+                    labels.append(f"→ {lbl_name}")
+            return labels
+        
+        # Target row
+        target_row = tk.Frame(goto_frame, bg=S.BG_CARD)
+        target_row.pack(fill="x", pady=S.PAD_XS)
+        
+        tk.Label(target_row, text="Jump to:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(side="left")
+        
+        target_var = tk.StringVar(value=value.get("target", "Next"))
+        target_combo = ttk.Combobox(target_row, textvariable=target_var, width=25,
+                                    values=get_label_list(), state="readonly")
+        target_combo.pack(side="left", padx=S.PAD_SM)
         widgets["target"] = target_var
         
-        tk.Label(parent, text="Jump to the action with this label name", 
-                fg="gray", font=("Arial", 8)).pack(anchor="w", padx=10)
+        # Refresh labels when dropdown opens
+        target_combo.bind("<Button-1>", lambda e: target_combo.configure(values=get_label_list()))
+        
+        # Custom label entry
+        custom_row = tk.Frame(goto_frame, bg=S.BG_CARD)
+        custom_row.pack(fill="x", pady=S.PAD_XS)
+        
+        tk.Label(custom_row, text="Or custom label:", bg=S.BG_CARD, fg=S.FG_MUTED,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        
+        custom_var = tk.StringVar(value=value.get("custom_target", ""))
+        custom_entry = tk.Entry(custom_row, textvariable=custom_var, width=20,
+                               bg=S.BG_INPUT, fg=S.FG_PRIMARY, insertbackground=S.FG_PRIMARY,
+                               font=(S.FONT_FAMILY, S.FONT_SIZE_SM), relief="flat")
+        custom_entry.pack(side="left", padx=S.PAD_SM)
+        widgets["custom_target"] = custom_var
+        
+        # Info
+        tk.Label(goto_frame, text="💡 Jump to a specific label or action position",
+                bg=S.BG_CARD, fg=S.FG_MUTED,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(anchor="w", pady=(S.PAD_SM, 0))
     
     def _render_repeat_config(self, parent, widgets, value):
-        """Render REPEAT config (spec B4-3)"""
-        count_frame = tk.Frame(parent)
-        count_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(count_frame, text="Repeat count:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        """Render REPEAT config - Modern UI with label dropdown"""
+        S = ModernStyle
+        parent.configure(bg=S.BG_CARD)
+        
+        # ==================== REPEAT SETTINGS ====================
+        repeat_frame = tk.LabelFrame(parent, text=" 🔁 Repeat Settings ", 
+                                     font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                     bg=S.BG_CARD, fg=S.FG_ACCENT,
+                                     padx=S.PAD_MD, pady=S.PAD_MD)
+        repeat_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Count row
+        count_row = tk.Frame(repeat_frame, bg=S.BG_CARD)
+        count_row.pack(fill="x", pady=S.PAD_XS)
+        
+        tk.Label(count_row, text="Repeat count:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(side="left")
+        
         count_var = tk.IntVar(value=value.get("count", 1))
-        tk.Spinbox(count_frame, from_=1, to=9999, textvariable=count_var, width=8).pack(side="left")
+        count_spin = tk.Spinbox(count_row, from_=1, to=9999, textvariable=count_var, width=8,
+                               bg=S.BG_INPUT, fg=S.FG_PRIMARY, buttonbackground=S.BTN_SECONDARY,
+                               font=(S.FONT_FAMILY, S.FONT_SIZE_MD), relief="flat")
+        count_spin.pack(side="left", padx=S.PAD_SM)
         widgets["count"] = count_var
         
-        end_frame = tk.Frame(parent)
-        end_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(end_frame, text="End label:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        tk.Label(count_row, text="times", bg=S.BG_CARD, fg=S.FG_MUTED,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        
+        # Function to get existing labels
+        def get_label_list():
+            labels = []
+            for action in self.actions:
+                lbl_name = ""
+                if action.action == "LABEL":
+                    if isinstance(action.value, dict):
+                        lbl_name = action.value.get("name", "")
+                if not lbl_name and action.label:
+                    lbl_name = action.label
+                if lbl_name and lbl_name not in labels:
+                    labels.append(lbl_name)
+            return labels
+        
+        # End label row
+        end_row = tk.Frame(repeat_frame, bg=S.BG_CARD)
+        end_row.pack(fill="x", pady=S.PAD_XS)
+        
+        tk.Label(end_row, text="From label:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(side="left")
+        
+        start_var = tk.StringVar(value=value.get("start_label", ""))
+        start_combo = ttk.Combobox(end_row, textvariable=start_var, width=15,
+                                   values=get_label_list())
+        start_combo.pack(side="left", padx=S.PAD_SM)
+        widgets["start_label"] = start_var
+        
+        # Refresh on click
+        start_combo.bind("<Button-1>", lambda e: start_combo.configure(values=get_label_list()))
+        
+        tk.Label(end_row, text="to label:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(side="left", padx=(S.PAD_SM, 0))
+        
         end_var = tk.StringVar(value=value.get("end_label", ""))
-        tk.Entry(end_frame, textvariable=end_var, width=20).pack(side="left")
+        end_combo = ttk.Combobox(end_row, textvariable=end_var, width=15,
+                                 values=get_label_list())
+        end_combo.pack(side="left", padx=S.PAD_SM)
         widgets["end_label"] = end_var
         
-        tk.Label(parent, text="Actions between Repeat and end_label will loop", 
-                fg="gray", font=("Arial", 8)).pack(anchor="w", padx=10)
+        # Refresh on click
+        end_combo.bind("<Button-1>", lambda e: end_combo.configure(values=get_label_list()))
+        
+        # Info
+        tk.Label(repeat_frame, text="💡 Actions between start_label and end_label will loop N times",
+                bg=S.BG_CARD, fg=S.FG_MUTED,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(anchor="w", pady=(S.PAD_SM, 0))
     
     def _render_embed_macro_config(self, parent, widgets, value):
-        """Render EMBED_MACRO config (spec B4-4)"""
-        name_frame = tk.Frame(parent)
-        name_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(name_frame, text="Macro name:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        """Render EMBED_MACRO config - Modern UI with macro list"""
+        S = ModernStyle
+        parent.configure(bg=S.BG_CARD)
+        import os
+        
+        # ==================== EMBED MACRO SETTINGS ====================
+        embed_frame = tk.LabelFrame(parent, text=" 📦 Embed Macro Settings ", 
+                                    font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                    bg=S.BG_CARD, fg=S.FG_ACCENT,
+                                    padx=S.PAD_MD, pady=S.PAD_MD)
+        embed_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Scan available macros (both .macro and legacy formats)
+        macros_dir = os.path.join("data", "macros")
+        available_macros = []
+        if os.path.exists(macros_dir):
+            for item in os.listdir(macros_dir):
+                item_path = os.path.join(macros_dir, item)
+                # Check for .macro files (new single-file format)
+                if item.endswith(".macro"):
+                    available_macros.append(f"📄 {item}")
+                # Check for folder with macro.json (legacy)
+                elif os.path.isdir(item_path):
+                    if os.path.exists(os.path.join(item_path, "macro.json")):
+                        available_macros.append(f"📁 {item}")
+                # Check for standalone .json files
+                elif item.endswith(".json"):
+                    available_macros.append(f"📄 {item}")
+        
+        # Macro selection row
+        select_row = tk.Frame(embed_frame, bg=S.BG_CARD)
+        select_row.pack(fill="x", pady=S.PAD_XS)
+        
+        tk.Label(select_row, text="Select macro:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(side="left")
+        
         name_var = tk.StringVar(value=value.get("macro_name", ""))
-        tk.Entry(name_frame, textvariable=name_var, width=25).pack(side="left")
+        
+        # Clean list for combobox (remove icons)
+        clean_macros = [m.replace("📄 ", "").replace("📁 ", "") for m in available_macros]
+        
+        if clean_macros:
+            macro_combo = ttk.Combobox(select_row, textvariable=name_var, width=30,
+                                       values=clean_macros)
+            macro_combo.pack(side="left", padx=S.PAD_SM)
+        else:
+            macro_entry = tk.Entry(select_row, textvariable=name_var, width=30,
+                                  bg=S.BG_INPUT, fg=S.FG_PRIMARY, insertbackground=S.FG_PRIMARY,
+                                  font=(S.FONT_FAMILY, S.FONT_SIZE_MD), relief="flat")
+            macro_entry.pack(side="left", padx=S.PAD_SM)
+        
         widgets["macro_name"] = name_var
         
-        def browse_macro():
+        # Browse file button
+        def browse_file():
             from tkinter import filedialog
             fp = filedialog.askopenfilename(
-                initialdir="data/macros",
-                filetypes=[("JSON", "*.json")]
+                title="Select Macro File",
+                initialdir=macros_dir,
+                filetypes=[
+                    ("Macro files", "*.macro"),
+                    ("JSON files", "*.json"),
+                    ("All files", "*.*")
+                ]
             )
             if fp:
                 name_var.set(fp)
-        tk.Button(name_frame, text="...", command=browse_macro).pack(side="left", padx=5)
         
-        tk.Label(parent, text="Execute another macro file inline", 
-                fg="gray", font=("Arial", 8)).pack(anchor="w", padx=10)
+        tk.Button(select_row, text="📁 Browse", command=browse_file,
+                 bg=S.ACCENT_BLUE, fg=S.FG_PRIMARY, relief="flat", cursor="hand2",
+                 font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=S.PAD_XS)
+        
+        # Available macros list
+        if available_macros:
+            list_frame = tk.LabelFrame(embed_frame, text=" 📋 Available Macros ",
+                                       font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                                       bg=S.BG_CARD, fg=S.FG_MUTED,
+                                       padx=S.PAD_SM, pady=S.PAD_SM)
+            list_frame.pack(fill="x", pady=(S.PAD_SM, 0))
+            
+            # Create scrollable listbox
+            list_container = tk.Frame(list_frame, bg=S.BG_CARD)
+            list_container.pack(fill="x")
+            
+            macro_listbox = tk.Listbox(list_container, height=5, 
+                                       bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                                       selectbackground=S.ACCENT_BLUE,
+                                       font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                                       relief="flat", highlightthickness=0)
+            macro_listbox.pack(side="left", fill="x", expand=True)
+            
+            scrollbar = ttk.Scrollbar(list_container, orient="vertical", 
+                                      command=macro_listbox.yview)
+            scrollbar.pack(side="right", fill="y")
+            macro_listbox.config(yscrollcommand=scrollbar.set)
+            
+            for macro in available_macros:
+                macro_listbox.insert(tk.END, f"  {macro}")
+            
+            def on_listbox_select(event):
+                selection = macro_listbox.curselection()
+                if selection:
+                    selected_text = macro_listbox.get(selection[0])
+                    # Remove icon prefix
+                    macro_name = selected_text.strip().replace("📁 ", "").replace("📄 ", "")
+                    name_var.set(macro_name)
+            
+            macro_listbox.bind("<<ListboxSelect>>", on_listbox_select)
+        else:
+            tk.Label(embed_frame, text="⚠️ No macros found in data/macros/",
+                    bg=S.BG_CARD, fg=S.ACCENT_ORANGE,
+                    font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(anchor="w", pady=S.PAD_XS)
+        
+        # Options
+        options_frame = tk.Frame(embed_frame, bg=S.BG_CARD)
+        options_frame.pack(fill="x", pady=(S.PAD_SM, 0))
+        
+        # Continue on error option
+        continue_var = tk.BooleanVar(value=value.get("continue_on_error", True))
+        tk.Checkbutton(options_frame, text="Continue on error", variable=continue_var,
+                      bg=S.BG_CARD, fg=S.FG_PRIMARY, selectcolor=S.BG_INPUT,
+                      activebackground=S.BG_CARD,
+                      font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        widgets["continue_on_error"] = continue_var
+        
+        # Inherit variables option
+        inherit_var = tk.BooleanVar(value=value.get("inherit_variables", True))
+        tk.Checkbutton(options_frame, text="Inherit variables", variable=inherit_var,
+                      bg=S.BG_CARD, fg=S.FG_PRIMARY, selectcolor=S.BG_INPUT,
+                      activebackground=S.BG_CARD,
+                      font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=S.PAD_MD)
+        widgets["inherit_variables"] = inherit_var
+        
+        # Info
+        tk.Label(embed_frame, text="💡 Execute another macro inline, then continue with current actions",
+                bg=S.BG_CARD, fg=S.FG_MUTED,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(anchor="w", pady=(S.PAD_SM, 0))
     
     def _render_group_config(self, parent, widgets, value):
         """Render GROUP config - shows grouped actions"""
@@ -5291,10 +6800,17 @@ class MainUI:
     
     def _render_drag_action_config(self, parent, widgets, value, dialog=None):
         """Render Drag action config - V2 with capture support"""
+        S = ModernStyle
+        parent.configure(bg=S.BG_CARD)
+        
+        # Target dropdown (Screen/Emulator)
+        target_mode_var = self._create_target_dropdown(parent, widgets, value, S)
+        
         # Button type (left/right)
-        btn_frame = tk.Frame(parent)
-        btn_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(btn_frame, text="Button:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        btn_frame = tk.Frame(parent, bg=S.BG_CARD)
+        btn_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        tk.Label(btn_frame, text="Button:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(0, S.PAD_SM))
         btn_var = tk.StringVar(value=value.get("button", "left"))
         btn_dropdown = ttk.Combobox(btn_frame, textvariable=btn_var, 
                                     values=["left", "right"], state="readonly", width=8)
@@ -5302,46 +6818,82 @@ class MainUI:
         widgets["button"] = btn_var
         
         # Duration
-        tk.Label(btn_frame, text="Duration (ms):").pack(side="left", padx=(10, 2))
+        tk.Label(btn_frame, text="Duration (ms):", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(S.PAD_MD, S.PAD_XS))
         duration_var = tk.IntVar(value=value.get("duration_ms", 500))
-        tk.Entry(btn_frame, textvariable=duration_var, width=6).pack(side="left", padx=2)
+        S.create_entry(btn_frame, textvariable=duration_var, width=6).pack(side="left", padx=2)
         widgets["duration_ms"] = duration_var
         
+        # Checkbox: Use current position for START point
+        start_opt_frame = tk.Frame(parent, bg=S.BG_CARD)
+        start_opt_frame.pack(fill="x", padx=S.PAD_MD, pady=(S.PAD_SM, 0))
+        
+        use_current_start_var = tk.BooleanVar(value=value.get("use_current_start", False))
+        use_current_cb = tk.Checkbutton(start_opt_frame, text="🎯 Start from current mouse position", 
+                                        variable=use_current_start_var,
+                                        bg=S.BG_CARD, fg=S.ACCENT_BLUE, selectcolor=S.BG_INPUT,
+                                        activebackground=S.BG_CARD, activeforeground=S.ACCENT_BLUE,
+                                        font=(S.FONT_FAMILY, S.FONT_SIZE_SM))
+        use_current_cb.pack(side="left")
+        widgets["use_current_start"] = use_current_start_var
+        
         # Start position
-        start_frame = tk.Frame(parent)
-        start_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(start_frame, text="Start:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        start_frame = tk.Frame(parent, bg=S.BG_CARD)
+        start_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        tk.Label(start_frame, text="Start:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(0, S.PAD_SM))
         x1_var = tk.IntVar(value=value.get("x1", 0))
         y1_var = tk.IntVar(value=value.get("y1", 0))
-        tk.Label(start_frame, text="X1:").pack(side="left")
-        tk.Entry(start_frame, textvariable=x1_var, width=6).pack(side="left", padx=2)
-        tk.Label(start_frame, text="Y1:").pack(side="left")
-        tk.Entry(start_frame, textvariable=y1_var, width=6).pack(side="left", padx=2)
+        tk.Label(start_frame, text="X1:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        x1_entry = S.create_entry(start_frame, textvariable=x1_var, width=6)
+        x1_entry.pack(side="left", padx=2)
+        tk.Label(start_frame, text="Y1:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        y1_entry = S.create_entry(start_frame, textvariable=y1_var, width=6)
+        y1_entry.pack(side="left", padx=2)
         widgets["x1"] = x1_var
         widgets["y1"] = y1_var
         
+        # Toggle start coords
+        def toggle_start_coords(*args):
+            state = "disabled" if use_current_start_var.get() else "normal"
+            x1_entry.config(state=state)
+            y1_entry.config(state=state)
+        
+        use_current_start_var.trace_add("write", toggle_start_coords)
+        toggle_start_coords()
+        
         # End position
-        end_frame = tk.Frame(parent)
-        end_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(end_frame, text="End:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        end_frame = tk.Frame(parent, bg=S.BG_CARD)
+        end_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        tk.Label(end_frame, text="End:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(0, S.PAD_SM))
         x2_var = tk.IntVar(value=value.get("x2", 0))
         y2_var = tk.IntVar(value=value.get("y2", 0))
-        tk.Label(end_frame, text="X2:").pack(side="left")
-        tk.Entry(end_frame, textvariable=x2_var, width=6).pack(side="left", padx=2)
-        tk.Label(end_frame, text="Y2:").pack(side="left")
-        tk.Entry(end_frame, textvariable=y2_var, width=6).pack(side="left", padx=2)
+        tk.Label(end_frame, text="X2:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        S.create_entry(end_frame, textvariable=x2_var, width=6).pack(side="left", padx=2)
+        tk.Label(end_frame, text="Y2:", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        S.create_entry(end_frame, textvariable=y2_var, width=6).pack(side="left", padx=2)
         widgets["x2"] = x2_var
         widgets["y2"] = y2_var
         
-        # Capture button
-        capture_frame = tk.Frame(parent)
-        capture_frame.pack(fill="x", padx=10, pady=5)
-        capture_btn = tk.Button(capture_frame, text="📍 Capture Drag", 
-                               command=lambda: self._capture_drag_path(x1_var, y1_var, x2_var, y2_var, duration_var),
-                               bg="#2196F3", fg="white", font=("Arial", 9))
+        # Capture button with target support
+        capture_frame = tk.Frame(parent, bg=S.BG_CARD)
+        capture_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        def do_capture():
+            hwnd = None
+            if target_mode_var.get() == "emulator":
+                hwnd = self._get_emulator_hwnd_for_capture()
+            self._capture_drag_path_target(x1_var, y1_var, x2_var, y2_var, duration_var, hwnd)
+        
+        capture_btn = S.create_modern_button(capture_frame, "📍 Capture Drag", do_capture, "accent", width=14)
         capture_btn.pack(side="left")
         tk.Label(capture_frame, text="(Giữ chuột và kéo để capture hành trình)", 
-                fg="#666666", font=("Arial", 8)).pack(side="left", padx=10)
+                bg=S.BG_CARD, fg=S.FG_MUTED, font=(S.FONT_FAMILY, S.FONT_SIZE_XS)).pack(side="left", padx=S.PAD_MD)
 
     def _load_macros(self):
         if not os.path.exists(MACRO_STORE):
@@ -6374,6 +7926,91 @@ class MainUI:
         info_dialog.protocol("WM_DELETE_WINDOW", lambda: [cancel(), on_close()])
         info_dialog.bind("<Destroy>", lambda e: on_close() if e.widget == info_dialog else None)
     
+    def _get_emulator_hwnd_for_capture(self):
+        """Get emulator hwnd for capturing - shows selection dialog if multiple available"""
+        # First, try workers with hwnd
+        available = []
+        for w in self.workers:
+            if w.hwnd:
+                available.append((f"Worker {w.id} - {w.res_width}x{w.res_height}", w.hwnd))
+        
+        # Also detect other LDPlayer windows
+        try:
+            from initialize_workers import detect_ldplayer_windows
+            ldplayer_wins = detect_ldplayer_windows()
+            existing_hwnds = {w.hwnd for w in self.workers if w.hwnd}
+            
+            for win in ldplayer_wins:
+                if win['hwnd'] not in existing_hwnds:
+                    display = f"{win['title'][:25]} ({win['width']}x{win['height']})"
+                    available.append((display, win['hwnd']))
+        except Exception as e:
+            log(f"[UI] Error detecting LDPlayer: {e}")
+        
+        if not available:
+            from tkinter import messagebox
+            messagebox.showwarning("Không tìm thấy", "Không có emulator/worker nào đang chạy!\nHãy Refresh Workers trước.")
+            return None
+        
+        if len(available) == 1:
+            log(f"[UI] Using single available emulator hwnd={available[0][1]}")
+            return available[0][1]  # Return the only hwnd
+        
+        # Multiple available - show selection dialog
+        S = ModernStyle
+        
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Chọn Emulator để Capture")
+        dialog.geometry("320x220")
+        dialog.configure(bg=S.BG_MAIN)
+        dialog.transient(self.root)
+        
+        # Center dialog
+        dialog.update_idletasks()
+        x = self.root.winfo_x() + (self.root.winfo_width() - dialog.winfo_width()) // 2
+        y = self.root.winfo_y() + (self.root.winfo_height() - dialog.winfo_height()) // 2
+        dialog.geometry(f"+{x}+{y}")
+        
+        selected_hwnd = [None]
+        
+        tk.Label(dialog, text="Chọn emulator để capture:", bg=S.BG_MAIN, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(pady=10)
+        
+        listbox = tk.Listbox(dialog, height=6, bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                            selectbackground=S.ACCENT_BLUE, font=(S.FONT_FAMILY, S.FONT_SIZE_SM))
+        listbox.pack(fill="both", expand=True, padx=10, pady=5)
+        
+        for name, hwnd in available:
+            listbox.insert(tk.END, name)
+        listbox.selection_set(0)
+        
+        def on_ok():
+            idx = listbox.curselection()
+            if idx:
+                selected_hwnd[0] = available[idx[0]][1]
+                log(f"[UI] Selected emulator hwnd={selected_hwnd[0]} for capture")
+            dialog.destroy()
+        
+        def on_cancel():
+            dialog.destroy()
+        
+        btn_frame = tk.Frame(dialog, bg=S.BG_MAIN)
+        btn_frame.pack(pady=10)
+        S.create_modern_button(btn_frame, "OK", on_ok, "accent", width=8).pack(side="left", padx=5)
+        S.create_modern_button(btn_frame, "Cancel", on_cancel, "default", width=8).pack(side="left", padx=5)
+        
+        # Handle dialog close
+        dialog.protocol("WM_DELETE_WINDOW", on_cancel)
+        
+        # Make dialog modal
+        dialog.grab_set()
+        dialog.focus_set()
+        
+        # Wait for dialog to close
+        self.root.wait_window(dialog)
+        
+        return selected_hwnd[0]
+    
     def _get_capture_target_rect(self):
         """
         Lấy client rect của capture target
@@ -6474,6 +8111,218 @@ class MainUI:
         # Update hold duration if captured
         if is_hold_mode and hold_duration_ms > 0:
             hold_var.set(hold_duration_ms)
+    
+    def _capture_click_with_hold_target(self, x_var, y_var, hold_var, btn_var, target_hwnd=None):
+        """Capture click position with hold duration - supports specific target window"""
+        import ctypes
+        
+        user32 = ctypes.windll.user32
+        btn_type = btn_var.get()
+        is_hold_mode = btn_type in ("hold_left", "hold_right")
+        
+        # Minimize main window
+        self.root.iconify()
+        self.root.update()
+        
+        # Wait for left mouse button release (if pressed)
+        while user32.GetAsyncKeyState(0x01) & 0x8000:
+            pass
+        
+        # Wait for click down
+        while not (user32.GetAsyncKeyState(0x01) & 0x8000):
+            pass
+        
+        # Get cursor position at click down
+        class POINT(ctypes.Structure):
+            _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+        
+        pt = POINT()
+        user32.GetCursorPos(ctypes.byref(pt))
+        screen_x, screen_y = pt.x, pt.y
+        
+        # Measure hold duration if in hold mode
+        hold_duration_ms = 0
+        if is_hold_mode:
+            import time
+            start_time = time.time()
+            while user32.GetAsyncKeyState(0x01) & 0x8000:
+                pass
+            hold_duration_ms = int((time.time() - start_time) * 1000)
+            hold_duration_ms = max(50, hold_duration_ms)
+        
+        # Convert based on target
+        result_x, result_y = screen_x, screen_y
+        
+        if target_hwnd:
+            # Get window client rect and convert
+            class RECT(ctypes.Structure):
+                _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
+                           ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
+            
+            rect = RECT()
+            user32.GetClientRect(target_hwnd, ctypes.byref(rect))
+            
+            pt_origin = POINT(0, 0)
+            user32.ClientToScreen(target_hwnd, ctypes.byref(pt_origin))
+            
+            # Convert screen coords to client coords
+            result_x = screen_x - pt_origin.x
+            result_y = screen_y - pt_origin.y
+            
+            # Clamp to window bounds
+            result_x = max(0, min(result_x, rect.right - rect.left))
+            result_y = max(0, min(result_y, rect.bottom - rect.top))
+            
+            log(f"[UI] Captured: client({result_x},{result_y}) in hwnd={target_hwnd}, hold={hold_duration_ms}ms")
+        else:
+            log(f"[UI] Captured: screen({screen_x},{screen_y}), hold={hold_duration_ms}ms")
+        
+        # Restore window
+        self.root.deiconify()
+        self.root.update()
+        
+        # Update variables
+        x_var.set(max(0, result_x))
+        y_var.set(max(0, result_y))
+        
+        if is_hold_mode and hold_duration_ms > 0:
+            hold_var.set(hold_duration_ms)
+    
+    def _capture_position_target(self, x_var, y_var, target_hwnd=None):
+        """Capture mouse position - supports specific target window"""
+        import ctypes
+        
+        user32 = ctypes.windll.user32
+        
+        # Minimize main window
+        self.root.iconify()
+        self.root.update()
+        
+        # Wait for left mouse button release (if pressed)
+        while user32.GetAsyncKeyState(0x01) & 0x8000:
+            pass
+        
+        # Wait for click
+        while not (user32.GetAsyncKeyState(0x01) & 0x8000):
+            pass
+        
+        class POINT(ctypes.Structure):
+            _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+        
+        pt = POINT()
+        user32.GetCursorPos(ctypes.byref(pt))
+        screen_x, screen_y = pt.x, pt.y
+        
+        # Wait for release
+        while user32.GetAsyncKeyState(0x01) & 0x8000:
+            pass
+        
+        # Convert based on target
+        result_x, result_y = screen_x, screen_y
+        
+        if target_hwnd:
+            class RECT(ctypes.Structure):
+                _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
+                           ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
+            
+            rect = RECT()
+            user32.GetClientRect(target_hwnd, ctypes.byref(rect))
+            
+            pt_origin = POINT(0, 0)
+            user32.ClientToScreen(target_hwnd, ctypes.byref(pt_origin))
+            
+            result_x = screen_x - pt_origin.x
+            result_y = screen_y - pt_origin.y
+            
+            result_x = max(0, min(result_x, rect.right - rect.left))
+            result_y = max(0, min(result_y, rect.bottom - rect.top))
+            
+            log(f"[UI] Captured: client({result_x},{result_y}) in hwnd={target_hwnd}")
+        else:
+            log(f"[UI] Captured: screen({screen_x},{screen_y})")
+        
+        # Restore window
+        self.root.deiconify()
+        self.root.update()
+        
+        x_var.set(max(0, result_x))
+        y_var.set(max(0, result_y))
+    
+    def _capture_drag_path_target(self, x1_var, y1_var, x2_var, y2_var, duration_var, target_hwnd=None):
+        """Capture drag path - supports specific target window"""
+        import ctypes
+        import time
+        
+        user32 = ctypes.windll.user32
+        
+        # Minimize main window
+        self.root.iconify()
+        self.root.update()
+        
+        # Wait for any button release first
+        while user32.GetAsyncKeyState(0x01) & 0x8000:
+            pass
+        
+        # Wait for mouse down (start of drag)
+        while not (user32.GetAsyncKeyState(0x01) & 0x8000):
+            pass
+        
+        class POINT(ctypes.Structure):
+            _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+        
+        pt = POINT()
+        user32.GetCursorPos(ctypes.byref(pt))
+        start_x, start_y = pt.x, pt.y
+        start_time = time.time()
+        
+        # Wait for mouse up (end of drag)
+        while user32.GetAsyncKeyState(0x01) & 0x8000:
+            pass
+        
+        user32.GetCursorPos(ctypes.byref(pt))
+        end_x, end_y = pt.x, pt.y
+        duration_ms = int((time.time() - start_time) * 1000)
+        duration_ms = max(100, duration_ms)  # Minimum 100ms
+        
+        # Convert based on target
+        if target_hwnd:
+            class RECT(ctypes.Structure):
+                _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
+                           ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
+            
+            rect = RECT()
+            user32.GetClientRect(target_hwnd, ctypes.byref(rect))
+            
+            pt_origin = POINT(0, 0)
+            user32.ClientToScreen(target_hwnd, ctypes.byref(pt_origin))
+            
+            # Convert to client coords
+            start_x = start_x - pt_origin.x
+            start_y = start_y - pt_origin.y
+            end_x = end_x - pt_origin.x
+            end_y = end_y - pt_origin.y
+            
+            # Clamp
+            max_w = rect.right - rect.left
+            max_h = rect.bottom - rect.top
+            start_x = max(0, min(start_x, max_w))
+            start_y = max(0, min(start_y, max_h))
+            end_x = max(0, min(end_x, max_w))
+            end_y = max(0, min(end_y, max_h))
+            
+            log(f"[UI] Captured drag: ({start_x},{start_y})->({end_x},{end_y}) in {duration_ms}ms, hwnd={target_hwnd}")
+        else:
+            log(f"[UI] Captured drag: screen({start_x},{start_y})->({end_x},{end_y}) in {duration_ms}ms")
+        
+        # Restore window
+        self.root.deiconify()
+        self.root.update()
+        
+        x1_var.set(max(0, start_x))
+        y1_var.set(max(0, start_y))
+        x2_var.set(max(0, end_x))
+        y2_var.set(max(0, end_y))
+        duration_var.set(duration_ms)
     
     def _capture_drag_path(self, x1_var, y1_var, x2_var, y2_var, duration_var):
         """
@@ -6841,54 +8690,114 @@ class MainUI:
             self._save_macros()
 
     def refresh_workers(self):
-        """Refresh workers by re-detecting LDPlayer windows"""
-        from initialize_workers import initialize_workers_from_ldplayer
+        """Scan LDPlayer windows và hiển thị trong danh sách Worker Status"""
+        from initialize_workers import detect_ldplayer_windows
+        from core.worker import Worker
         
         log("[UI] Refreshing workers...")
         
-        # Re-initialize workers
-        new_workers = initialize_workers_from_ldplayer()
+        # Detect LDPlayer windows
+        windows = detect_ldplayer_windows()
         
-        if new_workers:
-            self.workers = new_workers
-            log(f"[UI] Refreshed: {len(new_workers)} worker(s) detected")
-            messagebox.showinfo("Refresh Workers", f"✓ Phát hiện {len(new_workers)} LDPlayer instance(s)")
-        else:
-            log("[UI] Refresh: No workers detected")
-            messagebox.showwarning("Refresh Workers", "❌ Không tìm thấy LDPlayer nào.\n\nHãy chắc LDPlayer đang chạy.")
+        if not windows:
+            messagebox.showwarning("Refresh Workers", 
+                "❌ Không tìm thấy LDPlayer nào.\n\nHãy chắc LDPlayer đang chạy.")
+            return
         
-        # Update worker list display
+        # Clean up stale assignments
+        current_hwnds = [str(w['hwnd']) for w in windows]
+        self.worker_mgr.cleanup_stale_assignments(current_hwnds)
+        
+        # Update workers list - create/update worker entries for detected windows
+        new_workers = []
+        for window in windows:
+            hwnd = window['hwnd']
+            
+            # Check if already assigned
+            worker_id = self.worker_mgr.get_worker_id(str(hwnd))
+            
+            if worker_id:
+                # Find existing worker or create new with assigned ID
+                existing = [w for w in self.workers if w.id == worker_id]
+                if existing:
+                    new_workers.append(existing[0])
+                else:
+                    # Create worker with assigned ID
+                    worker = Worker(
+                        worker_id=worker_id,
+                        hwnd=hwnd,
+                        client_rect=(window['x'], window['y'], window['width'], window['height']),
+                        res_width=540, res_height=960,
+                        adb_device=None
+                    )
+                    new_workers.append(worker)
+            else:
+                # Not assigned yet - create temp worker with negative ID (placeholder)
+                temp_id = -(hwnd % 10000)  # Negative ID = not assigned
+                worker = Worker(
+                    worker_id=temp_id,
+                    hwnd=hwnd,
+                    client_rect=(window['x'], window['y'], window['width'], window['height']),
+                    res_width=540, res_height=960,
+                    adb_device=None
+                )
+                # Store window info for display
+                worker._window_title = window['title']
+                worker._is_assigned = False
+                new_workers.append(worker)
+        
+        self.workers = new_workers
+        log(f"[UI] Refreshed: {len(new_workers)} LDPlayer(s) detected")
+        
+        # Force UI update
         self._auto_refresh_status()
+        
+        # Show result
+        assigned = sum(1 for w in self.workers if self.worker_mgr.get_worker_id(str(w.hwnd)))
+        not_assigned = len(self.workers) - assigned
+        
+        msg = f"✅ Tìm thấy {len(self.workers)} LDPlayer\n\n"
+        if assigned:
+            msg += f"📗 {assigned} đã được gán Worker ID\n"
+        if not_assigned:
+            msg += f"📙 {not_assigned} chưa được gán (dùng Set để gán)"
+        
+        messagebox.showinfo("Refresh Workers", msg)
+        
     def set_worker_dialog(self):
         """
         Phân chia LDPlayer → Worker ID
-        
-        Tính năng:
-        1. Hiển thị danh sách LDPlayer hiện có (detect từ window)
+        Modern Dark UI với chức năng:
+        1. Scan LDPlayer windows hiện có
         2. Select/Unselect từng cái hoặc All
-        3. Auto-assign Worker dựa vào thứ tự (fill gaps)
-        4. Xóa Worker random (giữ nguyên gaps)
+        3. Gán Worker ID khi user click Set Worker
+        4. Xóa Worker assignment
         """
         from initialize_workers import detect_ldplayer_windows
+        from core.worker import Worker
         
-        if not self.workers:
-            messagebox.showwarning("Thông báo", "Không có worker nào")
-            return
+        S = ModernStyle
         
-        # Detect LDPlayer windows (không bắt buộc phải có)
+        # Detect LDPlayer windows
         ldplayer_windows = detect_ldplayer_windows()
         log(f"[UI] Set Worker dialog: detected {len(ldplayer_windows)} LDPlayer windows")
         
-        # Create dialog
+        # Create dialog với Modern Dark theme
         dialog = tk.Toplevel(self.root)
         dialog.title("Set Worker - Gán LDPlayer → Worker ID")
-        dialog.geometry("500x400")
+        dialog.geometry("550x450")
         dialog.transient(self.root)
         dialog.grab_set()
+        dialog.configure(bg=S.BG_PRIMARY)
         
         # ===== TITLE =====
-        tk.Label(dialog, text="Gán LDPlayer Instance → Worker ID", 
-                 font=("Arial", 11, "bold")).pack(pady=10)
+        header_frame = tk.Frame(dialog, bg=S.BG_SECONDARY, height=50)
+        header_frame.pack(fill="x")
+        header_frame.pack_propagate(False)
+        
+        tk.Label(header_frame, text="🔗 Gán LDPlayer Instance → Worker ID", 
+                 font=(S.FONT_FAMILY, S.FONT_SIZE_LG, "bold"),
+                 bg=S.BG_SECONDARY, fg=S.FG_PRIMARY).pack(pady=S.PAD_MD)
         
         ldplayer_vars = {}  # {hwnd → BooleanVar}
         ldplayer_list = []  # Will be populated by refresh
@@ -6904,6 +8813,12 @@ class MainUI:
             ldplayer_list.extend([(w['hwnd'], w['title']) for w in fresh_windows])
             log(f"[UI] Refresh: detected {len(ldplayer_list)} LDPlayer windows")
             
+            # Clean up stale assignments (hwnd không còn tồn tại)
+            current_hwnds = [str(w['hwnd']) for w in fresh_windows]
+            stale_count = self.worker_mgr.cleanup_stale_assignments(current_hwnds)
+            if stale_count > 0:
+                log(f"[UI] Cleaned up {stale_count} stale worker assignments")
+            
             for widget in scrollable_frame.winfo_children():
                 widget.destroy()
             
@@ -6911,8 +8826,14 @@ class MainUI:
             
             if not ldplayer_list:
                 # Show message when no LDPlayer found
-                tk.Label(scrollable_frame, text="❌ Không tìm thấy LDPlayer nào\n\nHãy chắc LDPlayer đang chạy và nhấn Refresh",
-                        bg="white", fg="red", font=("Arial", 10), justify="center").pack(pady=20)
+                msg_frame = tk.Frame(scrollable_frame, bg=S.BG_CARD)
+                msg_frame.pack(fill="x", pady=S.PAD_LG)
+                tk.Label(msg_frame, text="❌ Không tìm thấy LDPlayer nào",
+                        bg=S.BG_CARD, fg=S.ACCENT_RED, 
+                        font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold")).pack(pady=S.PAD_SM)
+                tk.Label(msg_frame, text="Hãy mở LDPlayer và nhấn Refresh",
+                        bg=S.BG_CARD, fg=S.FG_MUTED,
+                        font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack()
                 return
             
             for hwnd, title in ldplayer_list:
@@ -6921,35 +8842,84 @@ class MainUI:
                 
                 # Get current assignment
                 worker_id = self.worker_mgr.get_worker_id(str(hwnd))
-                assigned_text = f" → Worker {worker_id}" if worker_id else " → (Not assigned)"
                 
-                frame = tk.Frame(scrollable_frame, bg="white")
-                frame.pack(fill="x", padx=5, pady=4, anchor="w")
+                frame = tk.Frame(scrollable_frame, bg=S.BG_CARD)
+                frame.pack(fill="x", padx=S.PAD_SM, pady=3, anchor="w")
                 
-                tk.Checkbutton(frame, text=f"{title}{assigned_text}", variable=var,
-                              bg="white", font=("Arial", 9)).pack(anchor="w", fill="x")
+                # Status indicator
+                if worker_id:
+                    status_color = S.ACCENT_GREEN
+                    status_text = f"→ Worker {worker_id}"
+                else:
+                    status_color = S.FG_MUTED
+                    status_text = "(Not assigned)"
+                
+                cb = tk.Checkbutton(frame, text=f"  {title}", variable=var,
+                                   bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                                   selectcolor=S.BG_INPUT, activebackground=S.BG_CARD,
+                                   font=(S.FONT_FAMILY, S.FONT_SIZE_SM))
+                cb.pack(side="left", anchor="w")
+                
+                tk.Label(frame, text=status_text, bg=S.BG_CARD, fg=status_color,
+                        font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="right", padx=S.PAD_SM)
         
-        # ===== ACTION BUTTONS (ĐƯA LÊN ĐẦU) =====
-        action_frame = tk.Frame(dialog)
-        action_frame.pack(fill="x", padx=15, pady=(5, 10))
+        # ===== ACTION BUTTONS =====
+        action_frame = tk.Frame(dialog, bg=S.BG_PRIMARY)
+        action_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
         
         def assign_workers():
-            """Auto-assign Worker ID tới selected LDPlayers"""
+            """Gán Worker ID tới selected LDPlayers và tạo Worker objects"""
             selected = [hwnd for hwnd, var in ldplayer_vars.items() if var.get()]
             
             if not selected:
                 messagebox.showwarning("Thông báo", "Chưa select LDPlayer nào")
                 return
             
-            # Auto-assign
+            # Auto-assign Worker IDs
             result = self.worker_mgr.auto_assign_selected([str(hwnd) for hwnd in selected])
             
             if result:
-                msg = "✓ Đã gán:\n\n"
+                # Tạo Worker objects cho các LDPlayer mới được gán
+                new_workers_created = 0
+                for hwnd in selected:
+                    worker_id = self.worker_mgr.get_worker_id(str(hwnd))
+                    if worker_id:
+                        # Check if worker already exists
+                        existing = [w for w in self.workers if w.id == worker_id]
+                        if not existing:
+                            # Get window info
+                            try:
+                                from core.tech import win32gui
+                                rect = win32gui.GetWindowRect(hwnd)
+                                x, y, right, bottom = rect
+                                width, height = right - x, bottom - y
+                                
+                                # Create new Worker
+                                worker = Worker(
+                                    worker_id=worker_id,
+                                    hwnd=hwnd,
+                                    client_rect=(x, y, width, height),
+                                    res_width=540, res_height=960,
+                                    adb_device=None
+                                )
+                                self.workers.append(worker)
+                                new_workers_created += 1
+                                log(f"[UI] Created Worker {worker_id} for hwnd={hwnd}")
+                            except Exception as e:
+                                log(f"[UI] Failed to create worker: {e}")
+                
+                msg = f"✅ Đã gán {len(result)} LDPlayer(s)\n\n"
                 for ldplayer_id, worker_id in result.items():
-                    msg += f"  {ldplayer_id} → Worker {worker_id}\n"
+                    msg += f"  hwnd {ldplayer_id} → Worker {worker_id}\n"
+                
+                if new_workers_created > 0:
+                    msg += f"\n🆕 Tạo {new_workers_created} Worker mới"
+                
                 messagebox.showinfo("Thành công", msg)
                 log(f"[UI] Assigned {len(result)} LDPlayer(s) to Worker IDs")
+                
+                # Update status display
+                self._auto_refresh_status()
             else:
                 messagebox.showinfo("Thông báo", "✓ Tất cả đã được gán trước đó")
             
@@ -6957,43 +8927,64 @@ class MainUI:
             refresh_dialog()
         
         def delete_worker():
-            """Xóa Worker của LDPlayer được select"""
+            """Xóa Worker assignment của LDPlayer được select"""
             selected = [hwnd for hwnd, var in ldplayer_vars.items() if var.get()]
             
             if not selected:
-                messagebox.showwarning("Thông báo", "Vui lòng Select LDPlayer muốn xóa Worker")
+                messagebox.showwarning("Thông báo", "Vui lòng select LDPlayer muốn xóa Worker")
                 return
             
             # Delete Worker của tất cả selected LDPlayers
             deleted_count = 0
+            workers_to_remove = []
+            
             for hwnd in selected:
-                if self.worker_mgr.remove_worker(str(hwnd)):
-                    deleted_count += 1
+                worker_id = self.worker_mgr.get_worker_id(str(hwnd))
+                if worker_id:
+                    # Remove from assignment manager
+                    if self.worker_mgr.remove_worker(str(hwnd)):
+                        deleted_count += 1
+                        # Mark worker for removal from list
+                        for w in self.workers:
+                            if w.id == worker_id:
+                                workers_to_remove.append(w)
+            
+            # Remove workers from list
+            for w in workers_to_remove:
+                self.workers.remove(w)
             
             if deleted_count > 0:
-                messagebox.showinfo("Thành công", f"✓ Đã xóa Worker của {deleted_count} LDPlayer")
-                log(f"[UI] Deleted Worker for {deleted_count} LDPlayer(s)")
+                messagebox.showinfo("Thành công", f"✅ Đã xóa {deleted_count} Worker assignment(s)")
+                log(f"[UI] Deleted {deleted_count} Worker assignment(s)")
+                self._auto_refresh_status()
             else:
                 messagebox.showwarning("Thông báo", "Không có LDPlayer nào được gán Worker")
             
             # Refresh dialog
             refresh_dialog()
         
+        # Buttons with Modern Style
         tk.Button(action_frame, text="🔗 Set Worker", command=assign_workers,
-                  bg="#4CAF50", fg="white", font=("Arial", 9, "bold"), width=14).pack(side="left", padx=3)
+                  bg=S.ACCENT_GREEN, fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold"),
+                  relief="flat", cursor="hand2", width=12).pack(side="left", padx=3)
         tk.Button(action_frame, text="🗑️ Delete", command=delete_worker,
-                  bg="#f44336", fg="white", font=("Arial", 9, "bold"), width=10).pack(side="left", padx=3)
+                  bg=S.ACCENT_RED, fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold"),
+                  relief="flat", cursor="hand2", width=10).pack(side="left", padx=3)
         tk.Button(action_frame, text="🔄 Refresh", command=refresh_dialog,
-                  bg="#FF9800", fg="white", font=("Arial", 9, "bold"), width=10).pack(side="left", padx=3)
+                  bg=S.ACCENT_ORANGE, fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold"),
+                  relief="flat", cursor="hand2", width=10).pack(side="left", padx=3)
         tk.Button(action_frame, text="✓ Close", command=dialog.destroy,
-                  bg="#2196F3", fg="white", font=("Arial", 9, "bold"), width=8).pack(side="left", padx=3)
+                  bg=S.ACCENT_BLUE, fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold"),
+                  relief="flat", cursor="hand2", width=8).pack(side="left", padx=3)
         
         # ===== LDPLAYER LIST FRAME =====
-        list_frame = tk.LabelFrame(dialog, text="📱 LDPlayer Instances", 
-                                   font=("Arial", 10, "bold"))
-        list_frame.pack(fill="both", expand=True, padx=15, pady=(0, 10))
+        list_frame = tk.LabelFrame(dialog, text=" 📱 LDPlayer Instances ", 
+                                   font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                   bg=S.BG_CARD, fg=S.FG_ACCENT,
+                                   padx=S.PAD_SM, pady=S.PAD_SM)
+        list_frame.pack(fill="both", expand=True, padx=S.PAD_MD, pady=(0, S.PAD_MD))
         
-        # ===== SELECT ALL CHECKBOX (INSIDE LIST FRAME) =====
+        # ===== SELECT ALL CHECKBOX =====
         select_all_var = tk.BooleanVar()
         
         def toggle_select_all():
@@ -7002,16 +8993,20 @@ class MainUI:
             for var in ldplayer_vars.values():
                 var.set(is_selected)
         
-        select_all_frame = tk.Frame(list_frame, bg="white")
-        select_all_frame.pack(fill="x", padx=8, pady=5)
+        select_all_frame = tk.Frame(list_frame, bg=S.BG_CARD)
+        select_all_frame.pack(fill="x", padx=S.PAD_SM, pady=S.PAD_XS)
         tk.Checkbutton(select_all_frame, text="Select All", variable=select_all_var,
-                      command=toggle_select_all, font=("Arial", 9, "bold"), 
-                      bg="white").pack(anchor="w")
+                      command=toggle_select_all, font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold"),
+                      bg=S.BG_CARD, fg=S.FG_PRIMARY, selectcolor=S.BG_INPUT,
+                      activebackground=S.BG_CARD).pack(anchor="w")
+        
+        # Separator
+        ttk.Separator(list_frame, orient="horizontal").pack(fill="x", pady=S.PAD_XS)
         
         # Canvas + Scrollbar
-        canvas = tk.Canvas(list_frame, bg="white", highlightthickness=0)
+        canvas = tk.Canvas(list_frame, bg=S.BG_CARD, highlightthickness=0)
         scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=canvas.yview)
-        scrollable_frame = tk.Frame(canvas, bg="white")
+        scrollable_frame = tk.Frame(canvas, bg=S.BG_CARD)
         
         scrollable_frame.bind(
             "<Configure>",
@@ -7039,31 +9034,46 @@ class MainUI:
         running = self.launcher.get_running_workers()
 
         for idx, w in enumerate(self.workers):
-            # Determine status from worker state
-            if hasattr(w, 'paused') and w.paused:
+            # Check if worker is assigned
+            is_assigned = self.worker_mgr.get_worker_id(str(w.hwnd)) is not None
+            
+            # Determine status
+            if not is_assigned:
+                status = "READY"  # Ready to be assigned
+                worker_id_text = "Not assigned"
+            elif hasattr(w, 'paused') and w.paused:
                 status = "PAUSED"
+                worker_id_text = f"Worker {w.id}"
             elif hasattr(w, 'stopped') and not w.stopped and hasattr(w, '_execution_thread') and w._execution_thread and w._execution_thread.is_alive():
                 status = "RUNNING"
+                worker_id_text = f"Worker {w.id}"
             elif not w.is_ready():
                 status = "NOT READY"
+                worker_id_text = f"Worker {w.id}"
             elif w.id in running:
                 status = "RUNNING"
+                worker_id_text = f"Worker {w.id}"
             else:
                 status = "READY"
+                worker_id_text = f"Worker {w.id}"
 
-            # Extract name from hwnd or use default
-            name = f"LDPlayer-{w.id}"
+            # Extract name from hwnd or stored title
+            if hasattr(w, '_window_title') and w._window_title:
+                name = w._window_title
+            else:
+                name = f"LDPlayer-{w.id}" if w.id > 0 else f"LDPlayer (hwnd:{w.hwnd})"
             
-            # Worker ID = worker's index (w.id), vì workers được tạo tuần tự
-            # từ initialize_workers_from_ldplayer
-            worker_id_text = f"Worker {w.id}"
+            # Display ID: use actual worker_id if assigned, otherwise show index
+            display_id = w.id if w.id > 0 else idx + 1
             
             # Check if worker has custom actions
-            has_custom = w.id in self._worker_actions and len(self._worker_actions[w.id]) > 0
-            custom_count = len(self._worker_actions.get(w.id, []))
+            has_custom = w.id > 0 and w.id in self._worker_actions and len(self._worker_actions[w.id]) > 0
+            custom_count = len(self._worker_actions.get(w.id, [])) if w.id > 0 else 0
 
             # Actions column shows clickable text + custom indicator
-            if has_custom:
+            if not is_assigned:
+                actions_text = "[Set Worker]"
+            elif has_custom:
                 actions_text = f"[▶ ⏸ ⏹] ✏️{custom_count}"
             else:
                 actions_text = "[▶ ⏸ ⏹]"
@@ -7078,10 +9088,15 @@ class MainUI:
             tags = [row_tag]
             if status in status_tags:
                 tags.append(status_tags[status])
+            
+            # Different tag for not assigned
+            if not is_assigned:
+                tags.append("warning")  # Yellow-ish for "needs action"
 
             # Insert row with new column order: ID, Name, Worker, Status, Actions
-            item_id = self.worker_tree.insert("", tk.END, values=(w.id, name, worker_id_text, status, actions_text), tags=tags)
-            self.worker_tree_items[w.id] = item_id
+            item_id = self.worker_tree.insert("", tk.END, values=(display_id, name, worker_id_text, status, actions_text), tags=tags)
+            if w.id > 0:
+                self.worker_tree_items[w.id] = item_id
 
         self.root.after(self.REFRESH_MS, self._auto_refresh_status)
 
@@ -7418,8 +9433,8 @@ class MainUI:
         else:
             screen_w = toolbar.winfo_screenwidth()
             screen_h = toolbar.winfo_screenheight()
-            x = (screen_w - 200) // 2
-            y = (screen_h - 80) // 2
+            x = (screen_w - 280) // 2
+            y = (screen_h - 200) // 2
             toolbar.geometry(f"+{x}+{y}")
         
         # Main frame with border
@@ -7475,6 +9490,49 @@ class MainUI:
         )
         stop_btn.pack(side="left", padx=3, pady=3)
         
+        # ===== PLAYBACK LOG on Mini UI =====
+        log_frame = tk.Frame(main_frame, bg="#1B5E20")
+        log_frame.pack(fill="both", expand=True, padx=2, pady=(0, 2))
+        
+        # Header
+        header = tk.Frame(log_frame, bg="#2E7D32")
+        header.pack(fill="x")
+        tk.Label(header, text="#", width=3, bg="#2E7D32", fg="#90CAF9", 
+                font=("Consolas", 8, "bold")).pack(side="left")
+        tk.Label(header, text="Action", width=12, anchor="w", bg="#2E7D32", fg="#90CAF9",
+                font=("Consolas", 8, "bold")).pack(side="left")
+        tk.Label(header, text="Label", width=10, anchor="w", bg="#2E7D32", fg="#90CAF9",
+                font=("Consolas", 8, "bold")).pack(side="left")
+        tk.Label(header, text="Status", width=10, bg="#2E7D32", fg="#90CAF9",
+                font=("Consolas", 8, "bold")).pack(side="left")
+        
+        # Log listbox with scrollbar
+        list_frame = tk.Frame(log_frame, bg="#1B3320")
+        list_frame.pack(fill="both", expand=True)
+        
+        self._mini_log_canvas = tk.Canvas(list_frame, bg="#1B3320", highlightthickness=0, 
+                                          width=260, height=120)
+        scrollbar = tk.Scrollbar(list_frame, orient="vertical", command=self._mini_log_canvas.yview)
+        
+        self._mini_log_inner = tk.Frame(self._mini_log_canvas, bg="#1B3320")
+        self._mini_log_canvas.create_window((0, 0), window=self._mini_log_inner, anchor="nw")
+        self._mini_log_inner.bind("<Configure>", 
+            lambda e: self._mini_log_canvas.configure(scrollregion=self._mini_log_canvas.bbox("all")))
+        
+        self._mini_log_canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Mouse wheel scroll
+        def on_mousewheel(event):
+            self._mini_log_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        self._mini_log_canvas.bind_all("<MouseWheel>", on_mousewheel)
+        
+        # Store mini log rows
+        self._mini_log_rows = []
+        
+        # Populate with actions
+        self._populate_mini_playback_log()
+        
         # Bind Esc to stop
         toolbar.bind("<Escape>", lambda e: self._stop_playback())
         
@@ -7482,6 +9540,91 @@ class MainUI:
         
         # Hide main window
         self.root.withdraw()
+    
+    def _populate_mini_playback_log(self):
+        """Populate mini playback log on floating toolbar"""
+        if not hasattr(self, '_mini_log_inner'):
+            return
+        
+        # Clear existing
+        for widget in self._mini_log_inner.winfo_children():
+            widget.destroy()
+        self._mini_log_rows = []
+        
+        for idx, action in enumerate(self.actions):
+            row = tk.Frame(self._mini_log_inner, bg="#1B3320")
+            row.pack(fill="x", pady=1)
+            
+            idx_lbl = tk.Label(row, text=str(idx), width=3, bg="#1B3320", fg="#888888",
+                              font=("Consolas", 8))
+            idx_lbl.pack(side="left")
+            
+            action_lbl = tk.Label(row, text=action.action[:12], width=12, anchor="w",
+                                 bg="#1B3320", fg="#CCCCCC", font=("Consolas", 8))
+            action_lbl.pack(side="left")
+            
+            label_text = (action.label[:10] if action.label else "-")
+            label_lbl = tk.Label(row, text=label_text, width=10, anchor="w",
+                                bg="#1B3320", fg="#64B5F6", font=("Consolas", 8))
+            label_lbl.pack(side="left")
+            
+            status_lbl = tk.Label(row, text="⏳", width=10, bg="#1B3320", fg="#888888",
+                                 font=("Consolas", 8))
+            status_lbl.pack(side="left")
+            
+            self._mini_log_rows.append({
+                "frame": row,
+                "idx": idx_lbl,
+                "action": action_lbl,
+                "label": label_lbl,
+                "status": status_lbl
+            })
+    
+    def _highlight_mini_log_row(self, index: int, status: str = "running"):
+        """Highlight row in mini playback log"""
+        if not hasattr(self, '_mini_log_rows') or not self._mini_log_rows:
+            return
+        
+        colors = {
+            "running": {"bg": "#4CAF50", "fg": "#FFFFFF", "status": "▶ Run"},
+            "done": {"bg": "#1B3320", "fg": "#666666", "status": "✓"},
+            "error": {"bg": "#B71C1C", "fg": "#FFCDD2", "status": "✗"},
+            "skipped": {"bg": "#1B3320", "fg": "#666666", "status": "⊘"},
+            "pending": {"bg": "#1B3320", "fg": "#888888", "status": "⏳"}
+        }
+        
+        state = colors.get(status, colors["pending"])
+        
+        # Update previous row to done
+        if hasattr(self, '_mini_current_row') and self._mini_current_row >= 0:
+            if self._mini_current_row != index and self._mini_current_row < len(self._mini_log_rows):
+                prev = self._mini_log_rows[self._mini_current_row]
+                done = colors["done"]
+                prev["frame"].configure(bg=done["bg"])
+                prev["idx"].configure(bg=done["bg"], fg=done["fg"])
+                prev["action"].configure(bg=done["bg"], fg=done["fg"])
+                prev["label"].configure(bg=done["bg"], fg=done["fg"])
+                prev["status"].configure(bg=done["bg"], fg=done["fg"], text=done["status"])
+        
+        # Highlight current
+        if 0 <= index < len(self._mini_log_rows):
+            row = self._mini_log_rows[index]
+            row["frame"].configure(bg=state["bg"])
+            row["idx"].configure(bg=state["bg"], fg=state["fg"])
+            row["action"].configure(bg=state["bg"], fg=state["fg"])
+            row["label"].configure(bg=state["bg"], fg=state["fg"])
+            row["status"].configure(bg=state["bg"], fg=state["fg"], text=state["status"])
+            
+            self._mini_current_row = index
+            
+            # Auto scroll
+            if hasattr(self, '_mini_log_canvas'):
+                self._mini_log_canvas.update_idletasks()
+                row_y = row["frame"].winfo_y()
+                canvas_h = self._mini_log_canvas.winfo_height()
+                total_h = self._mini_log_inner.winfo_height()
+                if total_h > canvas_h:
+                    self._mini_log_canvas.yview_moveto(max(0, (row_y - canvas_h/2) / total_h))
     
     def _hide_playback_toolbar(self):
         """Hide playback toolbar and restore main window"""

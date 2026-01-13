@@ -194,9 +194,48 @@ class FindImage:
             log(f"[IMAGE] Template load error: {e}")
             return False
     
+    def _verify_match(self, screen: 'np.ndarray', top_left: Tuple[int, int]) -> float:
+        """
+        Verify match by extracting the matched region and comparing with template.
+        Returns verified confidence score.
+        """
+        if self._template is None:
+            return 0.0
+        
+        h, w = self._template.shape[:2]
+        x, y = top_left
+        
+        # Check bounds
+        if y + h > screen.shape[0] or x + w > screen.shape[1]:
+            return 0.0
+        
+        # Extract matched region from screenshot
+        matched_region = screen[y:y+h, x:x+w]
+        
+        # Compare using multiple methods for robust verification
+        try:
+            # Method 1: Normalized cross-correlation
+            result = cv2.matchTemplate(matched_region, self._template, cv2.TM_CCOEFF_NORMED)
+            ncc_score = result[0, 0] if result.size > 0 else 0.0
+            
+            # Method 2: Structural similarity (pixel difference)
+            diff = cv2.absdiff(matched_region, self._template)
+            gray_diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY) if len(diff.shape) == 3 else diff
+            similarity = 1.0 - (np.mean(gray_diff) / 255.0)
+            
+            # Combined score (weighted average)
+            verified_confidence = 0.7 * ncc_score + 0.3 * similarity
+            
+            return max(0.0, min(1.0, verified_confidence))
+            
+        except Exception as e:
+            log(f"[IMAGE] Verify match error: {e}")
+            return 0.0
+    
     def find_once(self) -> ImageMatch:
         """
         Search for template once (no timeout)
+        Verifies match by comparing extracted region with template.
         
         Returns:
             ImageMatch result
@@ -209,12 +248,47 @@ class FindImage:
                 return ImageMatch(found=False)
         
         # Capture screen/region
+        offset_x = 0
+        offset_y = 0
+        
         if self.target_hwnd:
+            # Capture full window
             screen = _capture_window(self.target_hwnd)
+            
+            # If region specified, crop the screenshot to region
+            if screen is not None and self.region:
+                x1, y1, x2, y2 = self.region
+                # Validate region bounds
+                if y2 > screen.shape[0]:
+                    y2 = screen.shape[0]
+                if x2 > screen.shape[1]:
+                    x2 = screen.shape[1]
+                if x1 >= x2 or y1 >= y2:
+                    log(f"[IMAGE] Invalid region: ({x1},{y1},{x2},{y2})")
+                    return ImageMatch(found=False)
+                    
+                # Region is in client coords, crop from full window screenshot
+                screen = screen[y1:y2, x1:x2]
+                # Save offset for later coordinate adjustment
+                offset_x = x1
+                offset_y = y1
+                log(f"[IMAGE] Searching in region ({x1},{y1})-({x2},{y2}), cropped size: {screen.shape[1]}x{screen.shape[0]}")
         else:
+            # Screen capture mode
             screen = _capture_screen_region(self.region, self.target_hwnd)
+            # If region specified, offset is already in region coords
+            if self.region:
+                offset_x = self.region[0]
+                offset_y = self.region[1]
         
         if screen is None:
+            return ImageMatch(found=False)
+        
+        # Check if template fits in search area
+        th, tw = self._template.shape[:2]
+        sh, sw = screen.shape[:2]
+        if tw > sw or th > sh:
+            log(f"[IMAGE] Template ({tw}x{th}) larger than search area ({sw}x{sh})")
             return ImageMatch(found=False)
         
         # Template matching
@@ -226,21 +300,28 @@ class FindImage:
             
             # For TM_SQDIFF methods, minimum is best match
             if self.method in (cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED):
-                confidence = 1.0 - min_val
+                initial_confidence = 1.0 - min_val
                 top_left = min_loc
             else:
-                confidence = max_val
+                initial_confidence = max_val
                 top_left = max_loc
             
-            if confidence >= self.threshold:
+            log(f"[IMAGE] Template match at ({top_left[0]},{top_left[1]}) initial_conf={initial_confidence:.3f}")
+            
+            # VERIFY: Extract matched region and compare with template
+            verified_confidence = self._verify_match(screen, top_left)
+            log(f"[IMAGE] Verified confidence: {verified_confidence:.3f} (threshold={self.threshold})")
+            
+            # Use verified confidence for final decision
+            if verified_confidence >= self.threshold:
                 h, w = self._template.shape[:2]
                 
-                # Calculate position (adjust for region offset)
-                offset_x = self.region[0] if self.region else 0
-                offset_y = self.region[1] if self.region else 0
-                
+                # Calculate absolute position in window/screen coords
+                # top_left is relative to cropped screenshot, add offset to get absolute coords
                 x = top_left[0] + offset_x
                 y = top_left[1] + offset_y
+                
+                log(f"[IMAGE] MATCH VERIFIED at ({x},{y}) conf={verified_confidence:.3f}")
                 
                 return ImageMatch(
                     found=True,
@@ -248,12 +329,13 @@ class FindImage:
                     y=y,
                     width=w,
                     height=h,
-                    confidence=confidence,
+                    confidence=verified_confidence,
                     center_x=x + w // 2,
                     center_y=y + h // 2
                 )
             
-            return ImageMatch(found=False, confidence=confidence)
+            log(f"[IMAGE] Match rejected: verified_conf={verified_confidence:.3f} < threshold={self.threshold}")
+            return ImageMatch(found=False, confidence=verified_confidence)
             
         except Exception as e:
             log(f"[IMAGE] Template matching error: {e}")
@@ -313,10 +395,28 @@ class FindImage:
                 return []
         
         # Capture screen/region
+        offset_x = 0
+        offset_y = 0
+        
         if self.target_hwnd:
+            # Capture full window
             screen = _capture_window(self.target_hwnd)
+            
+            # If region specified, crop the screenshot to region
+            if screen is not None and self.region:
+                x1, y1, x2, y2 = self.region
+                # Region is in client coords, crop from full window screenshot
+                screen = screen[y1:y2, x1:x2]
+                # Save offset for later coordinate adjustment
+                offset_x = x1
+                offset_y = y1
         else:
+            # Screen capture mode
             screen = _capture_screen_region(self.region, self.target_hwnd)
+            # If region specified, offset is already in region coords
+            if self.region:
+                offset_x = self.region[0]
+                offset_y = self.region[1]
         
         if screen is None:
             return []
@@ -341,10 +441,8 @@ class FindImage:
                 if self.method in (cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED):
                     confidence = 1.0 - confidence
                 
-                # Adjust for region offset
-                offset_x = self.region[0] if self.region else 0
-                offset_y = self.region[1] if self.region else 0
-                
+                # Calculate absolute position in window/screen coords
+                # x, y are relative to cropped screenshot, add offset to get absolute coords
                 match = ImageMatch(
                     found=True,
                     x=x + offset_x,

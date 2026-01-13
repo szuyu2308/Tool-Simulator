@@ -40,6 +40,15 @@ class CaptureOverlay:
     Per spec C1, C2: No popup, hide UI while capturing
     """
     
+    # Class-level flag to prevent concurrent captures
+    _is_active = False
+    
+    @classmethod
+    def force_reset(cls):
+        """Force reset the active flag - use if capture gets stuck"""
+        cls._is_active = False
+        log("[CAPTURE] Force reset active flag")
+    
     def __init__(self, root: tk.Tk, target_hwnd: Optional[int] = None):
         """
         Initialize capture overlay
@@ -54,6 +63,7 @@ class CaptureOverlay:
         self._canvas: Optional[tk.Canvas] = None
         self._result: Optional[CaptureResult] = None
         self._callback: Optional[Callable[[CaptureResult], None]] = None
+        self._initialized = False  # Track if init completed
         
         # Region capture state
         self._start_x = 0
@@ -81,9 +91,27 @@ class CaptureOverlay:
         Args:
             callback: Function to call with CaptureResult
         """
+        # Prevent concurrent captures
+        if CaptureOverlay._is_active:
+            log("[CAPTURE] Another capture is active, please wait...")
+            if callback:
+                callback(CaptureResult(success=False))
+            return
+        
+        CaptureOverlay._is_active = True
         self._mode = "xy"
         self._callback = callback
-        self._show_overlay()
+        try:
+            self._show_overlay()
+        except Exception as e:
+            log(f"[CAPTURE] Failed to show overlay: {e}")
+            CaptureOverlay._is_active = False  # Reset on failure
+            try:
+                self._root.deiconify()  # Restore GUI
+            except:
+                pass
+            if callback:
+                callback(CaptureResult(success=False))
     
     def capture_region(self, callback: Callable[[CaptureResult], None]):
         """
@@ -96,89 +124,108 @@ class CaptureOverlay:
         Args:
             callback: Function to call with CaptureResult
         """
+        # Prevent concurrent captures
+        if CaptureOverlay._is_active:
+            log("[CAPTURE] Another capture is active, please wait...")
+            if callback:
+                callback(CaptureResult(success=False))
+            return
+        
+        CaptureOverlay._is_active = True
         self._mode = "region"
         self._callback = callback
-        self._show_overlay()
+        try:
+            self._show_overlay()
+        except Exception as e:
+            log(f"[CAPTURE] Failed to show overlay: {e}")
+            CaptureOverlay._is_active = False  # Reset on failure
+            try:
+                self._root.deiconify()  # Restore GUI
+            except:
+                pass
+            if callback:
+                callback(CaptureResult(success=False))
     
     def _show_overlay(self):
-        """Show fullscreen capture overlay"""
-        # Hide main window first (per spec C1, C2)
+        """Show fullscreen capture overlay - simplified version"""
+        # Hide main window
         self._root.withdraw()
-        self._root.update()
+        self._root.update_idletasks()
         
-        # Small delay for window to hide
-        time.sleep(0.1)
+        # Get screen dimensions BEFORE creating overlay
+        screen_w = self._root.winfo_screenwidth()
+        screen_h = self._root.winfo_screenheight()
         
-        # Create fullscreen overlay
+        # Create overlay window
         self._overlay = tk.Toplevel(self._root)
-        self._overlay.attributes('-fullscreen', True)
-        self._overlay.attributes('-topmost', True)
-        self._overlay.attributes('-alpha', 0.3)  # Semi-transparent
-        self._overlay.configure(bg='black')
+        self._overlay.title("Capture")
         
-        # Remove window decorations
+        # Set geometry to cover full screen at position 0,0
+        self._overlay.geometry(f"{screen_w}x{screen_h}+0+0")
+        
+        # Configure window
+        self._overlay.configure(bg='gray20')
+        self._overlay.attributes('-topmost', True)
+        self._overlay.attributes('-alpha', 0.4)
+        
+        # Remove title bar AFTER setting geometry
         self._overlay.overrideredirect(True)
         
-        # Create canvas for drawing
-        screen_w = self._overlay.winfo_screenwidth()
-        screen_h = self._overlay.winfo_screenheight()
-        
+        # Create canvas
         self._canvas = tk.Canvas(
             self._overlay, 
             width=screen_w, 
             height=screen_h,
             bg='gray20',
-            highlightthickness=0
+            highlightthickness=0,
+            cursor="cross"
         )
         self._canvas.pack(fill="both", expand=True)
         
-        # Set cursor based on mode
-        if self._mode == "xy":
-            self._overlay.config(cursor="crosshair")
-            self._canvas.create_text(
-                screen_w // 2, 50,
-                text="Click to capture position (ESC to cancel)",
-                fill="white", font=("Arial", 16, "bold")
-            )
-        else:
-            self._overlay.config(cursor="cross")
-            # Show different text if constrained to emulator
-            if self._constrain_bounds:
-                self._canvas.create_text(
-                    screen_w // 2, 50,
-                    text="Click and drag within EMULATOR bounds (ESC to cancel)",
-                    fill="yellow", font=("Arial", 16, "bold")
-                )
-            else:
-                self._canvas.create_text(
-                    screen_w // 2, 50,
-                    text="Click and drag to select region (ESC to cancel)",
-                    fill="white", font=("Arial", 16, "bold")
-                )
-        
-        # Draw constrain bounds if set (emulator boundary)
+        # Instructions text
         if self._constrain_bounds:
+            self._canvas.create_text(
+                screen_w // 2, 30,
+                text="🎯 Click and DRAG to select region (ESC to cancel)",
+                fill="yellow", font=("Arial", 14, "bold")
+            )
+            # Draw emulator bounds
             bx1, by1, bx2, by2 = self._constrain_bounds
-            # Draw highlighted rectangle around emulator area
             self._bounds_rect_id = self._canvas.create_rectangle(
                 bx1, by1, bx2, by2,
-                outline="#00FF00", width=3, dash=(10, 5)
+                outline="#00FF00", width=3, dash=(8, 4)
             )
-            # Add label
             self._canvas.create_text(
-                (bx1 + bx2) // 2, by1 - 20,
-                text="📱 Emulator Area",
-                fill="#00FF00", font=("Arial", 12, "bold")
+                (bx1 + bx2) // 2, by1 - 15,
+                text="📱 Emulator",
+                fill="#00FF00", font=("Arial", 11, "bold")
+            )
+        else:
+            self._canvas.create_text(
+                screen_w // 2, 30,
+                text="🎯 Click and DRAG to select region (ESC to cancel)",
+                fill="white", font=("Arial", 14, "bold")
             )
         
-        # Bind events
-        self._canvas.bind("<Button-1>", self._on_click)
+        # Bind mouse events to CANVAS
+        self._canvas.bind("<ButtonPress-1>", self._on_click)
         self._canvas.bind("<B1-Motion>", self._on_drag)
         self._canvas.bind("<ButtonRelease-1>", self._on_release)
-        self._overlay.bind("<Escape>", self._on_cancel)
         
-        # Focus overlay
+        # Bind keyboard to OVERLAY
+        self._overlay.bind("<Escape>", self._on_cancel)
+        self._overlay.bind("<Key>", lambda e: self._on_cancel(e) if e.keysym == "Escape" else None)
+        
+        # CRITICAL: Update window, then grab focus
+        self._overlay.update()
+        self._overlay.lift()
         self._overlay.focus_force()
+        
+        # Grab all events (this is key for receiving mouse events)
+        try:
+            self._overlay.grab_set()
+        except:
+            pass
     
     def _on_click(self, event):
         """Handle mouse click"""
@@ -268,6 +315,19 @@ class CaptureOverlay:
             end_x = max(bx1, min(bx2, end_x))
             end_y = max(by1, min(by2, end_y))
         
+        # Validate region has actual size (not just a click)
+        width = abs(end_x - self._start_x)
+        height = abs(end_y - self._start_y)
+        if width < 5 or height < 5:
+            log(f"[CAPTURE] Region too small ({width}x{height}), need at least 5x5 pixels")
+            # Flash warning and let user try again
+            if self._rect_id:
+                self._canvas.itemconfig(self._rect_id, outline="#FF0000", width=4)
+                self._overlay.after(300, lambda: self._canvas.itemconfig(
+                    self._rect_id, outline="red", width=2) if self._rect_id else None)
+            self._is_dragging = False  # Reset to allow retry
+            return
+        
         self._finish_region_capture(
             self._start_x, self._start_y,
             end_x, end_y
@@ -275,25 +335,22 @@ class CaptureOverlay:
     
     def _on_cancel(self, event):
         """Handle ESC key - cancel capture"""
-        # Ensure main window is fully hidden and not captured
-        self._root.withdraw()
-        try:
-            self._root.overrideredirect(True)
-            self._root.lower()
-        except Exception:
-            pass
+        # Close overlay FIRST (this resets _is_active flag)
         self._close_overlay()
-        # Wait a short moment to ensure all windows are hidden
-        import time
-        time.sleep(0.15)
-        self._root.deiconify()
-        try:
-            self._root.overrideredirect(False)
-        except Exception:
-            pass
         
+        # Restore GUI
+        try:
+            self._root.deiconify()
+            self._root.lift()
+            self._root.focus_force()
+        except Exception as e:
+            log(f"[CAPTURE] Restore warning: {e}")
+        
+        # Callback with failure
         if self._callback:
-            self._callback(CaptureResult(success=False))
+            callback = self._callback
+            self._callback = None  # Prevent double callback
+            callback(CaptureResult(success=False))
     
     def _finish_capture(self, screen_x: int, screen_y: int):
         """Finish single point capture"""
@@ -320,18 +377,11 @@ class CaptureOverlay:
         
         log(f"[CAPTURE] XY captured: ({client_x}, {client_y}) {'client' if is_client else 'screen'}")
         
+        # Callback with result (prevent double callback)
         if self._callback:
-            self._callback(result)
-    
-    def _hide_gui(self):
-        """Hide the main GUI window completely."""
-        self._root.withdraw()
-        try:
-            self._root.overrideredirect(True)
-            self._root.lower()
-        except Exception as e:
-            log(f"[CAPTURE] Failed to fully hide GUI: {e}")
-        time.sleep(0.2)  # Ensure the window is fully hidden
+            callback = self._callback
+            self._callback = None
+            callback(result)
 
     def _restore_gui(self):
         """Restore the main GUI window."""
@@ -342,39 +392,33 @@ class CaptureOverlay:
             log(f"[CAPTURE] Failed to restore GUI: {e}")
 
     def _finish_region_capture(self, x1: int, y1: int, x2: int, y2: int):
-        """Finish region capture, use OpenCV to crop, save to files/ and clipboard"""
+        """Finish region capture - capture from target window directly"""
         import os
         import cv2
         import numpy as np
         try:
-            from PIL import ImageGrab, Image
+            from PIL import Image
         except ImportError:
-            ImageGrab = None
             Image = None
 
-        # CRITICAL: Close overlay and hide GUI BEFORE capturing screen
-        # Order matters: overlay first, then GUI, then wait for screen to update
-        self._close_overlay()
-        self._hide_gui()
+        # Store screen coords before closing overlay
+        screen_x1, screen_y1 = min(x1, x2), min(y1, y2)
+        screen_x2, screen_y2 = max(x1, x2), max(y1, y2)
         
-        # Force window manager to process the hide
-        self._root.update_idletasks()
-        self._root.update()
-        
-        # Wait for screen to fully update (Windows needs time to redraw)
-        time.sleep(0.25)
+        # Close overlay FIRST
+        try:
+            self._close_overlay()
+        except Exception as e:
+            log(f"[CAPTURE] Close overlay error: {e}")
+            CaptureOverlay._is_active = False
 
-        # Normalize coordinates (ensure x1,y1 is top-left)
-        left = min(x1, x2)
-        top = min(y1, y2)
-        right = max(x1, x2)
-        bottom = max(y1, y2)
-
-        # Convert to client coords if target window is set
+        # Convert to client coords for result
+        left, top, right, bottom = screen_x1, screen_y1, screen_x2, screen_y2
         is_client = False
+        
         if self._target_hwnd:
-            pt1 = wintypes.POINT(left, top)
-            pt2 = wintypes.POINT(right, bottom)
+            pt1 = wintypes.POINT(screen_x1, screen_y1)
+            pt2 = wintypes.POINT(screen_x2, screen_y2)
             user32.ScreenToClient(self._target_hwnd, ctypes.byref(pt1))
             user32.ScreenToClient(self._target_hwnd, ctypes.byref(pt2))
             left, top = pt1.x, pt1.y
@@ -383,48 +427,60 @@ class CaptureOverlay:
 
         img_path = None
         clipboard_ok = False
-        pil_img = None  # Store PIL image for preview
-        
-        # Capture the region as an image (screen coordinates) using OpenCV
-        if ImageGrab is not None and Image is not None:
-            bbox = (min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2))
+        pil_img = None
+
+        # Capture directly from target window using Win32 API
+        if self._target_hwnd and Image is not None:
             try:
-                img = ImageGrab.grab(bbox)
-                img_np = np.array(img)
-                img_cv = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
-                
-                # Save to files/ with unique name
-                os.makedirs('files', exist_ok=True)
-                import datetime
-                ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-                img_path = os.path.join('files', f'crop_{ts}.png')
-                cv2.imwrite(img_path, img_cv)
-                
-                # Keep PIL image for preview
-                pil_img = Image.fromarray(cv2.cvtColor(img_cv, cv2.COLOR_BGR2RGB))
-                
-                # Copy to clipboard (Windows only)
-                try:
-                    import io
-                    import win32clipboard
+                pil_img = self._capture_window_region(
+                    self._target_hwnd, 
+                    left, top, right, bottom
+                )
+                if pil_img:
+                    # Save to files/
+                    os.makedirs('files', exist_ok=True)
+                    import datetime
+                    ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+                    img_path = os.path.join('files', f'crop_{ts}.png')
+                    pil_img.save(img_path)
                     
-                    output = io.BytesIO()
-                    pil_img.convert("RGB").save(output, "BMP")
-                    data = output.getvalue()[14:]  # Skip BMP header
-                    output.close()
-                    
-                    win32clipboard.OpenClipboard()
-                    win32clipboard.EmptyClipboard()
-                    win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
-                    win32clipboard.CloseClipboard()
-                    clipboard_ok = True
-                    log(f"[CAPTURE] Image copied to clipboard successfully")
-                except Exception as e:
-                    log(f"[CAPTURE] Failed to copy image to clipboard: {e}")
+                    # Copy to clipboard
+                    try:
+                        import io
+                        import win32clipboard
+                        output = io.BytesIO()
+                        pil_img.convert("RGB").save(output, "BMP")
+                        data = output.getvalue()[14:]
+                        output.close()
+                        win32clipboard.OpenClipboard()
+                        win32clipboard.EmptyClipboard()
+                        win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+                        win32clipboard.CloseClipboard()
+                        clipboard_ok = True
+                    except Exception as e:
+                        log(f"[CAPTURE] Clipboard error: {e}")
             except Exception as e:
-                log(f"[CAPTURE] OpenCV crop error: {e}")
-        else:
-            log("[CAPTURE] PIL.ImageGrab not available, cannot capture region image.")
+                log(f"[CAPTURE] Window capture error: {e}")
+        
+        # Fallback: try screen grab if window capture failed
+        if pil_img is None:
+            try:
+                from PIL import ImageGrab
+                # Need to wait for overlay to fully close
+                self._root.update_idletasks()
+                self._root.after(100)  # Small delay
+                self._root.update()
+                
+                bbox = (screen_x1, screen_y1, screen_x2, screen_y2)
+                pil_img = ImageGrab.grab(bbox)
+                if pil_img:
+                    os.makedirs('files', exist_ok=True)
+                    import datetime
+                    ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+                    img_path = os.path.join('files', f'crop_{ts}.png')
+                    pil_img.save(img_path)
+            except Exception as e:
+                log(f"[CAPTURE] Screen grab fallback error: {e}")
 
         result = CaptureResult(
             success=True,
@@ -435,24 +491,138 @@ class CaptureOverlay:
             hwnd=self._target_hwnd or 0,
             client_coords=is_client
         )
-        # Attach image path, clipboard status, and PIL image for preview logic
         result.img_path = img_path
         result.clipboard_ok = clipboard_ok
-        result.pil_image = pil_img  # For preview without re-reading from disk
+        result.pil_image = pil_img
 
-        log(f"[CAPTURE] Region captured: ({left}, {top}) - ({right}, {bottom}) {'client' if is_client else 'screen'}; img_path={img_path}; clipboard={clipboard_ok}")
+        log(f"[CAPTURE] Region captured: ({left}, {top}) - ({right}, {bottom}) {'client' if is_client else 'screen'}; img_path={img_path}")
 
-        self._restore_gui()  # Restore GUI after capture
+        # Restore GUI
+        try:
+            self._root.deiconify()
+            self._root.lift()
+        except Exception as e:
+            log(f"[CAPTURE] Restore error: {e}")
 
+        # Callback
         if self._callback:
-            self._callback(result)
+            callback = self._callback
+            self._callback = None
+            try:
+                callback(result)
+            except Exception as e:
+                log(f"[CAPTURE] Callback error: {e}")
+    
+    def _capture_window_region(self, hwnd: int, x1: int, y1: int, x2: int, y2: int):
+        """Capture a region from a window using Win32 API (doesn't require window to be visible)"""
+        try:
+            from PIL import Image
+            import win32gui
+            import win32ui
+            import win32con
+            
+            # Get window dimensions
+            left, top, wnd_right, wnd_bottom = win32gui.GetClientRect(hwnd)
+            width = wnd_right - left
+            height = wnd_bottom - top
+            
+            # Clamp region to window bounds
+            x1 = max(0, min(width, x1))
+            y1 = max(0, min(height, y1))
+            x2 = max(0, min(width, x2))
+            y2 = max(0, min(height, y2))
+            
+            if x2 <= x1 or y2 <= y1:
+                log(f"[CAPTURE] Invalid region: ({x1},{y1})-({x2},{y2})")
+                return None
+            
+            # Create device contexts
+            hwnd_dc = win32gui.GetWindowDC(hwnd)
+            mfc_dc = win32ui.CreateDCFromHandle(hwnd_dc)
+            save_dc = mfc_dc.CreateCompatibleDC()
+            
+            # Create bitmap
+            bitmap = win32ui.CreateBitmap()
+            bitmap.CreateCompatibleBitmap(mfc_dc, width, height)
+            save_dc.SelectObject(bitmap)
+            
+            # Copy window content to bitmap
+            # Use PrintWindow for better compatibility
+            result = ctypes.windll.user32.PrintWindow(hwnd, save_dc.GetSafeHdc(), 3)  # PW_RENDERFULLCONTENT=2, PW_CLIENTONLY=1, combined=3
+            
+            if result == 0:
+                # Fallback to BitBlt
+                save_dc.BitBlt((0, 0), (width, height), mfc_dc, (0, 0), win32con.SRCCOPY)
+            
+            # Get bitmap info
+            bmp_info = bitmap.GetInfo()
+            bmp_str = bitmap.GetBitmapBits(True)
+            
+            # Create PIL image
+            img = Image.frombuffer(
+                'RGB',
+                (bmp_info['bmWidth'], bmp_info['bmHeight']),
+                bmp_str, 'raw', 'BGRX', 0, 1
+            )
+            
+            # Cleanup
+            win32gui.DeleteObject(bitmap.GetHandle())
+            save_dc.DeleteDC()
+            mfc_dc.DeleteDC()
+            win32gui.ReleaseDC(hwnd, hwnd_dc)
+            
+            # Crop to region
+            cropped = img.crop((x1, y1, x2, y2))
+            return cropped
+            
+        except Exception as e:
+            log(f"[CAPTURE] Win32 capture error: {e}")
+            return None
     
     def _close_overlay(self):
-        """Close overlay window"""
+        """Close overlay window - thorough cleanup"""
+        # Reset class-level active flag FIRST
+        CaptureOverlay._is_active = False
+        
         if self._overlay:
-            self._overlay.destroy()
+            try:
+                # Release grab first
+                self._overlay.grab_release()
+            except:
+                pass
+            
+            try:
+                # Unbind all events
+                if self._canvas:
+                    self._canvas.unbind("<ButtonPress-1>")
+                    self._canvas.unbind("<B1-Motion>")
+                    self._canvas.unbind("<ButtonRelease-1>")
+                self._overlay.unbind("<Escape>")
+                self._overlay.unbind("<Key>")
+            except Exception as e:
+                log(f"[CAPTURE] Unbind warning: {e}")
+            
+            try:
+                self._overlay.destroy()
+            except Exception as e:
+                log(f"[CAPTURE] Destroy warning: {e}")
+            
             self._overlay = None
             self._canvas = None
+        
+        # Reset all instance state
+        self._is_dragging = False
+        self._rect_id = None
+        self._size_text_id = None
+        self._bounds_rect_id = None
+        self._start_x = 0
+        self._start_y = 0
+        
+        # Force Tkinter to process pending events
+        try:
+            self._root.update_idletasks()
+        except Exception:
+            pass
 
 
 class QuickCapture:

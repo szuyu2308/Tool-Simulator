@@ -171,7 +171,7 @@ class WaitScreenChange(WaitAction):
     
     def __init__(self,
                  region: Tuple[int, int, int, int],
-                 threshold: float = 0.05,
+                 threshold: float = 0.235,
                  timeout_ms: int = 30000,
                  target_hwnd: int = 0):
         """
