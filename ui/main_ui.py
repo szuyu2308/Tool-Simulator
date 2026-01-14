@@ -1520,18 +1520,89 @@ class MainUI:
         if not worker:
             return
         
-        # Resume if paused
-        if hasattr(worker, 'paused') and worker.paused:
-            worker.resume()
-            log(f"[UI] Worker {worker_id}: Resumed")
+        # Get actions - priority: worker custom > loaded file > global actions
+        actions = self._get_actions_for_worker(worker_id=worker_id)
+        if not actions:
+            messagebox.showwarning("No Script", "Chưa có actions. Vui lòng thêm actions trước.")
             return
         
-        # Start new execution with current script
-        if self.current_script:
-            worker.start(self.current_script)
-            log(f"[UI] Worker {worker_id}: Started script '{self.current_script.name}'")
+        # Get target hwnd from worker
+        target_hwnd = worker.emulator.hwnd if hasattr(worker, 'emulator') and hasattr(worker.emulator, 'hwnd') else None
+        
+        # Start playback using UI system (có mini toolbar + playlog)
+        self._start_playback_for_worker(worker_id, actions, target_hwnd)
+        
+        # Log source
+        if worker_id in self._worker_actions and self._worker_actions[worker_id]:
+            log(f"[UI] Worker {worker_id}: Started with CUSTOM actions ({len(actions)} actions)")
         else:
-            messagebox.showwarning("No Script", "Chưa có script được load. Vui lòng load script trước.")
+            log(f"[UI] Worker {worker_id}: Started with GLOBAL actions ({len(actions)} actions)")
+    
+    def _get_actions_for_worker(self, worker_id=None):
+        """Get action list for a specific worker
+        
+        Args:
+            worker_id: If provided, check for worker-specific custom actions first
+            
+        Returns:
+            List of actions (dict format) or None
+        """
+        # Priority 1: Worker custom actions (if worker_id provided)
+        if worker_id is not None:
+            worker_actions = self._worker_actions.get(worker_id, [])
+            if worker_actions:
+                # Convert Action objects to dict format
+                return [action.to_dict() if hasattr(action, 'to_dict') else action 
+                       for action in worker_actions]
+        
+        # Priority 2: Script loaded from file
+        if self.current_script:
+            # Extract actions from script.sequence
+            return [cmd.params for cmd in self.current_script.sequence if hasattr(cmd, 'params')]
+        
+        # Priority 3: Global UI actions
+        if self.actions:
+            return self.actions
+        
+        return None
+    
+    def _start_playback_for_worker(self, worker_id: int, actions: list, target_hwnd: int = None):
+        """Start playback for specific worker with mini toolbar"""
+        # Stop current playback if any
+        if self._playback_running:
+            self._stop_playback()
+            time.sleep(0.1)
+        
+        # Set playback state
+        self._playback_running = True
+        self._playback_stop_event.clear()
+        self._current_action_index = 0
+        self._playback_worker_id = worker_id  # Track which worker is playing
+        
+        # Show mini toolbar if not visible
+        if not hasattr(self, '_mini_toolbar_visible') or not self._mini_toolbar_visible:
+            self._create_mini_playback_toolbar()
+        
+        # Update mini toolbar title with emulator name
+        worker_name = self._get_worker_display_name(worker_id)
+        if hasattr(self, '_mini_toolbar_title'):
+            self._mini_toolbar_title.config(text=f"{worker_name} Playback")
+        
+        # Start playback thread
+        def playback_thread():
+            try:
+                self._playback_loop(actions, target_hwnd)
+            except Exception as e:
+                log(f"[UI] Worker {worker_id} playback error: {e}")
+                import traceback
+                log(f"[UI] Traceback: {traceback.format_exc()}")
+            finally:
+                self._playback_running = False
+                if hasattr(self, '_playback_worker_id'):
+                    del self._playback_worker_id
+        
+        thread = threading.Thread(target=playback_thread, daemon=True)
+        thread.start()
     
     def _pause_worker(self, worker_id: int):
         """Pause script execution for a worker"""
@@ -1545,37 +1616,100 @@ class MainUI:
     
     def _stop_worker(self, worker_id: int):
         """Stop script execution for a worker"""
-        worker = self._find_worker(worker_id)
-        if not worker:
+        # Stop independent playback thread if exists
+        if hasattr(self, '_worker_stop_events') and worker_id in self._worker_stop_events:
+            self._worker_stop_events[worker_id].set()
+            log(f"[UI] Worker {worker_id}: Stopped (independent playback)")
             return
         
-        if hasattr(worker, 'stop'):
-            worker.stop()
-            log(f"[UI] Worker {worker_id}: Stopped")
+        # Stop UI playback if this worker is currently playing
+        if hasattr(self, '_playback_worker_id') and self._playback_worker_id == worker_id:
+            self._stop_playback()
+            log(f"[UI] Worker {worker_id}: Stopped (UI playback)")
+            return
+        
+        log(f"[UI] Worker {worker_id}: Not running")
     
     def _restart_worker(self, worker_id: int):
         """Restart script execution for a worker"""
-        worker = self._find_worker(worker_id)
-        if not worker:
-            return
-        
-        # Stop first
-        if hasattr(worker, 'stop'):
-            worker.stop()
-        
-        # Then start
-        if self.current_script:
-            worker.start(self.current_script)
-            log(f"[UI] Worker {worker_id}: Restarted")
+        self._stop_worker(worker_id)
+        time.sleep(0.2)  # Wait for stop to complete
+        self._play_worker(worker_id)
     
     def _play_all_workers(self):
-        """Start/Resume all workers"""
+        """Start/Resume all workers - each runs independently"""
         if not self.workers:
             messagebox.showinfo("Info", "No workers available")
             return
-        for w in self.workers:
-            self._play_worker(w.id)
-        log(f"[UI] Play All: Started {len(self.workers)} workers")
+        
+        started_count = 0
+        for worker in self.workers:
+            actions = self._get_actions_for_worker(worker_id=worker.id)
+            if not actions:
+                log(f"[UI] Worker {worker.id}: No actions available, skipping")
+                continue
+            
+            # Get target hwnd
+            target_hwnd = worker.emulator.hwnd if hasattr(worker, 'emulator') and hasattr(worker.emulator, 'hwnd') else None
+            
+            # Start independent playback thread for each worker
+            self._start_independent_worker_playback(worker.id, actions, target_hwnd)
+            started_count += 1
+        
+        log(f"[UI] Play All: Started {started_count}/{len(self.workers)} workers")
+        if started_count > 0:
+            messagebox.showinfo("Play All", f"✓ Started {started_count} worker(s)")
+    
+    def _get_worker_display_name(self, worker_id: int) -> str:
+        """Get display name for worker (emulator name if available, else Worker ID)"""
+        worker = self._find_worker(worker_id)
+        if worker and hasattr(worker, 'emulator_name'):
+            return worker.emulator_name
+        return f"Worker {worker_id}"
+    
+    def _start_independent_worker_playback(self, worker_id: int, actions: list, target_hwnd: int = None):
+        """Start independent playback thread for a worker"""
+        def playback_thread():
+            stop_event = threading.Event()
+            # Store stop event for this worker
+            if not hasattr(self, '_worker_stop_events'):
+                self._worker_stop_events = {}
+            self._worker_stop_events[worker_id] = stop_event
+            
+            # Get worker display name
+            worker_name = self._get_worker_display_name(worker_id)
+            
+            try:
+                total_actions = len(actions)
+                log(f"[{worker_name}] ▶ Started: {total_actions} actions")
+                
+                # Execute actions independently
+                for idx, action in enumerate(actions, 1):
+                    if stop_event.is_set():
+                        log(f"[{worker_name}] ⏹ Stopped by user at {idx-1}/{total_actions} ({(idx-1)/total_actions*100:.0f}%)")
+                        break
+                    
+                    # Calculate progress
+                    progress = (idx / total_actions) * 100
+                    
+                    # Execute action using _execute_action
+                    try:
+                        action_type = action.get('type', 'Unknown')
+                        log(f"[{worker_name}] {idx}/{total_actions} ({progress:.0f}%) - {action_type}")
+                        self._execute_action(action, target_hwnd or 0)
+                    except Exception as e:
+                        log(f"[{worker_name}] ✗ Error at {idx}/{total_actions}: {e}")
+                
+                if not stop_event.is_set():
+                    log(f"[{worker_name}] ✓ Complete: {total_actions}/{total_actions} (100%)")
+            except Exception as e:
+                log(f"[{worker_name}] ✗ Playback error: {e}")
+            finally:
+                if hasattr(self, '_worker_stop_events') and worker_id in self._worker_stop_events:
+                    del self._worker_stop_events[worker_id]
+        
+        thread = threading.Thread(target=playback_thread, daemon=True, name=f"Worker-{worker_id}-Playback")
+        thread.start()
     
     def _stop_all_workers(self):
         """Stop all workers"""
@@ -1768,6 +1902,10 @@ class MainUI:
             
             # Update count label
             count_label.config(text=f"Total: {len(actions)} actions")
+            
+            # Sync toggle button state
+            use_custom_mode.set(len(actions) > 0)
+            update_toggle_button()
         
         def copy_from_global():
             """Copy global action list to this worker"""
@@ -1890,15 +2028,40 @@ class MainUI:
                     del actions[idx]
             refresh_tree()
         
-        def use_global():
-            """Set worker to use global actions (remove custom)"""
-            if messagebox.askyesno("Confirm", "Worker sẽ dùng global action list thay vì custom?"):
-                if worker_id in self._worker_actions:
-                    del self._worker_actions[worker_id]
-                refresh_tree()
-                messagebox.showinfo("Info", "Worker sẽ dùng Global Action List khi playback")
+        # Toggle button state
+        use_custom_mode = tk.BooleanVar(value=worker_id in self._worker_actions and len(self._worker_actions[worker_id]) > 0)
         
-        # Buttons
+        def toggle_mode():
+            """Toggle between Use Global and Use Custom"""
+            if use_custom_mode.get():
+                # Currently using custom -> switch to global
+                if messagebox.askyesno("Confirm", "Switch to Global actions?\n\nCustom actions sẽ bị xóa!"):
+                    if worker_id in self._worker_actions:
+                        del self._worker_actions[worker_id]
+                    use_custom_mode.set(False)
+                    refresh_tree()
+                    update_toggle_button()
+                    messagebox.showinfo("Info", "✓ Worker sẽ dùng Global Actions")
+            else:
+                # Currently using global -> switch to custom
+                use_custom_mode.set(True)
+                update_toggle_button()
+                messagebox.showinfo("Info", "✓ Worker sẽ dùng Custom Actions\n\nHãy thêm actions bằng Copy/Load")
+        
+        def update_toggle_button():
+            """Update toggle button text and color"""
+            if use_custom_mode.get():
+                toggle_btn.config(text="🔧 Use Custom", bg=S.ACCENT_PURPLE)
+            else:
+                toggle_btn.config(text="🌐 Use Global", bg=S.BTN_SECONDARY)
+        
+        # Buttons - Toggle ở đầu tiên
+        toggle_btn = tk.Button(btn_frame, text="", command=toggle_mode,
+                              fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold"),
+                              relief="flat", cursor="hand2", width=15)
+        toggle_btn.pack(side="left", padx=(0, 10))
+        update_toggle_button()
+        
         tk.Button(btn_frame, text="📋 Copy từ Global", command=copy_from_global,
                  bg=S.ACCENT_BLUE, fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
                  relief="flat", cursor="hand2").pack(side="left", padx=2)
@@ -1910,9 +2073,6 @@ class MainUI:
                  relief="flat", cursor="hand2").pack(side="left", padx=2)
         tk.Button(btn_frame, text="❌ Clear All", command=clear_actions,
                  bg=S.ACCENT_RED, fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
-                 relief="flat", cursor="hand2").pack(side="left", padx=2)
-        tk.Button(btn_frame, text="🔄 Use Global", command=use_global,
-                 bg=S.BTN_SECONDARY, fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
                  relief="flat", cursor="hand2").pack(side="left", padx=2)
         
         # ===== INFO & COUNT =====
@@ -3352,6 +3512,55 @@ class MainUI:
                     goto_target = goto_target[2:]
                 self._handle_goto(goto_target)
         
+        elif action.action == "WAIT_COLOR_DISAPPEAR":
+            from core.wait_actions import WaitColorDisappear
+            
+            region = v.get("region", (0, 0, 100, 100))
+            auto_detect = v.get("auto_detect", False)
+            tolerance = v.get("tolerance", 30)
+            disappear_threshold = v.get("disappear_threshold", 0.01)
+            timeout_ms = v.get("timeout_ms", 30000)
+            stable_count_exit = v.get("stable_count_exit", 0)
+            
+            # Only use target_rgb if not auto-detect mode
+            if auto_detect:
+                wait = WaitColorDisappear(
+                    region=tuple(region) if isinstance(region, list) else region,
+                    tolerance=tolerance,
+                    disappear_threshold=disappear_threshold,
+                    timeout_ms=timeout_ms,
+                    target_hwnd=target_hwnd or 0,
+                    auto_detect=True,
+                    auto_detect_count=v.get("auto_detect_count", 3),
+                    stable_count_exit=stable_count_exit
+                )
+            else:
+                target_rgb = v.get("target_rgb", (255, 255, 255))
+                wait = WaitColorDisappear(
+                    region=tuple(region) if isinstance(region, list) else region,
+                    target_rgb=tuple(target_rgb) if isinstance(target_rgb, list) else target_rgb,
+                    tolerance=tolerance,
+                    disappear_threshold=disappear_threshold,
+                    timeout_ms=timeout_ms,
+                    target_hwnd=target_hwnd or 0,
+                    auto_detect=False,
+                    stable_count_exit=stable_count_exit
+                )
+            
+            result = wait.wait(self._playback_stop_event)
+            color_disappeared = result.success if result else False
+            
+            if color_disappeared:
+                goto_target = v.get("goto_if_found", "Next")
+                if goto_target and goto_target.startswith("→ "):
+                    goto_target = goto_target[2:]
+                self._handle_goto(goto_target)
+            else:
+                goto_target = v.get("goto_if_not_found", "End")
+                if goto_target and goto_target.startswith("→ "):
+                    goto_target = goto_target[2:]
+                self._handle_goto(goto_target)
+        
         elif action.action == "WAIT_COMBOKEY":
             from core.wait_actions import WaitHotkey
             wait = WaitHotkey(
@@ -4380,7 +4589,7 @@ class MainUI:
             "Click": ["CLICK", "DRAG", "WHEEL"],
             "Input": ["KEY_PRESS", "COMBOKEY", "TEXT"],
             "Image": ["FIND_IMAGE", "CAPTURE_IMAGE"],
-            "Wait": ["WAIT", "WAIT_TIME", "WAIT_PIXEL_COLOR", "WAIT_SCREEN_CHANGE", "WAIT_COMBOKEY", "WAIT_FILE"],
+            "Wait": ["WAIT", "WAIT_TIME", "WAIT_PIXEL_COLOR", "WAIT_SCREEN_CHANGE", "WAIT_COLOR_DISAPPEAR", "WAIT_COMBOKEY", "WAIT_FILE"],
             "Flow": ["LABEL", "GOTO", "REPEAT", "EMBED_MACRO", "GROUP", "SET_VARIABLE", "COMMENT"]
         }
         
@@ -4577,6 +4786,8 @@ class MainUI:
                 self._render_wait_pixel_color_config(config_frame, config_widgets, value, dialog)
             elif action_type == "WAIT_SCREEN_CHANGE":
                 self._render_wait_screen_change_config(config_frame, config_widgets, value, dialog)
+            elif action_type == "WAIT_COLOR_DISAPPEAR":
+                self._render_wait_color_disappear_config(config_frame, config_widgets, value, dialog)
             elif action_type == "WAIT_COMBOKEY":
                 self._render_wait_combokey_config(config_frame, config_widgets, value)
             elif action_type == "WAIT_FILE":
@@ -5314,6 +5525,26 @@ class MainUI:
                 "timeout_seconds": widgets.get("timeout_seconds", tk.IntVar(value=120)).get(),
                 "goto_if_not_found": widgets.get("goto_if_not_found", tk.StringVar(value="End")).get(),
             }
+        elif action_type == "WAIT_COLOR_DISAPPEAR":
+            result = {
+                "region": (widgets["x1"].get(), widgets["y1"].get(), 
+                          widgets["x2"].get(), widgets["y2"].get()),
+                "tolerance": widgets["tolerance"].get(),
+                "disappear_threshold": widgets["disappear_threshold"].get() / 100.0,  # Convert % to decimal
+                "timeout_ms": widgets["timeout_ms"].get(),
+                "stable_count_exit": widgets.get("stable_count_exit", tk.IntVar(value=0)).get(),
+                "goto_if_found": widgets.get("goto_if_found", tk.StringVar(value="Next")).get(),
+                "goto_if_not_found": widgets.get("goto_if_not_found", tk.StringVar(value="End")).get(),
+                "auto_detect": widgets.get("auto_detect", tk.BooleanVar(value=False)).get(),
+            }
+            
+            # Only include target_rgb if not auto-detect
+            if not result["auto_detect"]:
+                result["target_rgb"] = (widgets["r"].get(), widgets["g"].get(), widgets["b"].get())
+            else:
+                result["auto_detect_count"] = widgets.get("auto_detect_count", tk.IntVar(value=3)).get()
+            
+            return result
         elif action_type == "WAIT_COMBOKEY":
             return {
                 "key_combo": widgets["key_combo"].get(),
@@ -5675,6 +5906,267 @@ class MainUI:
         widgets["goto_if_not_found"] = goto_notfound_var
         
         # Refresh labels when dropdown opens
+        goto_notfound_combo.bind("<Button-1>", lambda e: goto_notfound_combo.configure(values=get_label_list()))
+    
+    def _render_wait_color_disappear_config(self, parent, widgets, value, dialog=None):
+        """Render WAIT_COLOR_DISAPPEAR config - Wait until specific color disappears"""
+        S = ModernStyle
+        parent.configure(bg=S.BG_CARD)
+        
+        region = value.get("region", (0, 0, 100, 100))
+        target_rgb = value.get("target_rgb", (255, 255, 255))
+        
+        # ==================== MONITOR REGION ====================
+        region_frame = tk.LabelFrame(parent, text=" 📐 Monitor Region ", 
+                                     font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                     bg=S.BG_CARD, fg=S.FG_ACCENT,
+                                     padx=S.PAD_MD, pady=S.PAD_SM)
+        region_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Region coords
+        coords_row = tk.Frame(region_frame, bg=S.BG_CARD)
+        coords_row.pack(fill="x", pady=2)
+        
+        x1_var = tk.IntVar(value=region[0] if len(region) > 0 else 0)
+        y1_var = tk.IntVar(value=region[1] if len(region) > 1 else 0)
+        x2_var = tk.IntVar(value=region[2] if len(region) > 2 else 100)
+        y2_var = tk.IntVar(value=region[3] if len(region) > 3 else 100)
+        
+        tk.Label(coords_row, text="X1:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        tk.Entry(coords_row, textvariable=x1_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=2)
+        tk.Label(coords_row, text="Y1:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(S.PAD_SM, 0))
+        tk.Entry(coords_row, textvariable=y1_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=2)
+        tk.Label(coords_row, text="X2:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(S.PAD_SM, 0))
+        tk.Entry(coords_row, textvariable=x2_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=2)
+        tk.Label(coords_row, text="Y2:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(S.PAD_SM, 0))
+        tk.Entry(coords_row, textvariable=y2_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=2)
+        
+        # Capture region button
+        def capture_region():
+            from core.capture_utils import CaptureOverlay
+            target_hwnd = getattr(self, '_capture_target_hwnd', None)
+            
+            def on_capture(result):
+                if result.success:
+                    x1_var.set(result.x)
+                    y1_var.set(result.y)
+                    x2_var.set(result.x2)
+                    y2_var.set(result.y2)
+            
+            overlay = CaptureOverlay(self.root, target_hwnd=target_hwnd)
+            overlay.capture_region(on_capture)
+        
+        tk.Button(coords_row, text="📍 Capture", command=capture_region,
+                 bg=S.ACCENT_BLUE, fg=S.FG_PRIMARY, relief="flat", cursor="hand2",
+                 font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=S.PAD_MD)
+        
+        widgets["x1"] = x1_var
+        widgets["y1"] = y1_var
+        widgets["x2"] = x2_var
+        widgets["y2"] = y2_var
+        
+        # ==================== TARGET COLOR ====================
+        color_frame = tk.LabelFrame(parent, text=" 🎨 Target Color (Spin Arc Color) ", 
+                                    font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                    bg=S.BG_CARD, fg=S.FG_ACCENT,
+                                    padx=S.PAD_MD, pady=S.PAD_MD)
+        color_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Auto-detect checkbox
+        auto_detect_var = tk.BooleanVar(value=value.get("auto_detect", False))
+        auto_detect_cb = tk.Checkbutton(color_frame, 
+                                        text="🔍 Auto-detect colors from baseline (recommended for spin arc)",
+                                        variable=auto_detect_var,
+                                        font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                        bg=S.BG_CARD, fg=S.ACCENT_GREEN,
+                                        selectcolor=S.BG_INPUT, activebackground=S.BG_CARD)
+        auto_detect_cb.pack(anchor="w", pady=(0, S.PAD_SM))
+        widgets["auto_detect"] = auto_detect_var
+        
+        # Auto-detect count
+        auto_count_row = tk.Frame(color_frame, bg=S.BG_CARD)
+        auto_count_row.pack(fill="x", pady=2)
+        tk.Label(auto_count_row, text="  → Track top", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        auto_count_var = tk.IntVar(value=value.get("auto_detect_count", 3))
+        tk.Spinbox(auto_count_row, from_=1, to=10, textvariable=auto_count_var, width=5,
+                  bg=S.BG_INPUT, fg=S.FG_PRIMARY, relief="flat").pack(side="left", padx=S.PAD_SM)
+        tk.Label(auto_count_row, text="colors", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        widgets["auto_detect_count"] = auto_count_var
+        
+        # Separator
+        tk.Frame(color_frame, height=1, bg=S.FG_MUTED).pack(fill="x", pady=S.PAD_SM)
+        
+        # Manual mode label
+        manual_label = tk.Label(color_frame, text="OR manually specify color:",
+                               font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                               bg=S.BG_CARD, fg=S.FG_MUTED)
+        manual_label.pack(anchor="w", pady=(S.PAD_SM, 2))
+        
+        # RGB inputs
+        rgb_row = tk.Frame(color_frame, bg=S.BG_CARD)
+        rgb_row.pack(fill="x", pady=2)
+        
+        r_var = tk.IntVar(value=target_rgb[0] if len(target_rgb) > 0 else 255)
+        g_var = tk.IntVar(value=target_rgb[1] if len(target_rgb) > 1 else 255)
+        b_var = tk.IntVar(value=target_rgb[2] if len(target_rgb) > 2 else 255)
+        
+        tk.Label(rgb_row, text="R:", bg=S.BG_CARD, fg="#FF5555",
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold")).pack(side="left")
+        r_entry = tk.Entry(rgb_row, textvariable=r_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                          insertbackground=S.FG_PRIMARY, relief="flat")
+        r_entry.pack(side="left", padx=2)
+        
+        tk.Label(rgb_row, text="G:", bg=S.BG_CARD, fg="#55FF55",
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold")).pack(side="left", padx=(S.PAD_SM, 0))
+        g_entry = tk.Entry(rgb_row, textvariable=g_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                          insertbackground=S.FG_PRIMARY, relief="flat")
+        g_entry.pack(side="left", padx=2)
+        
+        tk.Label(rgb_row, text="B:", bg=S.BG_CARD, fg="#5555FF",
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold")).pack(side="left", padx=(S.PAD_SM, 0))
+        b_entry = tk.Entry(rgb_row, textvariable=b_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                          insertbackground=S.FG_PRIMARY, relief="flat")
+        b_entry.pack(side="left", padx=2)
+        
+        # Color preview
+        color_preview = tk.Label(rgb_row, text="  ", width=4, relief="solid", bd=1)
+        color_preview.pack(side="left", padx=S.PAD_SM)
+        
+        # Enable/disable RGB inputs based on auto_detect
+        def toggle_rgb_inputs(*args):
+            state = "disabled" if auto_detect_var.get() else "normal"
+            r_entry.config(state=state)
+            g_entry.config(state=state)
+            b_entry.config(state=state)
+            auto_count_row.pack(fill="x", pady=2) if auto_detect_var.get() else auto_count_row.pack_forget()
+        
+        auto_detect_var.trace_add("write", toggle_rgb_inputs)
+        toggle_rgb_inputs()
+        
+        def update_preview(*args):
+            try:
+                r, g, b = r_var.get(), g_var.get(), b_var.get()
+                color_preview.configure(bg=f"#{r:02x}{g:02x}{b:02x}")
+            except:
+                pass
+        
+        r_var.trace_add("write", update_preview)
+        g_var.trace_add("write", update_preview)
+        b_var.trace_add("write", update_preview)
+        update_preview()
+        
+        widgets["r"] = r_var
+        widgets["g"] = g_var
+        widgets["b"] = b_var
+        
+        # Tolerance
+        tol_row = tk.Frame(color_frame, bg=S.BG_CARD)
+        tol_row.pack(fill="x", pady=S.PAD_XS)
+        tk.Label(tol_row, text="Tolerance:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        tol_var = tk.IntVar(value=value.get("tolerance", 30))
+        tk.Entry(tol_row, textvariable=tol_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=S.PAD_SM)
+        tk.Label(tol_row, text="(0-255, ±tolerance per RGB channel)", bg=S.BG_CARD, fg=S.FG_MUTED,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_XS)).pack(side="left")
+        widgets["tolerance"] = tol_var
+        
+        # Disappear threshold
+        thresh_row = tk.Frame(color_frame, bg=S.BG_CARD)
+        thresh_row.pack(fill="x", pady=S.PAD_XS)
+        tk.Label(thresh_row, text="Disappear at:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        disappear_var = tk.DoubleVar(value=value.get("disappear_threshold", 0.01) * 100)  # Convert to %
+        tk.Entry(thresh_row, textvariable=disappear_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=S.PAD_SM)
+        tk.Label(thresh_row, text="% pixels remaining (e.g., 1.0 = <1%)", bg=S.BG_CARD, fg=S.FG_MUTED,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_XS)).pack(side="left")
+        widgets["disappear_threshold"] = disappear_var
+        
+        # Stable count exit
+        stable_row = tk.Frame(color_frame, bg=S.BG_CARD)
+        stable_row.pack(fill="x", pady=S.PAD_XS)
+        tk.Label(stable_row, text="Stable exit:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        stable_count_var = tk.IntVar(value=value.get("stable_count_exit", 0))
+        tk.Entry(stable_row, textvariable=stable_count_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=S.PAD_SM)
+        tk.Label(stable_row, text="checks (0=disabled, e.g. 10=exit after 10 identical checks)", bg=S.BG_CARD, fg=S.FG_MUTED,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_XS)).pack(side="left")
+        widgets["stable_count_exit"] = stable_count_var
+        
+        # Info label
+        info_label = tk.Label(color_frame, 
+                             text="💡 Auto-detect: Tracks animated colors (variance-based). Stable exit: Safety for static backgrounds.",
+                             font=(S.FONT_FAMILY, S.FONT_SIZE_XS, "italic"),
+                             bg=S.BG_CARD, fg=S.ACCENT_BLUE)
+        info_label.pack(anchor="w", pady=(S.PAD_SM, 0))
+        
+        # ==================== TIMEOUT & GOTO ====================
+        action_frame = tk.LabelFrame(parent, text=" ⚙️ Actions ", 
+                                     font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                     bg=S.BG_CARD, fg=S.FG_ACCENT,
+                                     padx=S.PAD_MD, pady=S.PAD_MD)
+        action_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Timeout
+        timeout_row = tk.Frame(action_frame, bg=S.BG_CARD)
+        timeout_row.pack(fill="x", pady=2)
+        tk.Label(timeout_row, text="Timeout:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        timeout_var = tk.IntVar(value=value.get("timeout_ms", 30000))
+        tk.Entry(timeout_row, textvariable=timeout_var, width=8, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=S.PAD_SM)
+        tk.Label(timeout_row, text="ms", bg=S.BG_CARD, fg=S.FG_MUTED,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        widgets["timeout_ms"] = timeout_var
+        
+        # Function to get all labels
+        def get_label_list():
+            labels = ["Next", "Previous", "Start", "End", "Exit macro"]
+            for action in self.actions:
+                label_name = ""
+                if action.action == "LABEL":
+                    if isinstance(action.value, dict):
+                        label_name = action.value.get("name", "")
+                if not label_name and action.label:
+                    label_name = action.label
+                if label_name and f"→ {label_name}" not in labels:
+                    labels.append(f"→ {label_name}")
+            return labels
+        
+        # Go to if color disappeared
+        goto_found_row = tk.Frame(action_frame, bg=S.BG_CARD)
+        goto_found_row.pack(fill="x", pady=2)
+        tk.Label(goto_found_row, text="✅ If color disappeared:", bg=S.BG_CARD, fg=S.ACCENT_GREEN,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        goto_found_var = tk.StringVar(value=value.get("goto_if_found", "Next"))
+        goto_found_combo = ttk.Combobox(goto_found_row, textvariable=goto_found_var, width=20,
+                                        values=get_label_list(), state="readonly")
+        goto_found_combo.pack(side="left", padx=S.PAD_SM)
+        widgets["goto_if_found"] = goto_found_var
+        goto_found_combo.bind("<Button-1>", lambda e: goto_found_combo.configure(values=get_label_list()))
+        
+        # Go to if timeout
+        goto_notfound_row = tk.Frame(action_frame, bg=S.BG_CARD)
+        goto_notfound_row.pack(fill="x", pady=2)
+        tk.Label(goto_notfound_row, text="❌ If timeout:", bg=S.BG_CARD, fg=S.ACCENT_RED,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        goto_notfound_var = tk.StringVar(value=value.get("goto_if_not_found", "End"))
+        goto_notfound_combo = ttk.Combobox(goto_notfound_row, textvariable=goto_notfound_var, width=20,
+                                           values=get_label_list(), state="readonly")
+        goto_notfound_combo.pack(side="left", padx=S.PAD_SM)
+        widgets["goto_if_not_found"] = goto_notfound_var
         goto_notfound_combo.bind("<Button-1>", lambda e: goto_notfound_combo.configure(values=get_label_list()))
     
     def _render_wait_combokey_config(self, parent, widgets, value):
@@ -8889,10 +9381,16 @@ class MainUI:
                         if not existing:
                             # Get window info
                             try:
-                                from core.tech import win32gui
+                                from core.tech import win32gui, ctypes, user32
                                 rect = win32gui.GetWindowRect(hwnd)
                                 x, y, right, bottom = rect
                                 width, height = right - x, bottom - y
+                                
+                                # Get window title (emulator name)
+                                length = user32.GetWindowTextLengthW(hwnd)
+                                buff = ctypes.create_unicode_buffer(length + 1)
+                                user32.GetWindowTextW(hwnd, buff, length + 1)
+                                emulator_name = buff.value if buff.value else f"LDPlayer-{worker_id}"
                                 
                                 # Create new Worker
                                 worker = Worker(
@@ -8902,9 +9400,11 @@ class MainUI:
                                     res_width=540, res_height=960,
                                     adb_device=None
                                 )
+                                # Add emulator name as custom attribute
+                                worker.emulator_name = emulator_name
                                 self.workers.append(worker)
                                 new_workers_created += 1
-                                log(f"[UI] Created Worker {worker_id} for hwnd={hwnd}")
+                                log(f"[UI] Created Worker {worker_id} '{emulator_name}' for hwnd={hwnd}")
                             except Exception as e:
                                 log(f"[UI] Failed to create worker: {e}")
                 
@@ -9524,7 +10024,11 @@ class MainUI:
         
         # Mouse wheel scroll
         def on_mousewheel(event):
-            self._mini_log_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            try:
+                if self._mini_log_canvas.winfo_exists():
+                    self._mini_log_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            except:
+                pass
         self._mini_log_canvas.bind_all("<MouseWheel>", on_mousewheel)
         
         # Store mini log rows
@@ -9600,31 +10104,42 @@ class MainUI:
             if self._mini_current_row != index and self._mini_current_row < len(self._mini_log_rows):
                 prev = self._mini_log_rows[self._mini_current_row]
                 done = colors["done"]
-                prev["frame"].configure(bg=done["bg"])
-                prev["idx"].configure(bg=done["bg"], fg=done["fg"])
-                prev["action"].configure(bg=done["bg"], fg=done["fg"])
-                prev["label"].configure(bg=done["bg"], fg=done["fg"])
-                prev["status"].configure(bg=done["bg"], fg=done["fg"], text=done["status"])
+                try:
+                    if prev["frame"].winfo_exists():
+                        prev["frame"].configure(bg=done["bg"])
+                        prev["idx"].configure(bg=done["bg"], fg=done["fg"])
+                        prev["action"].configure(bg=done["bg"], fg=done["fg"])
+                        prev["label"].configure(bg=done["bg"], fg=done["fg"])
+                        prev["status"].configure(bg=done["bg"], fg=done["fg"], text=done["status"])
+                except tk.TclError:
+                    pass  # Widget destroyed, ignore
         
         # Highlight current
         if 0 <= index < len(self._mini_log_rows):
             row = self._mini_log_rows[index]
-            row["frame"].configure(bg=state["bg"])
-            row["idx"].configure(bg=state["bg"], fg=state["fg"])
-            row["action"].configure(bg=state["bg"], fg=state["fg"])
-            row["label"].configure(bg=state["bg"], fg=state["fg"])
-            row["status"].configure(bg=state["bg"], fg=state["fg"], text=state["status"])
+            try:
+                if row["frame"].winfo_exists():
+                    row["frame"].configure(bg=state["bg"])
+                    row["idx"].configure(bg=state["bg"], fg=state["fg"])
+                    row["action"].configure(bg=state["bg"], fg=state["fg"])
+                    row["label"].configure(bg=state["bg"], fg=state["fg"])
+                    row["status"].configure(bg=state["bg"], fg=state["fg"], text=state["status"])
+            except tk.TclError:
+                pass  # Widget destroyed, ignore
             
             self._mini_current_row = index
             
             # Auto scroll
             if hasattr(self, '_mini_log_canvas'):
-                self._mini_log_canvas.update_idletasks()
-                row_y = row["frame"].winfo_y()
-                canvas_h = self._mini_log_canvas.winfo_height()
-                total_h = self._mini_log_inner.winfo_height()
-                if total_h > canvas_h:
-                    self._mini_log_canvas.yview_moveto(max(0, (row_y - canvas_h/2) / total_h))
+                try:
+                    self._mini_log_canvas.update_idletasks()
+                    row_y = row["frame"].winfo_y()
+                    canvas_h = self._mini_log_canvas.winfo_height()
+                    total_h = self._mini_log_inner.winfo_height()
+                    if total_h > canvas_h:
+                        self._mini_log_canvas.yview_moveto(max(0, (row_y - canvas_h/2) / total_h))
+                except tk.TclError:
+                    pass  # Widget destroyed, ignore
     
     def _hide_playback_toolbar(self):
         """Hide playback toolbar and restore main window"""
