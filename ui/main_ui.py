@@ -1149,7 +1149,8 @@ class MainUI:
         for text, icon, cmd, color in [
             ("Play All", "▶", self._play_all_workers, S.ACCENT_GREEN),
             ("Stop All", "⏹", self._stop_all_workers, S.ACCENT_RED),
-            ("Remove", "🗑", self.remove_macro, S.BTN_SECONDARY),
+            ("Editor", "🎛", self._open_worker_editor, S.ACCENT_BLUE),
+            ("Remove", "🗑", self._remove_workers, S.BTN_SECONDARY),
         ]:
             btn = tk.Button(btn_row2, text=f"{icon} {text}", command=cmd,
                            bg=color, fg=S.FG_PRIMARY,
@@ -1163,15 +1164,14 @@ class MainUI:
         tree_frame = tk.Frame(worker_frame, bg=S.BG_CARD)
         tree_frame.pack(fill="both", expand=True, padx=S.PAD_XS, pady=(0, S.PAD_XS))
 
-        columns = ("ID", "Name", "Worker", "Status", "Actions")
-        self.worker_tree = ttk.Treeview(tree_frame, columns=columns, height=14, show="headings")
+        columns = ("ID", "Name", "Worker", "Status")
+        self.worker_tree = ttk.Treeview(tree_frame, columns=columns, height=14, show="headings", selectmode="extended")
 
         self.worker_tree.column("#0", width=0, stretch=tk.NO)
         self.worker_tree.column("ID", anchor=tk.CENTER, width=30, minwidth=25)
-        self.worker_tree.column("Name", anchor=tk.W, width=100, minwidth=70)
-        self.worker_tree.column("Worker", anchor=tk.CENTER, width=55, minwidth=45)
-        self.worker_tree.column("Status", anchor=tk.CENTER, width=65, minwidth=50)
-        self.worker_tree.column("Actions", anchor=tk.CENTER, width=70, minwidth=50)
+        self.worker_tree.column("Name", anchor=tk.W, width=150, minwidth=100)
+        self.worker_tree.column("Worker", anchor=tk.CENTER, width=70, minwidth=50)
+        self.worker_tree.column("Status", anchor=tk.CENTER, width=80, minwidth=60)
 
         for col in columns:
             self.worker_tree.heading(col, text=col, anchor=tk.CENTER if col != "Name" else tk.W)
@@ -1182,8 +1182,9 @@ class MainUI:
         self.worker_tree.pack(side=tk.LEFT, fill="both", expand=True)
         scrollbar.pack(side=tk.RIGHT, fill="y")
 
-        self.worker_tree.bind("<Button-1>", self._on_worker_tree_click)
-        self.worker_tree.bind("<Double-1>", lambda e: "break")
+        self.worker_tree.bind("<Button-3>", self._on_worker_tree_right_click)
+        self.worker_tree.bind("<Double-1>", lambda e: self._open_worker_editor())
+        self.worker_tree.bind("<Control-a>", self._select_all_workers)
         self.worker_tree_items = {}
         
         # Apply zebra striping
@@ -1463,21 +1464,15 @@ class MainUI:
     
     def _on_worker_tree_click(self, event):
         """Handle click on worker tree for per-row actions"""
-        region = self.worker_tree.identify("region", event.x, event.y)
-        column = self.worker_tree.identify_column(event.x)
-        item = self.worker_tree.identify_row(event.y)
-        
-        if not item:
-            return
-        
-        # Only respond to clicks on Actions column (#5)
-        if column == "#5" and region == "cell":
-            # Get worker ID from the row
-            values = self.worker_tree.item(item, "values")
-            worker_id = int(values[0])
-            
-            # Show action popup menu
-            self._show_worker_action_menu(event, worker_id)
+        # No longer needed since Actions column removed
+        # Right-click menu now handles all actions
+        pass
+    
+    def _select_all_workers(self, event=None):
+        """Select all workers in worker tree (Ctrl+A)"""
+        for item in self.worker_tree.get_children():
+            self.worker_tree.selection_add(item)
+        return "break"  # Prevent default Ctrl+A behavior
     
     def _show_worker_action_menu(self, event, worker_id: int):
         """Show popup menu with Play/Pause/Stop actions for worker"""
@@ -1499,6 +1494,9 @@ class MainUI:
         menu.add_separator()
         menu.add_command(label="🔄 Restart", command=lambda: self._restart_worker(worker_id))
         menu.add_separator()
+        menu.add_command(label="🎛 Edit Actions", command=self._open_worker_editor)
+        menu.add_command(label="🗑️ Remove", command=self._remove_workers)
+        menu.add_separator()
         
         # Edit custom actions
         has_custom = worker_id in self._worker_actions and len(self._worker_actions[worker_id]) > 0
@@ -1513,6 +1511,59 @@ class MainUI:
             menu.tk_popup(event.x_root, event.y_root)
         finally:
             menu.grab_release()
+    
+    def _on_worker_tree_right_click(self, event):
+        """Handle right-click on worker tree to show context menu"""
+        item = self.worker_tree.identify_row(event.y)
+        
+        if not item:
+            return
+        
+        # Get worker ID from the row
+        values = self.worker_tree.item(item, "values")
+        if not values:
+            return
+        
+        worker_id = int(values[0])
+        
+        # Show action popup menu
+        self._show_worker_action_menu(event, worker_id)
+    
+    def _remove_workers(self):
+        """Remove selected workers from worker tree"""
+        selection = self.worker_tree.selection()
+        if not selection:
+            messagebox.showwarning("Remove Workers", "❌ Vui lòng chọn worker cần xóa.")
+            return
+        
+        # Confirm removal
+        count = len(selection)
+        if not messagebox.askyesno("Remove Workers", 
+                                   f"⚠️ Xóa {count} worker(s) khỏi danh sách?\n\n"
+                                   "LDPlayer sẽ vẫn chạy, chỉ xóa khỏi danh sách hiện tại."):
+            return
+        
+        # Collect worker IDs to remove
+        workers_to_remove = []
+        for item_id in selection:
+            values = self.worker_tree.item(item_id, "values")
+            if values:
+                worker_id = int(values[0])
+                # Find worker object
+                for w in self.workers:
+                    if w.id == worker_id:
+                        workers_to_remove.append(w)
+                        break
+        
+        # Remove from self.workers list
+        for w in workers_to_remove:
+            self.workers.remove(w)
+            log(f"[UI] Removed Worker ID={w.id} ({w.name}) from list")
+        
+        # Refresh UI
+        self._auto_refresh_status()
+        
+        messagebox.showinfo("Remove Workers", f"✅ Đã xóa {len(workers_to_remove)} worker(s) khỏi danh sách.")
     
     def _play_worker(self, worker_id: int):
         """Start or resume script execution for a worker"""
@@ -1637,7 +1688,7 @@ class MainUI:
         self._play_worker(worker_id)
     
     def _play_all_workers(self):
-        """Start/Resume all workers - each runs independently"""
+        """Start/Resume all workers - each runs independently with mini toolbar"""
         if not self.workers:
             messagebox.showinfo("Info", "No workers available")
             return
@@ -1650,15 +1701,17 @@ class MainUI:
                 continue
             
             # Get target hwnd
-            target_hwnd = worker.emulator.hwnd if hasattr(worker, 'emulator') and hasattr(worker.emulator, 'hwnd') else None
+            target_hwnd = worker.hwnd if hasattr(worker, 'hwnd') else None
             
             # Start independent playback thread for each worker
             self._start_independent_worker_playback(worker.id, actions, target_hwnd)
             started_count += 1
         
-        log(f"[UI] Play All: Started {started_count}/{len(self.workers)} workers")
+        # Create Play All mini toolbar
         if started_count > 0:
-            messagebox.showinfo("Play All", f"✓ Started {started_count} worker(s)")
+            self._create_play_all_mini_toolbar(started_count)
+        
+        log(f"[UI] Play All: Started {started_count}/{len(self.workers)} workers")
     
     def _get_worker_display_name(self, worker_id: int) -> str:
         """Get display name for worker (emulator name if available, else Worker ID)"""
@@ -1676,8 +1729,13 @@ class MainUI:
                 self._worker_stop_events = {}
             self._worker_stop_events[worker_id] = stop_event
             
-            # Get worker display name
+            # Get worker display name and ADB serial
             worker_name = self._get_worker_display_name(worker_id)
+            worker = self._find_worker(worker_id)
+            adb_serial = worker.adb_device if worker and hasattr(worker, 'adb_device') else None
+            
+            if adb_serial:
+                log(f"[{worker_name}] Using ADB device: {adb_serial}")
             
             try:
                 total_actions = len(actions)
@@ -1692,11 +1750,12 @@ class MainUI:
                     # Calculate progress
                     progress = (idx / total_actions) * 100
                     
-                    # Execute action using _execute_action
+                    # Execute action using _execute_action with adb_serial
                     try:
-                        action_type = action.get('type', 'Unknown')
+                        # Action is Action object, not dict
+                        action_type = action.action if hasattr(action, 'action') else action.get('action', 'Unknown')
                         log(f"[{worker_name}] {idx}/{total_actions} ({progress:.0f}%) - {action_type}")
-                        self._execute_action(action, target_hwnd or 0)
+                        self._execute_action(action, target_hwnd or 0, adb_serial=adb_serial)
                     except Exception as e:
                         log(f"[{worker_name}] ✗ Error at {idx}/{total_actions}: {e}")
                 
@@ -1715,9 +1774,695 @@ class MainUI:
         """Stop all workers"""
         if not self.workers:
             return
+        
+        # Set stop events for all workers
+        if hasattr(self, '_worker_stop_events'):
+            for stop_event in self._worker_stop_events.values():
+                stop_event.set()
+        
+        log(f"[UI] Stop All: Stopping {len(self.workers)} workers")
+        
+        # Close Play All mini toolbar
+        if hasattr(self, '_play_all_toolbar') and self._play_all_toolbar:
+            try:
+                self._play_all_toolbar.destroy()
+                self._play_all_toolbar = None
+            except:
+                pass
+    
+    def _create_play_all_mini_toolbar(self, worker_count: int):
+        """Create mini toolbar for Play All with 2-panel layout: Progress + Playlog"""
+        S = ModernStyle
+        
+        # Close existing toolbar if any
+        if hasattr(self, '_play_all_toolbar') and self._play_all_toolbar:
+            try:
+                self._play_all_toolbar.destroy()
+            except:
+                pass
+        
+        # Create new toolbar window
+        toolbar = tk.Toplevel(self.root)
+        toolbar.title("▶ Play All")
+        toolbar.geometry("1000x500")
+        toolbar.configure(bg=S.BG_PRIMARY)
+        toolbar.attributes('-topmost', True)
+        
+        self._play_all_toolbar = toolbar
+        
+        # Header
+        header = tk.Frame(toolbar, bg=S.BG_SECONDARY, height=40)
+        header.pack(fill="x")
+        header.pack_propagate(False)
+        
+        tk.Label(header, text=f"▶ Play All ({worker_count} workers)", 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_LG, "bold"),
+                bg=S.BG_SECONDARY, fg=S.FG_ACCENT).pack(side="left", padx=S.PAD_MD)
+        
+        # Stop button
+        stop_btn = tk.Button(header, text="⏹ Stop All", command=self._stop_all_workers,
+                            bg=S.ACCENT_RED, fg=S.FG_PRIMARY, font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                            relief="flat", cursor="hand2", width=12)
+        stop_btn.pack(side="right", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # 2-Panel horizontal layout
+        paned = tk.PanedWindow(toolbar, orient=tk.HORIZONTAL, bg=S.BG_PRIMARY, 
+                              sashwidth=4, sashrelief=tk.RAISED)
+        paned.pack(fill="both", expand=True, padx=S.PAD_SM, pady=S.PAD_SM)
+        
+        # ========== LEFT PANEL: Worker Progress ==========
+        left_panel = tk.Frame(paned, bg=S.BG_CARD)
+        paned.add(left_panel, width=350)
+        
+        tk.Label(left_panel, text="📊 Worker Progress", 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                bg=S.BG_CARD, fg=S.FG_ACCENT).pack(pady=S.PAD_SM)
+        
+        # Progress tree
+        progress_tree_frame = tk.Frame(left_panel, bg=S.BG_CARD)
+        progress_tree_frame.pack(fill="both", expand=True, padx=S.PAD_SM, pady=S.PAD_SM)
+        
+        columns = ("ID", "Name", "Status", "Progress")
+        progress_tree = ttk.Treeview(progress_tree_frame, columns=columns, show="headings", 
+                                    height=15, selectmode="browse")
+        
+        progress_tree.column("ID", width=40, anchor=tk.CENTER)
+        progress_tree.column("Name", width=120, anchor=tk.W)
+        progress_tree.column("Status", width=80, anchor=tk.CENTER)
+        progress_tree.column("Progress", width=90, anchor=tk.CENTER)
+        
+        for col in columns:
+            progress_tree.heading(col, text=col)
+        
+        progress_scrollbar = ttk.Scrollbar(progress_tree_frame, orient="vertical", command=progress_tree.yview)
+        progress_tree.configure(yscrollcommand=progress_scrollbar.set)
+        
+        progress_tree.pack(side="left", fill="both", expand=True)
+        progress_scrollbar.pack(side="right", fill="y")
+        
+        self._play_all_progress_tree = progress_tree
+        
+        # Populate initial worker status
         for w in self.workers:
-            self._stop_worker(w.id)
-        log(f"[UI] Stop All: Stopped {len(self.workers)} workers")
+            if w.id > 0:
+                worker_name = self._get_worker_display_name(w.id)
+                progress_tree.insert("", tk.END, values=(w.id, worker_name, "Starting...", "0/0"))
+        
+        # Apply zebra striping
+        S.apply_zebra_striping(progress_tree)
+        
+        # ========== RIGHT PANEL: Playlog ==========
+        right_panel = tk.Frame(paned, bg=S.BG_CARD)
+        paned.add(right_panel)
+        
+        tk.Label(right_panel, text="📋 Playlog", 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                bg=S.BG_CARD, fg=S.FG_ACCENT).pack(pady=S.PAD_SM)
+        
+        # Filter buttons
+        filter_frame = tk.Frame(right_panel, bg=S.BG_CARD)
+        filter_frame.pack(fill="x", padx=S.PAD_SM)
+        
+        self._log_filter_mode = tk.StringVar(value="all")
+        
+        filter_buttons = [
+            ("All", "all", S.ACCENT_BLUE),
+            ("Errors", "error", S.ACCENT_RED),
+            ("Workers", "worker", S.ACCENT_GREEN),
+            ("Actions", "action", S.ACCENT_PURPLE),
+        ]
+        
+        for text, mode, color in filter_buttons:
+            btn = tk.Radiobutton(filter_frame, text=text, variable=self._log_filter_mode, 
+                                value=mode, indicatoron=False, width=10,
+                                bg=color, fg=S.FG_PRIMARY, selectcolor=S.BG_TERTIARY,
+                                font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                                relief="flat", cursor="hand2")
+            btn.pack(side="left", padx=2)
+        
+        # Playlog text area
+        log_frame = tk.Frame(right_panel, bg=S.BG_CARD)
+        log_frame.pack(fill="both", expand=True, padx=S.PAD_SM, pady=S.PAD_SM)
+        
+        playlog_text = tk.Text(log_frame, wrap=tk.WORD, height=20, width=50,
+                              bg=S.BG_INPUT, fg=S.FG_PRIMARY, font=(S.FONT_MONO, S.FONT_SIZE_SM),
+                              relief="flat", highlightthickness=1, highlightbackground=S.BORDER_COLOR)
+        playlog_text.pack(side="left", fill="both", expand=True)
+        
+        playlog_scrollbar = ttk.Scrollbar(log_frame, orient="vertical", command=playlog_text.yview)
+        playlog_text.configure(yscrollcommand=playlog_scrollbar.set)
+        playlog_scrollbar.pack(side="right", fill="y")
+        
+        self._play_all_playlog = playlog_text
+        
+        # Hotkey hint
+        hint = tk.Label(toolbar, text="💡 Hotkeys: F10 = Play | F12 = Stop (mini toolbar only)", 
+                       bg=S.BG_PRIMARY, fg=S.FG_MUTED, font=(S.FONT_FAMILY, S.FONT_SIZE_SM))
+        hint.pack(side="bottom", pady=S.PAD_SM)
+        
+        # Bind hotkeys to toolbar window
+        toolbar.bind('<F10>', lambda e: self._play_all_workers())
+        toolbar.bind('<F12>', lambda e: self._stop_all_workers())
+        
+        # Redirect log output to playlog
+        self._setup_playlog_redirect()
+    
+    def _setup_playlog_redirect(self):
+        """Setup log redirection to play all playlog with filter support"""
+        import logging
+        
+        class PlaylogHandler(logging.Handler):
+            def __init__(self, text_widget, filter_var, parent_ui):
+                super().__init__()
+                self.text_widget = text_widget
+                self.filter_var = filter_var
+                self.parent_ui = parent_ui
+                
+            def emit(self, record):
+                try:
+                    msg = self.format(record)
+                    
+                    # Filter logic
+                    filter_mode = self.filter_var.get()
+                    
+                    if filter_mode == "error" and not any(marker in msg.lower() for marker in ['error', 'fail', 'exception']):
+                        return
+                    elif filter_mode == "worker" and not any(marker in msg for marker in ['[Worker', '[LD', '[Zalo']):
+                        return
+                    elif filter_mode == "action" and not any(marker in msg for marker in ['CLICK', 'FIND_IMAGE', 'WAIT', 'SET']):
+                        return
+                    
+                    # Show log
+                    if any(marker in msg for marker in ['[Zalo', '[LD', '[Worker', 'Using ADB', 'Started:', 'Complete:', 'Error at', 'CLICK', 'FIND_IMAGE', 'WAIT']):
+                        self.text_widget.insert(tk.END, msg + '\n')
+                        self.text_widget.see(tk.END)
+                        
+                        # Update progress tree if worker status changed
+                        self.parent_ui._update_worker_progress_from_log(msg)
+                except:
+                    pass
+        
+        if hasattr(self, '_play_all_playlog') and self._play_all_playlog:
+            handler = PlaylogHandler(self._play_all_playlog, self._log_filter_mode, self)
+            handler.setFormatter(logging.Formatter('%(asctime)s | %(message)s', '%H:%M:%S'))
+            logging.getLogger().addHandler(handler)
+            
+            # Store handler to remove later
+            self._playlog_handler = handler
+    
+    def _update_worker_progress_from_log(self, log_msg: str):
+        """Update progress tree based on log messages"""
+        if not hasattr(self, '_play_all_progress_tree'):
+            return
+        
+        try:
+            # Parse worker ID from log
+            import re
+            
+            # Pattern: [Worker X] or [LD-X] or [ZaloX]
+            match = re.search(r'\[(?:Worker|LD-|Zalo)(\d+)\]', log_msg)
+            if not match:
+                return
+            
+            worker_id = int(match.group(1))
+            
+            # Find item in progress tree
+            for item in self._play_all_progress_tree.get_children():
+                values = self._play_all_progress_tree.item(item, "values")
+                if int(values[0]) == worker_id:
+                    current_status = values[2]
+                    current_progress = values[3]
+                    
+                    # Update status based on log content
+                    if "Started:" in log_msg or "Using ADB" in log_msg:
+                        new_status = "▶ Running"
+                    elif "Complete:" in log_msg or "Finish" in log_msg:
+                        new_status = "✅ Done"
+                    elif "Error" in log_msg or "Fail" in log_msg:
+                        new_status = "❌ Error"
+                    elif "Stop" in log_msg:
+                        new_status = "⏹ Stopped"
+                    else:
+                        new_status = current_status
+                    
+                    # Update progress if action count found
+                    action_match = re.search(r'(\d+)/(\d+)', log_msg)
+                    if action_match:
+                        new_progress = f"{action_match.group(1)}/{action_match.group(2)}"
+                    else:
+                        new_progress = current_progress
+                    
+                    # Update tree item
+                    self._play_all_progress_tree.item(item, values=(values[0], values[1], new_status, new_progress))
+                    break
+        except:
+            pass
+    
+    def _open_worker_editor(self):
+        """Open Worker Actions Editor with Multi/Single tabs"""
+        S = ModernStyle
+        
+        dialog = tk.Toplevel(self.root)
+        dialog.title("🎛️ Worker Actions Editor")
+        dialog.geometry("1100x700")
+        dialog.configure(bg=S.BG_PRIMARY)
+        dialog.transient(self.root)
+        
+        # Create notebook with 2 tabs
+        notebook = ttk.Notebook(dialog)
+        notebook.pack(fill="both", expand=True, padx=S.PAD_MD, pady=S.PAD_MD)
+        
+        # Tab 1: Multi-Worker Editor
+        multi_frame = tk.Frame(notebook, bg=S.BG_CARD)
+        notebook.add(multi_frame, text="📋 Multi-Worker Editor")
+        
+        # Tab 2: Single Worker Editor  
+        single_frame = tk.Frame(notebook, bg=S.BG_CARD)
+        notebook.add(single_frame, text="👤 Single Worker Editor")
+        
+        # ==================== TAB 1: MULTI-WORKER EDITOR ====================
+        self._create_multi_worker_tab(multi_frame, dialog, S)
+        
+        # ==================== TAB 2: SINGLE WORKER EDITOR ====================
+        self._create_single_worker_tab(single_frame, dialog, S)
+    
+    def _create_multi_worker_tab(self, parent, dialog, S):
+        """Create Multi-Worker Editor tab (Panel 1: Workers | Panel 2: Actions)"""
+        # Horizontal split
+        paned = tk.PanedWindow(parent, orient=tk.HORIZONTAL, bg=S.BG_CARD, 
+                              sashwidth=4, sashrelief=tk.RAISED)
+        paned.pack(fill="both", expand=True)
+        
+        # === PANEL 1: Worker Selection ===
+        left_panel = tk.Frame(paned, bg=S.BG_CARD)
+        paned.add(left_panel, width=300)
+        
+        tk.Label(left_panel, text="📋 Select Workers", 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_LG, "bold"),
+                bg=S.BG_CARD, fg=S.FG_ACCENT).pack(pady=S.PAD_MD)
+        
+        # Select All checkbox
+        select_all_var = tk.BooleanVar(value=False)
+        
+        def toggle_all():
+            state = select_all_var.get()
+            for var in worker_vars.values():
+                var.set(state)
+        
+        tk.Checkbutton(left_panel, text="✓ Select All", variable=select_all_var,
+                      command=toggle_all, font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                      bg=S.BG_CARD, fg=S.FG_PRIMARY, selectcolor=S.BG_INPUT,
+                      activebackground=S.BG_CARD).pack(anchor="w", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Worker list with checkboxes
+        worker_list_frame = tk.Frame(left_panel, bg=S.BG_INPUT)
+        worker_list_frame.pack(fill="both", expand=True, padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        worker_canvas = tk.Canvas(worker_list_frame, bg=S.BG_INPUT, highlightthickness=0)
+        worker_scrollbar = ttk.Scrollbar(worker_list_frame, orient="vertical", command=worker_canvas.yview)
+        worker_scrollable = tk.Frame(worker_canvas, bg=S.BG_INPUT)
+        
+        worker_scrollable.bind("<Configure>", lambda e: worker_canvas.configure(scrollregion=worker_canvas.bbox("all")))
+        worker_canvas.create_window((0, 0), window=worker_scrollable, anchor="nw")
+        worker_canvas.configure(yscrollcommand=worker_scrollbar.set)
+        
+        worker_canvas.pack(side="left", fill="both", expand=True)
+        worker_scrollbar.pack(side="right", fill="y")
+        
+        # Populate workers
+        worker_vars = {}
+        for w in self.workers:
+            if w.id > 0:  # Only assigned workers
+                var = tk.BooleanVar(value=False)
+                worker_name = self._get_worker_display_name(w.id)
+                cb = tk.Checkbutton(worker_scrollable, text=f"Worker {w.id}: {worker_name}",
+                                  variable=var, font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                                  bg=S.BG_INPUT, fg=S.FG_PRIMARY, selectcolor=S.BG_CARD,
+                                  activebackground=S.BG_INPUT)
+                cb.pack(anchor="w", padx=S.PAD_SM, pady=2)
+                worker_vars[w.id] = var
+        
+        # === PANEL 2: Actions Editor ===
+        right_panel = tk.Frame(paned, bg=S.BG_CARD)
+        paned.add(right_panel)
+        
+        tk.Label(right_panel, text="⚙️ Actions Configuration", 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_LG, "bold"),
+                bg=S.BG_CARD, fg=S.FG_ACCENT).pack(pady=S.PAD_MD)
+        
+        # Action buttons row
+        action_btn_frame = tk.Frame(right_panel, bg=S.BG_CARD)
+        action_btn_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        def switch_use_global():
+            """Switch selected workers to Use Global"""
+            selected = [wid for wid, var in worker_vars.items() if var.get()]
+            if not selected:
+                messagebox.showwarning("Warning", "Please select at least one worker")
+                return
+            
+            for wid in selected:
+                if wid in self._worker_custom_actions:
+                    del self._worker_custom_actions[wid]
+            
+            messagebox.showinfo("Success", f"✓ {len(selected)} worker(s) switched to Use Global")
+            log(f"[UI] Switched {len(selected)} workers to Use Global")
+        
+        def switch_use_custom():
+            """Switch selected workers to Use Custom (copy from global)"""
+            selected = [wid for wid, var in worker_vars.items() if var.get()]
+            if not selected:
+                messagebox.showwarning("Warning", "Please select at least one worker")
+                return
+            
+            for wid in selected:
+                if wid not in self._worker_custom_actions:
+                    # Copy from global
+                    self._worker_custom_actions[wid] = [a.to_dict() for a in self.actions]
+            
+            messagebox.showinfo("Success", f"✓ {len(selected)} worker(s) switched to Use Custom (copied from Global)")
+            log(f"[UI] Switched {len(selected)} workers to Use Custom")
+        
+        def input_global_to_workers():
+            """Import Global actions → selected workers (overwrite custom)"""
+            selected = [wid for wid, var in worker_vars.items() if var.get()]
+            if not selected:
+                messagebox.showwarning("Warning", "Please select at least one worker")
+                return
+            
+            confirm = messagebox.askyesno("Confirm", 
+                f"Overwrite custom actions for {len(selected)} worker(s) with Global actions?")
+            if not confirm:
+                return
+            
+            for wid in selected:
+                self._worker_custom_actions[wid] = [a.to_dict() for a in self.actions]
+            
+            messagebox.showinfo("Success", f"✓ Imported Global → {len(selected)} worker(s)")
+            log(f"[UI] Imported Global to {len(selected)} workers")
+        
+        def output_worker_to_global():
+            """Export first selected worker's actions → Global"""
+            selected = [wid for wid, var in worker_vars.items() if var.get()]
+            if not selected:
+                messagebox.showwarning("Warning", "Please select at least one worker")
+                return
+            
+            first_wid = selected[0]
+            if first_wid not in self._worker_custom_actions:
+                messagebox.showwarning("Warning", f"Worker {first_wid} has no custom actions")
+                return
+            
+            confirm = messagebox.askyesno("Confirm", 
+                f"Overwrite Global actions with Worker {first_wid}'s custom actions?")
+            if not confirm:
+                return
+            
+            # Convert dict → Action objects
+            self.actions = [Action.from_dict(a) for a in self._worker_custom_actions[first_wid]]
+            self._refresh_action_list()
+            
+            messagebox.showinfo("Success", f"✓ Exported Worker {first_wid} → Global")
+            log(f"[UI] Exported Worker {first_wid} to Global")
+        
+        for text, cmd, color in [
+            ("📥 Global → Workers", input_global_to_workers, S.ACCENT_CYAN),
+            ("📤 Worker → Global", output_worker_to_global, S.ACCENT_ORANGE),
+            ("🌐 Use Global", switch_use_global, S.ACCENT_GREEN),
+            ("👤 Use Custom", switch_use_custom, S.ACCENT_PURPLE),
+        ]:
+            btn = tk.Button(action_btn_frame, text=text, command=cmd, width=16,
+                           bg=color, fg=S.FG_PRIMARY, font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                           relief="flat", cursor="hand2")
+            btn.pack(side="left", padx=2)
+        
+        # Info label
+        info_text = ("💡 Tips:\n"
+                    "• Select workers → Use Custom to enable per-worker actions\n"
+                    "• Global → Workers: Import global actions to selected workers\n"
+                    "• Worker → Global: Export first selected worker to global")
+        tk.Label(right_panel, text=info_text, font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                fg=S.FG_MUTED, bg=S.BG_CARD, justify="left").pack(anchor="w", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Action preview tree
+        preview_frame = tk.LabelFrame(right_panel, text=" 📋 Action Preview (from first selected worker) ", 
+                                     font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                     bg=S.BG_CARD, fg=S.FG_ACCENT)
+        preview_frame.pack(fill="both", expand=True, padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        columns = ("#", "Action", "Value", "Label")
+        preview_tree = ttk.Treeview(preview_frame, columns=columns, show="headings", height=12)
+        
+        preview_tree.column("#", width=40, anchor=tk.CENTER)
+        preview_tree.column("Action", width=120, anchor=tk.W)
+        preview_tree.column("Value", width=250, anchor=tk.W)
+        preview_tree.column("Label", width=100, anchor=tk.W)
+        
+        for col in columns:
+            preview_tree.heading(col, text=col)
+        
+        preview_scrollbar = ttk.Scrollbar(preview_frame, orient="vertical", command=preview_tree.yview)
+        preview_tree.configure(yscrollcommand=preview_scrollbar.set)
+        
+        preview_tree.pack(side="left", fill="both", expand=True, padx=S.PAD_SM, pady=S.PAD_SM)
+        preview_scrollbar.pack(side="right", fill="y")
+        
+        def update_preview():
+            """Update action preview from first selected worker"""
+            # Clear preview
+            for item in preview_tree.get_children():
+                preview_tree.delete(item)
+            
+            # Get first selected worker
+            selected = [wid for wid, var in worker_vars.items() if var.get()]
+            if not selected:
+                return
+            
+            first_wid = selected[0]
+            actions = self._get_actions_for_worker(first_wid)
+            
+            for idx, action in enumerate(actions, 1):
+                if isinstance(action, dict):
+                    action_type = action.get("action", "?")
+                    action_obj = Action.from_dict(action)
+                    value_summary = action_obj.get_value_summary()
+                    label = action.get("label", "")
+                else:
+                    action_type = action.action
+                    value_summary = action.get_value_summary()
+                    label = action.label
+                
+                preview_tree.insert("", tk.END, values=(idx, action_type, value_summary, label))
+        
+        # Bind checkbox changes to preview update
+        for var in worker_vars.values():
+            var.trace_add("write", lambda *args: update_preview())
+        
+        # Initial preview
+        update_preview()
+    
+    def _create_single_worker_tab(self, parent, dialog, S):
+        """Create Single Worker Editor tab (Panel 1: Worker List | Panel 2: Actions Editor)"""
+        # Horizontal split
+        paned = tk.PanedWindow(parent, orient=tk.HORIZONTAL, bg=S.BG_CARD,
+                              sashwidth=4, sashrelief=tk.RAISED)
+        paned.pack(fill="both", expand=True)
+        
+        # === PANEL 1: Worker List ===
+        left_panel = tk.Frame(paned, bg=S.BG_CARD)
+        paned.add(left_panel, width=250)
+        
+        tk.Label(left_panel, text="👥 Workers", 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_LG, "bold"),
+                bg=S.BG_CARD, fg=S.FG_ACCENT).pack(pady=S.PAD_MD)
+        
+        # Worker listbox
+        worker_listbox = tk.Listbox(left_panel, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                                    font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                                    selectbackground=S.ACCENT_BLUE, selectmode=tk.SINGLE)
+        worker_listbox.pack(fill="both", expand=True, padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Populate workers
+        worker_id_map = {}
+        for w in self.workers:
+            if w.id > 0:
+                worker_name = self._get_worker_display_name(w.id)
+                display = f"Worker {w.id}: {worker_name}"
+                worker_listbox.insert(tk.END, display)
+                worker_id_map[worker_listbox.size() - 1] = w.id
+        
+        # === PANEL 2: Action List for Selected Worker ===
+        right_panel = tk.Frame(paned, bg=S.BG_CARD)
+        paned.add(right_panel)
+        
+        title_var = tk.StringVar(value="⚙️ Select a worker")
+        tk.Label(right_panel, textvariable=title_var, 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_LG, "bold"),
+                bg=S.BG_CARD, fg=S.FG_ACCENT).pack(pady=S.PAD_MD)
+        
+        # Action list frame
+        action_frame = tk.Frame(right_panel, bg=S.BG_CARD)
+        action_frame.pack(fill="both", expand=True, padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Treeview for actions with more columns like main UI
+        columns = ("#", "Action", "Value", "Label", "Comment")
+        action_tree = ttk.Treeview(action_frame, columns=columns, show="headings", height=16, selectmode="extended")
+        
+        action_tree.column("#", width=30, anchor=tk.CENTER)
+        action_tree.column("Action", width=100, anchor=tk.W)
+        action_tree.column("Value", width=200, anchor=tk.W)
+        action_tree.column("Label", width=80, anchor=tk.W)
+        action_tree.column("Comment", width=120, anchor=tk.W)
+        
+        for col in columns:
+            action_tree.heading(col, text=col)
+        
+        action_scrollbar = ttk.Scrollbar(action_frame, orient="vertical", command=action_tree.yview)
+        action_tree.configure(yscrollcommand=action_scrollbar.set)
+        
+        action_tree.pack(side="left", fill="both", expand=True)
+        action_scrollbar.pack(side="right", fill="y")
+        
+        # Action buttons
+        btn_frame = tk.Frame(right_panel, bg=S.BG_CARD)
+        btn_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_MD)
+        
+        current_worker_id = [None]  # Store current selection
+        
+        def load_worker_actions(worker_id):
+            """Load actions for selected worker into treeview"""
+            current_worker_id[0] = worker_id
+            worker_name = self._get_worker_display_name(worker_id)
+            title_var.set(f"⚙️ Worker {worker_id}: {worker_name}")
+            
+            # Clear tree
+            for item in action_tree.get_children():
+                action_tree.delete(item)
+            
+            # Get actions
+            actions = self._get_actions_for_worker(worker_id)
+            
+            for idx, action in enumerate(actions, 1):
+                if isinstance(action, dict):
+                    action_type = action.get("action", "?")
+                    action_obj = Action.from_dict(action)
+                    value_summary = action_obj.get_value_summary()
+                    label = action.get("label", "")
+                    comment = action.get("comment", "")
+                else:
+                    action_type = action.action
+                    value_summary = action.get_value_summary()
+                    label = action.label
+                    comment = action.comment if hasattr(action, 'comment') else ""
+                
+                action_tree.insert("", tk.END, values=(idx, action_type, value_summary, label, comment))
+        
+        def on_worker_select(event):
+            selection = worker_listbox.curselection()
+            if selection:
+                idx = selection[0]
+                worker_id = worker_id_map.get(idx)
+                if worker_id:
+                    load_worker_actions(worker_id)
+        
+        worker_listbox.bind("<<ListboxSelect>>", on_worker_select)
+        
+        # Right-click menu for action tree
+        def on_action_right_click(event):
+            menu = tk.Menu(dialog, tearoff=0)
+            menu.add_command(label="✏️ Edit", command=lambda: edit_selected_action())
+            menu.add_command(label="📋 Copy", command=lambda: copy_actions())
+            menu.add_command(label="📋 Paste", command=lambda: paste_actions())
+            menu.add_command(label="🗑️ Delete", command=lambda: delete_actions())
+            try:
+                menu.tk_popup(event.x_root, event.y_root)
+            finally:
+                menu.grab_release()
+        
+        action_tree.bind("<Button-3>", on_action_right_click)
+        action_tree.bind("<Double-1>", lambda e: edit_selected_action())
+        
+        def edit_selected_action():
+            selection = action_tree.selection()
+            if not selection or current_worker_id[0] is None:
+                return
+            # Open main action editor dialog for this action
+            values = action_tree.item(selection[0], "values")
+            if values:
+                idx = int(values[0]) - 1
+                # Note: This would need integration with main UI's _open_add_action_dialog
+                messagebox.showinfo("Edit Action", "Use 'Edit Actions' button to modify worker actions")
+        
+        def copy_actions():
+            import json
+            selection = action_tree.selection()
+            if not selection:
+                return
+            
+            copied = []
+            for item in selection:
+                values = action_tree.item(item, "values")
+                if values:
+                    idx = int(values[0]) - 1
+                    actions = self._get_actions_for_worker(current_worker_id[0])
+                    if 0 <= idx < len(actions):
+                        action = actions[idx]
+                        copied.append(action.to_dict() if hasattr(action, 'to_dict') else action)
+            
+            if copied:
+                try:
+                    dialog.clipboard_clear()
+                    dialog.clipboard_append(json.dumps(copied))
+                    log(f"[Editor] Copied {len(copied)} action(s)")
+                except:
+                    pass
+        
+        def paste_actions():
+            messagebox.showinfo("Paste", "Use 'Edit Actions' button to modify worker actions")
+        
+        def delete_actions():
+            messagebox.showinfo("Delete", "Use 'Edit Actions' button to modify worker actions")
+        
+        def edit_worker_actions():
+            if current_worker_id[0] is None:
+                messagebox.showwarning("Warning", "Please select a worker first")
+                return
+            self._edit_worker_actions(current_worker_id[0])
+            # Refresh after edit
+            if current_worker_id[0]:
+                load_worker_actions(current_worker_id[0])
+        
+        def use_global_for_worker():
+            if current_worker_id[0] is None:
+                messagebox.showwarning("Warning", "Please select a worker first")
+                return
+            
+            wid = current_worker_id[0]
+            if wid in self._worker_custom_actions:
+                del self._worker_custom_actions[wid]
+                messagebox.showinfo("Success", f"Worker {wid} now uses Global actions")
+                load_worker_actions(wid)
+        
+        def use_custom_for_worker():
+            if current_worker_id[0] is None:
+                messagebox.showwarning("Warning", "Please select a worker first")
+                return
+            
+            wid = current_worker_id[0]
+            if wid not in self._worker_custom_actions:
+                self._worker_custom_actions[wid] = [a.to_dict() for a in self.actions]
+                messagebox.showinfo("Success", f"Worker {wid} now uses Custom actions (copied from Global)")
+                load_worker_actions(wid)
+        
+        for text, cmd, color in [
+            ("✏️ Edit Actions", edit_worker_actions, S.ACCENT_BLUE),
+            ("🌐 Use Global", use_global_for_worker, S.ACCENT_GREEN),
+            ("👤 Use Custom", use_custom_for_worker, S.ACCENT_PURPLE),
+        ]:
+            btn = tk.Button(btn_frame, text=text, command=cmd, width=14,
+                           bg=color, fg=S.FG_PRIMARY, font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                           relief="flat", cursor="hand2")
+            btn.pack(side="left", padx=2)
     
     def _edit_selected_action(self):
         """Edit the selected action in action list"""
@@ -1822,6 +2567,69 @@ class MainUI:
             if w.id == worker_id:
                 return w
         return None
+    
+    def _detect_adb_serial(self, emulator_name: str, hwnd: Optional[int] = None) -> Optional[str]:
+        """
+        Detect ADB serial for emulator by matching with adb devices list.
+        
+        Strategy (priority order):
+        1. If manual mapping exists in config → use it
+        2. If only 1 device → auto-select
+        3. Query each device for window title match (via adb shell dumpsys)
+        4. Sequential assignment for multiple devices
+        
+        Args:
+            emulator_name: Window title (e.g., "LDPlayer-Zalo1")
+            hwnd: Window handle (for future manual mapping)
+        
+        Returns:
+            ADB serial (e.g., "emulator-5554", "127.0.0.1:5555") or None
+        """
+        try:
+            # Get ADB device list
+            import subprocess
+            result = subprocess.run(
+                ["adb", "devices"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=3
+            )
+            
+            if result.returncode != 0:
+                return None
+            
+            # Parse device list (format: "device_serial\tdevice")
+            lines = result.stdout.strip().split('\n')[1:]  # Skip header "List of devices attached"
+            devices = []
+            for line in lines:
+                parts = line.split('\t')
+                if len(parts) >= 2 and parts[1].strip() == 'device':
+                    devices.append(parts[0].strip())
+            
+            if not devices:
+                log("[UI] No ADB devices found")
+                return None
+            
+            # Strategy 1: Single device → auto-select
+            if len(devices) == 1:
+                log(f"[UI] Auto-selected ADB device: {devices[0]}")
+                return devices[0]
+            
+            # Strategy 2: Multiple devices → Round-robin assignment
+            # Use instance counter to distribute devices
+            if not hasattr(self, '_adb_device_index'):
+                self._adb_device_index = 0
+            
+            selected_device = devices[self._adb_device_index % len(devices)]
+            self._adb_device_index += 1
+            
+            log(f"[UI] Multi-device mode: Assigned '{emulator_name}' → {selected_device} (round-robin)")
+            return selected_device
+            
+        except Exception as e:
+            log(f"[UI] Failed to detect ADB device: {e}")
+            return None
 
     def _edit_worker_actions(self, worker_id: int):
         """Open dialog to edit custom actions for a specific worker - Modern UI"""
@@ -3178,8 +3986,14 @@ class MainUI:
         ctypes.windll.user32.keybd_event(VK_CTRL, 0, 2, 0)
         ctypes.windll.user32.keybd_event(VK_SHIFT, 0, 2, 0)
     
-    def _execute_action(self, action: Action, target_hwnd: Optional[int]):
-        """Execute a single action using SendInput (per spec 6.2)"""
+    def _execute_action(self, action: Action, target_hwnd: Optional[int], adb_serial: Optional[str] = None):
+        """Execute a single action using SendInput (per spec 6.2)
+        
+        Args:
+            action: Action to execute
+            target_hwnd: Target window handle
+            adb_serial: ADB device serial for emulator-based actions
+        """
         import ctypes
         from ctypes import wintypes
         
@@ -3437,7 +4251,8 @@ class MainUI:
                 region=tuple(region) if isinstance(region, list) else region,
                 threshold=v.get("threshold", 0.05),
                 timeout_ms=timeout_seconds * 1000,
-                target_hwnd=target_hwnd or 0
+                target_hwnd=target_hwnd or 0,
+                adb_serial=adb_serial
             )
             
             # Wait for screen change - returns WaitResult object
@@ -3532,7 +4347,8 @@ class MainUI:
                     target_hwnd=target_hwnd or 0,
                     auto_detect=True,
                     auto_detect_count=v.get("auto_detect_count", 3),
-                    stable_count_exit=stable_count_exit
+                    stable_count_exit=stable_count_exit,
+                    adb_serial=adb_serial
                 )
             else:
                 target_rgb = v.get("target_rgb", (255, 255, 255))
@@ -3544,7 +4360,8 @@ class MainUI:
                     timeout_ms=timeout_ms,
                     target_hwnd=target_hwnd or 0,
                     auto_detect=False,
-                    stable_count_exit=stable_count_exit
+                    stable_count_exit=stable_count_exit,
+                    adb_serial=adb_serial
                 )
             
             result = wait.wait(self._playback_stop_event)
@@ -3629,6 +4446,43 @@ class MainUI:
                 # Process result
                 if found and match:
                     log(f"[FIND_IMAGE] Found at ({match.center_x}, {match.center_y}) confidence={match.confidence:.2f}")
+                    
+                    # Motion guard: Wait for motion to stop before clicking
+                    if v.get("motion_guard_enabled", False):
+                        motion_region = v.get("motion_region")
+                        if motion_region and len(motion_region) == 4:
+                            log(f"[FIND_IMAGE] Motion guard active - checking region {motion_region}")
+                            
+                            from core.wait_actions import WaitColorDisappear
+                            
+                            motion_threshold = v.get("motion_threshold", 1.0)  # Variance %
+                            stable_count = v.get("motion_stable_count", 5)
+                            timeout_ms = v.get("motion_timeout_ms", 10000)  # 10s default
+                            
+                            # Use WaitColorDisappear with auto-detect to track animated colors
+                            motion_waiter = WaitColorDisappear(
+                                region=tuple(motion_region),
+                                tolerance=10,
+                                disappear_threshold=motion_threshold,
+                                timeout_ms=timeout_ms,
+                                target_hwnd=target_hwnd or 0,
+                                auto_detect=True,
+                                auto_detect_count=3,
+                                stable_count_exit=stable_count,
+                                adb_serial=adb_serial
+                            )
+                            
+                            motion_result = motion_waiter.wait()
+                            if motion_result:
+                                log(f"[FIND_IMAGE] Motion stopped - proceeding with click")
+                            else:
+                                log(f"[FIND_IMAGE] Motion guard timeout - skipping click")
+                                # Handle goto for motion timeout
+                                goto_timeout = v.get("goto_motion_timeout", "Next")
+                                if goto_timeout and goto_timeout.startswith("→ "):
+                                    goto_timeout = goto_timeout[2:]
+                                self._handle_goto(goto_timeout)
+                                return  # Exit without clicking
                     
                     # Calculate click position based on setting
                     click_pos = v.get("click_position", "Centered")
@@ -5558,7 +6412,7 @@ class MainUI:
             }
         # V2 Image Actions
         elif action_type == "FIND_IMAGE":
-            return {
+            result = {
                 "template_path": widgets["template_path"].get(),
                 "threshold": widgets["threshold"].get(),
                 "crop_region": widgets.get("crop_region", tk.StringVar()).get(),
@@ -5571,11 +6425,29 @@ class MainUI:
                 "save_y_var": widgets.get("save_y_var", tk.StringVar(value="$foundY")).get(),
                 "goto_if_found": widgets.get("goto_if_found", tk.StringVar(value="Next")).get(),
                 "goto_found_label": widgets.get("goto_found_label", tk.StringVar()).get(),
+                # Motion Guard options
+                "motion_guard_enabled": widgets.get("motion_guard_enabled", tk.BooleanVar(value=False)).get(),
+                "motion_threshold": widgets.get("motion_threshold", tk.DoubleVar(value=1.0)).get(),
+                "motion_stable_count": widgets.get("motion_stable_count", tk.IntVar(value=5)).get(),
+                "motion_timeout_ms": widgets.get("motion_timeout_ms", tk.IntVar(value=10000)).get(),
+                "goto_motion_timeout": widgets.get("goto_motion_timeout", tk.StringVar(value="Next")).get(),
                 # If Not Found options
                 "retry_seconds": widgets.get("retry_seconds", tk.IntVar(value=30)).get(),
                 "goto_if_not_found": widgets.get("goto_if_not_found", tk.StringVar(value="Next")).get(),
                 "goto_notfound_label": widgets.get("goto_notfound_label", tk.StringVar()).get(),
             }
+            
+            # Parse motion_region from string to list
+            motion_region_str = widgets.get("motion_region", tk.StringVar()).get()
+            if motion_region_str and motion_region_str.strip():
+                try:
+                    parts = [int(p.strip()) for p in motion_region_str.split(',')]
+                    if len(parts) == 4:
+                        result["motion_region"] = parts
+                except:
+                    pass  # Invalid format, skip
+            
+            return result
         elif action_type == "CAPTURE_IMAGE":
             return {
                 "save_path": widgets["save_path"].get(),
@@ -6759,6 +7631,138 @@ class MainUI:
         # Hidden compatibility var
         click_type_var = tk.StringVar(value=value.get("click_type", "left"))
         widgets["click_type"] = click_type_var
+        
+        # ==================== MOTION GUARD (NEW) ====================
+        motion_frame = tk.LabelFrame(parent, text=" 🎭 Motion Guard (Wait for Motion to Stop) ", 
+                                     font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                     bg=S.BG_CARD, fg=S.ACCENT_CYAN,
+                                     padx=S.PAD_MD, pady=S.PAD_MD)
+        motion_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        # Enable motion guard
+        motion_enabled_var = tk.BooleanVar(value=value.get("motion_guard_enabled", False))
+        tk.Checkbutton(motion_frame, text="✓ Check motion before clicking (e.g., wait for spin arc to stop)",
+                      variable=motion_enabled_var,
+                      font=(S.FONT_FAMILY, S.FONT_SIZE_MD), bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                      selectcolor=S.BG_INPUT, activebackground=S.BG_CARD).pack(anchor="w", pady=2)
+        widgets["motion_guard_enabled"] = motion_enabled_var
+        
+        # Motion region row
+        motion_region_row = tk.Frame(motion_frame, bg=S.BG_CARD)
+        motion_region_row.pack(fill="x", pady=2)
+        
+        tk.Label(motion_region_row, text="Motion region (x,y,x2,y2):", 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD), 
+                fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left")
+        
+        motion_region_var = tk.StringVar(value=",".join(map(str, value.get("motion_region", []))) if value.get("motion_region") else "")
+        motion_region_entry = tk.Entry(motion_region_row, textvariable=motion_region_var, width=25, 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                bg=S.BG_INPUT, fg=S.FG_PRIMARY, insertbackground=S.FG_PRIMARY,
+                relief="flat", highlightthickness=1, highlightbackground=S.BORDER_COLOR)
+        motion_region_entry.pack(side="left", padx=5)
+        widgets["motion_region"] = motion_region_var
+        
+        def crop_motion_region():
+            """Crop motion check region from screen"""
+            from core.capture_utils import CaptureOverlay
+            import ctypes
+            
+            target_hwnd = getattr(self, '_capture_target_hwnd', None)
+            emu_bounds = None
+            
+            if target_hwnd:
+                try:
+                    user32 = ctypes.windll.user32
+                    class RECT(ctypes.Structure):
+                        _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
+                                   ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
+                    class POINT(ctypes.Structure):
+                        _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+                    
+                    rect = RECT()
+                    user32.GetClientRect(target_hwnd, ctypes.byref(rect))
+                    pt = POINT(0, 0)
+                    user32.ClientToScreen(target_hwnd, ctypes.byref(pt))
+                    client_w = rect.right - rect.left
+                    client_h = rect.bottom - rect.top
+                    emu_bounds = (pt.x, pt.y, pt.x + client_w, pt.y + client_h)
+                except Exception as e:
+                    log(f"[UI] Failed to get hwnd bounds: {e}")
+            
+            def on_crop(result):
+                if result.success:
+                    motion_region_var.set(f"{result.x},{result.y},{result.x2},{result.y2}")
+            
+            overlay = CaptureOverlay(self.root, target_hwnd=target_hwnd)
+            if emu_bounds:
+                overlay._constrain_bounds = emu_bounds
+            overlay.capture_region(on_crop, save_image=False)
+        
+        tk.Button(motion_region_row, text="✂️ Crop", command=crop_motion_region,
+                 font=(S.FONT_FAMILY, S.FONT_SIZE_SM), bg=S.ACCENT_BLUE, fg=S.FG_PRIMARY,
+                 relief="flat", cursor="hand2", width=6).pack(side="left", padx=2)
+        
+        # Threshold and stable count row
+        motion_params_row = tk.Frame(motion_frame, bg=S.BG_CARD)
+        motion_params_row.pack(fill="x", pady=2)
+        
+        tk.Label(motion_params_row, text="Variance threshold (%):", 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD), 
+                fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left")
+        
+        motion_threshold_var = tk.DoubleVar(value=value.get("motion_threshold", 1.0))
+        motion_threshold_spinbox = tk.Spinbox(motion_params_row, from_=0.1, to=10.0, increment=0.1,
+                                   textvariable=motion_threshold_var,
+                                   width=5, font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                                   bg=S.BG_INPUT, fg=S.FG_PRIMARY, buttonbackground=S.BTN_SECONDARY,
+                                   relief="flat", highlightthickness=1, highlightbackground=S.BORDER_COLOR)
+        motion_threshold_spinbox.pack(side="left", padx=5)
+        widgets["motion_threshold"] = motion_threshold_var
+        
+        tk.Label(motion_params_row, text="Stable count:", 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD), 
+                fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left", padx=(15, 0))
+        
+        motion_stable_var = tk.IntVar(value=value.get("motion_stable_count", 5))
+        motion_stable_spinbox = tk.Spinbox(motion_params_row, from_=1, to=50,
+                                   textvariable=motion_stable_var,
+                                   width=5, font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                                   bg=S.BG_INPUT, fg=S.FG_PRIMARY, buttonbackground=S.BTN_SECONDARY,
+                                   relief="flat", highlightthickness=1, highlightbackground=S.BORDER_COLOR)
+        motion_stable_spinbox.pack(side="left", padx=5)
+        widgets["motion_stable_count"] = motion_stable_var
+        
+        tk.Label(motion_params_row, text="Timeout (ms):", 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD), 
+                fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left", padx=(15, 0))
+        
+        motion_timeout_var = tk.IntVar(value=value.get("motion_timeout_ms", 10000))
+        motion_timeout_spinbox = tk.Spinbox(motion_params_row, from_=1000, to=60000, increment=1000,
+                                   textvariable=motion_timeout_var,
+                                   width=7, font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                                   bg=S.BG_INPUT, fg=S.FG_PRIMARY, buttonbackground=S.BTN_SECONDARY,
+                                   relief="flat", highlightthickness=1, highlightbackground=S.BORDER_COLOR)
+        motion_timeout_spinbox.pack(side="left", padx=5)
+        widgets["motion_timeout_ms"] = motion_timeout_var
+        
+        # Goto if motion timeout
+        motion_goto_row = tk.Frame(motion_frame, bg=S.BG_CARD)
+        motion_goto_row.pack(fill="x", pady=2)
+        
+        tk.Label(motion_goto_row, text="If motion timeout:", 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD), 
+                fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left")
+        
+        motion_goto_var = tk.StringVar(value=value.get("goto_motion_timeout", "Next"))
+        motion_goto_combo = ttk.Combobox(motion_goto_row, textvariable=motion_goto_var, width=20,
+                                        values=get_label_list(), state="readonly")
+        motion_goto_combo.pack(side="left", padx=5)
+        widgets["goto_motion_timeout"] = motion_goto_var
+        
+        # Explanation
+        tk.Label(motion_frame, text="💡 Motion guard uses variance detection to wait until animated content stops (e.g., spin arc, loading animation)",
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM), fg=S.FG_MUTED, bg=S.BG_CARD, wraplength=700, justify="left").pack(anchor="w", pady=(5, 0))
         
         # ==================== IF IMAGE IS NOT FOUND ====================
         notfound_frame = tk.LabelFrame(parent, text=" ❌ If Image is NOT FOUND ", 
@@ -9101,6 +10105,9 @@ class MainUI:
         from core.adb_manager import ADBManager
         from initialize_workers import detect_ldplayer_windows
         
+        # Refresh workers first to ensure list is up-to-date
+        self._refresh_workers_silent()
+        
         msg = "=== LDPlayer Detection ===\n\n"
         
         # Check windows first
@@ -9181,6 +10188,67 @@ class MainUI:
                 del self.command_tree_items[name]
             self._save_macros()
 
+    def _refresh_workers_silent(self):
+        """Refresh workers without showing messagebox (for internal use)"""
+        from initialize_workers import detect_ldplayer_windows
+        from core.worker import Worker
+        
+        # Detect LDPlayer windows
+        windows = detect_ldplayer_windows()
+        
+        if not windows:
+            return False
+        
+        # Clean up stale assignments
+        current_hwnds = [str(w['hwnd']) for w in windows]
+        self.worker_mgr.cleanup_stale_assignments(current_hwnds)
+        
+        # Update workers list
+        new_workers = []
+        for window in windows:
+            hwnd = window['hwnd']
+            
+            # Filter out LDMultiPlayer window
+            if 'LDMultiPlayer' in window['title'] or 'MultiPlayer' in window['title']:
+                continue
+            
+            # Check if already assigned
+            worker_id = self.worker_mgr.get_worker_id(str(hwnd))
+            
+            if worker_id:
+                existing = [w for w in self.workers if w.id == worker_id]
+                if existing:
+                    new_workers.append(existing[0])
+                else:
+                    adb_serial = self._detect_adb_serial(window['title'], hwnd=hwnd)
+                    worker = Worker(
+                        worker_id=worker_id,
+                        hwnd=hwnd,
+                        client_rect=(window['x'], window['y'], window['width'], window['height']),
+                        res_width=540, res_height=960,
+                        adb_device=adb_serial
+                    )
+                    worker.emulator_name = window['title']
+                    new_workers.append(worker)
+            else:
+                temp_id = -(hwnd % 10000)
+                adb_serial = self._detect_adb_serial(window['title'], hwnd=hwnd)
+                worker = Worker(
+                    worker_id=temp_id,
+                    hwnd=hwnd,
+                    client_rect=(window['x'], window['y'], window['width'], window['height']),
+                    res_width=540, res_height=960,
+                    adb_device=adb_serial
+                )
+                worker._window_title = window['title']
+                worker.emulator_name = window['title']
+                worker._is_assigned = False
+                new_workers.append(worker)
+        
+        self.workers = new_workers
+        self._auto_refresh_status()
+        return True
+
     def refresh_workers(self):
         """Scan LDPlayer windows và hiển thị trong danh sách Worker Status"""
         from initialize_workers import detect_ldplayer_windows
@@ -9205,6 +10273,11 @@ class MainUI:
         for window in windows:
             hwnd = window['hwnd']
             
+            # Filter out LDMultiPlayer window
+            if 'LDMultiPlayer' in window['title'] or 'MultiPlayer' in window['title']:
+                log(f"[UI] Filtered out: {window['title']}")
+                continue
+            
             # Check if already assigned
             worker_id = self.worker_mgr.get_worker_id(str(hwnd))
             
@@ -9214,27 +10287,35 @@ class MainUI:
                 if existing:
                     new_workers.append(existing[0])
                 else:
+                    # Detect ADB serial for this emulator
+                    adb_serial = self._detect_adb_serial(window['title'], hwnd=hwnd)
+                    
                     # Create worker with assigned ID
                     worker = Worker(
                         worker_id=worker_id,
                         hwnd=hwnd,
                         client_rect=(window['x'], window['y'], window['width'], window['height']),
                         res_width=540, res_height=960,
-                        adb_device=None
+                        adb_device=adb_serial
                     )
+                    # Store emulator name
+                    worker.emulator_name = window['title']
                     new_workers.append(worker)
             else:
                 # Not assigned yet - create temp worker with negative ID (placeholder)
                 temp_id = -(hwnd % 10000)  # Negative ID = not assigned
+                adb_serial = self._detect_adb_serial(window['title'], hwnd=hwnd)
+                
                 worker = Worker(
                     worker_id=temp_id,
                     hwnd=hwnd,
                     client_rect=(window['x'], window['y'], window['width'], window['height']),
                     res_width=540, res_height=960,
-                    adb_device=None
+                    adb_device=adb_serial
                 )
                 # Store window info for display
                 worker._window_title = window['title']
+                worker.emulator_name = window['title']
                 worker._is_assigned = False
                 new_workers.append(worker)
         
@@ -9302,7 +10383,12 @@ class MainUI:
             # Re-detect LDPlayer windows
             fresh_windows = detect_ldplayer_windows()
             ldplayer_list.clear()
-            ldplayer_list.extend([(w['hwnd'], w['title']) for w in fresh_windows])
+            for w in fresh_windows:
+                # Filter out LDMultiPlayer/MultiPlayer
+                if 'LDMultiPlayer' in w['title'] or 'MultiPlayer' in w['title']:
+                    log(f"[UI] Set Worker: Filtered out {w['title']}")
+                    continue
+                ldplayer_list.append((w['hwnd'], w['title']))
             log(f"[UI] Refresh: detected {len(ldplayer_list)} LDPlayer windows")
             
             # Clean up stale assignments (hwnd không còn tồn tại)
@@ -9392,19 +10478,22 @@ class MainUI:
                                 user32.GetWindowTextW(hwnd, buff, length + 1)
                                 emulator_name = buff.value if buff.value else f"LDPlayer-{worker_id}"
                                 
+                                # Detect ADB serial
+                                adb_serial = self._detect_adb_serial(emulator_name, hwnd=hwnd)
+                                
                                 # Create new Worker
                                 worker = Worker(
                                     worker_id=worker_id,
                                     hwnd=hwnd,
                                     client_rect=(x, y, width, height),
                                     res_width=540, res_height=960,
-                                    adb_device=None
+                                    adb_device=adb_serial
                                 )
                                 # Add emulator name as custom attribute
                                 worker.emulator_name = emulator_name
                                 self.workers.append(worker)
                                 new_workers_created += 1
-                                log(f"[UI] Created Worker {worker_id} '{emulator_name}' for hwnd={hwnd}")
+                                log(f"[UI] Created Worker {worker_id} '{emulator_name}' (ADB: {adb_serial}) for hwnd={hwnd}")
                             except Exception as e:
                                 log(f"[UI] Failed to create worker: {e}")
                 
@@ -9473,7 +10562,12 @@ class MainUI:
         tk.Button(action_frame, text="🔄 Refresh", command=refresh_dialog,
                   bg=S.ACCENT_ORANGE, fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold"),
                   relief="flat", cursor="hand2", width=10).pack(side="left", padx=3)
-        tk.Button(action_frame, text="✓ Close", command=dialog.destroy,
+        
+        def close_and_refresh():
+            self._refresh_workers_silent()
+            dialog.destroy()
+        
+        tk.Button(action_frame, text="✓ Close", command=close_and_refresh,
                   bg=S.ACCENT_BLUE, fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold"),
                   relief="flat", cursor="hand2", width=8).pack(side="left", padx=3)
         
@@ -9526,6 +10620,13 @@ class MainUI:
 
     def _auto_refresh_status(self):
         S = ModernStyle  # For zebra striping
+        
+        # Preserve current selection
+        selected_ids = []
+        for item in self.worker_tree.selection():
+            values = self.worker_tree.item(item, "values")
+            if values:
+                selected_ids.append(str(values[0]))  # Store display ID as string
         
         # Clear existing items
         for item in self.worker_tree.get_children():
@@ -9593,10 +10694,17 @@ class MainUI:
             if not is_assigned:
                 tags.append("warning")  # Yellow-ish for "needs action"
 
-            # Insert row with new column order: ID, Name, Worker, Status, Actions
-            item_id = self.worker_tree.insert("", tk.END, values=(display_id, name, worker_id_text, status, actions_text), tags=tags)
+            # Insert row with new column order: ID, Name, Worker, Status (removed Actions)
+            item_id = self.worker_tree.insert("", tk.END, values=(display_id, name, worker_id_text, status), tags=tags)
             if w.id > 0:
                 self.worker_tree_items[w.id] = item_id
+
+        # Restore selection
+        if selected_ids:
+            for item in self.worker_tree.get_children():
+                values = self.worker_tree.item(item, "values")
+                if values and str(values[0]) in selected_ids:
+                    self.worker_tree.selection_add(item)
 
         self.root.after(self.REFRESH_MS, self._auto_refresh_status)
 
@@ -9729,6 +10837,22 @@ class MainUI:
         info_frame.pack(fill="x", padx=S.PAD_XL, pady=S.PAD_MD)
         tk.Label(info_frame, text="💡 Tip: Use F1-F12, or combinations like Ctrl+Shift+R",
                 font=(S.FONT_FAMILY, S.FONT_SIZE_SM), fg=S.FG_MUTED, bg=S.BG_PRIMARY).pack()
+        
+        # Play All mini toolbar info
+        toolbar_info_frame = tk.LabelFrame(dialog, text=" Play All Mini Toolbar (Fixed) ", 
+                                          font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                          bg=S.BG_CARD, fg=S.ACCENT_CYAN)
+        toolbar_info_frame.pack(fill="x", padx=S.PAD_XL, pady=S.PAD_MD)
+        
+        tk.Label(toolbar_info_frame, text="F10 = ▶ Play All", 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD), bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                anchor="w").pack(padx=S.PAD_MD, pady=2, fill="x")
+        tk.Label(toolbar_info_frame, text="F12 = ⏹ Stop All", 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD), bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                anchor="w").pack(padx=S.PAD_MD, pady=2, fill="x")
+        tk.Label(toolbar_info_frame, text="⚠️ Only active when mini toolbar has focus", 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM), bg=S.BG_CARD, fg=S.FG_MUTED,
+                anchor="w").pack(padx=S.PAD_MD, pady=2, fill="x")
         
         # Buttons
         btn_frame = tk.Frame(dialog, bg=S.BG_PRIMARY)

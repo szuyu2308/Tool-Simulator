@@ -11,6 +11,8 @@ from __future__ import annotations
 import time
 import os
 import threading
+import subprocess
+import io
 from abc import ABC, abstractmethod
 from typing import Optional, Tuple, Callable, Any
 from dataclasses import dataclass
@@ -173,18 +175,54 @@ class WaitScreenChange(WaitAction):
                  region: Tuple[int, int, int, int],
                  threshold: float = 0.235,
                  timeout_ms: int = 30000,
-                 target_hwnd: int = 0):
+                 target_hwnd: int = 0,
+                 adb_serial: Optional[str] = None):
         """
         Args:
             region: (x1, y1, x2, y2) region to monitor
             threshold: Change threshold (0.0 - 1.0)
             timeout_ms: Timeout in milliseconds
             target_hwnd: Target window handle (0 for screen coords)
+            adb_serial: If set, capture via ADB screencap using emulator coordinates
         """
         self.region = region
         self.threshold = threshold
         self.timeout_ms = timeout_ms
         self.target_hwnd = target_hwnd
+        self.adb_serial = adb_serial
+    
+    def _capture_region_adb(self) -> Optional[bytes]:
+        """Capture region using ADB screencap (region is in emulator coordinates)."""
+        try:
+            from PIL import Image
+        except ImportError:
+            log("[WAIT] Pillow not installed; cannot use ADB capture. Install: pip install pillow")
+            return None
+        
+        x1, y1, x2, y2 = self.region
+        if not self.adb_serial:
+            return None
+        
+        try:
+            # exec-out returns raw PNG bytes
+            p = subprocess.run(
+                ["adb", "-s", self.adb_serial, "exec-out", "screencap", "-p"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=max(5, int(self.timeout_ms / 1000)),
+                check=False,
+            )
+            if p.returncode != 0 or not p.stdout:
+                log(f"[WAIT] ADB screencap failed ({self.adb_serial}): {p.stderr.decode(errors='ignore')}")
+                return None
+            
+            img = Image.open(io.BytesIO(p.stdout)).convert("RGBA")
+            crop = img.crop((x1, y1, x2, y2))
+            # Return BGRA bytes to match existing pixel loops
+            return crop.tobytes("raw", "BGRA")
+        except Exception as e:
+            log(f"[WAIT] ADB capture error ({self.adb_serial}): {e}")
+            return None
     
     def _capture_region(self) -> Optional[bytes]:
         """Capture region as raw pixel data"""
@@ -192,6 +230,10 @@ class WaitScreenChange(WaitAction):
             import mss
             
             x1, y1, x2, y2 = self.region
+            
+            # Prefer ADB capture if adb_serial provided (emulator coordinates)
+            if self.adb_serial:
+                return self._capture_region_adb()
             
             # Convert client to screen coords if needed
             if self.target_hwnd:
@@ -370,7 +412,8 @@ class WaitColorDisappear(WaitAction):
                  target_hwnd: int = 0,
                  auto_detect: bool = False,
                  auto_detect_count: int = 3,
-                 stable_count_exit: int = 0):
+                 stable_count_exit: int = 0,
+                 adb_serial: Optional[str] = None):
         """
         Args:
             region: (x1, y1, x2, y2) region to monitor
@@ -382,6 +425,7 @@ class WaitColorDisappear(WaitAction):
             auto_detect: Auto-detect top colors from baseline
             auto_detect_count: Number of top colors to track (default 3)
             stable_count_exit: If N consecutive checks have identical values, exit (0 = disabled)
+            adb_serial: If set, capture via ADB screencap using emulator coordinates
         """
         self.region = region
         self.target_rgb = target_rgb
@@ -392,7 +436,39 @@ class WaitColorDisappear(WaitAction):
         self.auto_detect = auto_detect
         self.auto_detect_count = auto_detect_count
         self.stable_count_exit = stable_count_exit
+        self.adb_serial = adb_serial
         self.tracked_colors = []  # Will be populated if auto_detect=True
+    
+    def _capture_region_adb(self) -> Optional[bytes]:
+        """Capture region using ADB screencap (region is in emulator coordinates)."""
+        try:
+            from PIL import Image
+        except ImportError:
+            log("[WAIT_COLOR] Pillow not installed; cannot use ADB capture. Install: pip install pillow")
+            return None
+        
+        x1, y1, x2, y2 = self.region
+        if not self.adb_serial:
+            return None
+        
+        try:
+            p = subprocess.run(
+                ["adb", "-s", self.adb_serial, "exec-out", "screencap", "-p"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=max(5, int(self.timeout_ms / 1000)),
+                check=False,
+            )
+            if p.returncode != 0 or not p.stdout:
+                log(f"[WAIT_COLOR] ADB screencap failed ({self.adb_serial}): {p.stderr.decode(errors='ignore')}")
+                return None
+            
+            img = Image.open(io.BytesIO(p.stdout)).convert("RGBA")
+            crop = img.crop((x1, y1, x2, y2))
+            return crop.tobytes("raw", "BGRA")
+        except Exception as e:
+            log(f"[WAIT_COLOR] ADB capture error ({self.adb_serial}): {e}")
+            return None
     
     def _capture_region(self) -> Optional[bytes]:
         """Capture region as raw pixel data"""
@@ -400,6 +476,11 @@ class WaitColorDisappear(WaitAction):
             import mss
             
             x1, y1, x2, y2 = self.region
+            
+            # Prefer ADB capture if adb_serial provided (emulator coordinates)
+            if self.adb_serial:
+                log(f"[WAIT_COLOR_DISAPPEAR] Debug: Capture source: ADB ({self.adb_serial}), region: {self.region}")
+                return self._capture_region_adb()
             
             # Convert client to screen coords if needed
             if self.target_hwnd:
