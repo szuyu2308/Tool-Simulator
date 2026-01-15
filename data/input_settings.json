@@ -1,0 +1,6 @@
+{
+  "click_method": "ADB Tap",
+  "find_image_click_method": "ADB Tap",
+  "drag_method": "SetCursorPos",
+  "show_guide_on_startup": false
+}
