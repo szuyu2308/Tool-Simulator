@@ -15,8 +15,11 @@ echo.
 :: ============================================================
 set APP_NAME=AutoTool
 set MAIN_FILE=app.py
-set ICON_FILE=
+set ICON_FILE=icon.ico
 set OUTPUT_DIR=dist
+
+:: Fix Python encoding issues
+set PYTHONIOENCODING=utf-8
 
 :: ============================================================
 :: CHECK REQUIREMENTS
@@ -66,25 +69,24 @@ echo     ✅ Đã dọn dẹp
 :: BUILD WITH NUITKA
 :: ============================================================
 echo.
-echo [3/5] 🔨 Đang build EXE với Nuitka...
+echo [3/4] 🔨 Đang build EXE với Nuitka...
 echo     ⏳ Quá trình này mất 3-10 phút (lần đầu lâu hơn)
 echo.
 
 python -m nuitka ^
     --standalone ^
     --onefile ^
-    --windows-console-mode=attach ^
+    --windows-console-mode=force ^
     --output-dir=%OUTPUT_DIR% ^
     --output-filename=%APP_NAME%.exe ^
     --enable-plugin=tk-inter ^
-    --include-data-dir=data=data ^
-    --include-data-dir=profiles=profiles ^
-    --include-data-dir=handlers=handlers ^
-    --include-data-dir=detectors=detectors ^
+    --enable-plugin=numpy ^
+    --enable-plugin=multiprocessing ^
     --follow-imports ^
+    --follow-stdlib ^
     --assume-yes-for-downloads ^
     --remove-output ^
-    --lto=yes ^
+    --lto=no ^
     --jobs=4 ^
     --show-progress ^
     --show-memory ^
@@ -97,33 +99,10 @@ if errorlevel 1 (
 )
 
 :: ============================================================
-:: COPY ADDITIONAL FILES
-:: ============================================================
-echo.
-echo [4/5] 📁 Sao chép files bổ sung...
-
-:: Create necessary folders in dist if onefile didn't include them
-if not exist "%OUTPUT_DIR%\data" mkdir "%OUTPUT_DIR%\data"
-if not exist "%OUTPUT_DIR%\data\macros" mkdir "%OUTPUT_DIR%\data\macros"
-if not exist "%OUTPUT_DIR%\profiles" mkdir "%OUTPUT_DIR%\profiles"
-if not exist "%OUTPUT_DIR%\logs" mkdir "%OUTPUT_DIR%\logs"
-
-:: Copy data files (json configs)
-xcopy /Y /Q "data\*.json" "%OUTPUT_DIR%\data\" >nul 2>&1
-
-:: Copy profiles
-xcopy /Y /Q /E /I "profiles" "%OUTPUT_DIR%\profiles" >nul 2>&1
-
-:: Copy macros
-xcopy /Y /Q /E /I "data\macros" "%OUTPUT_DIR%\data\macros" >nul 2>&1
-
-echo     ✅ Đã sao chép
-
-:: ============================================================
 :: DONE
 :: ============================================================
 echo.
-echo [5/5] ✅ BUILD HOÀN TẤT!
+echo [4/4] ✅ BUILD HOÀN TẤT!
 echo.
 echo ╔══════════════════════════════════════════════════════════════╗
 echo ║  📦 Output: %OUTPUT_DIR%\%APP_NAME%.exe
@@ -149,7 +128,19 @@ set /p RUN="▶️ Chạy thử exe ngay? (Y/N): "
 if /i "%RUN%"=="Y" (
     echo.
     echo 🚀 Đang khởi động...
-    start "" "%OUTPUT_DIR%\%APP_NAME%.exe"
+    echo ⚠️ Cửa sổ console sẽ mở để xem lỗi (nếu có)
+    echo.
+    cd "%OUTPUT_DIR%"
+    "%APP_NAME%.exe"
+    echo.
+    echo ══════════════════════════════════════════════════════════════
+    if errorlevel 1 (
+        echo ❌ App thoát với lỗi! Kiểm tra thông báo bên trên.
+    ) else (
+        echo ✅ App đã thoát bình thường
+    )
+    echo ══════════════════════════════════════════════════════════════
+    cd ..
 )
 
 goto :end
