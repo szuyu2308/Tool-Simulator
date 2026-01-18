@@ -717,9 +717,19 @@ class Action:
             btn = v.get("button", "left")
             x, y = v.get("x", 0), v.get("y", 0)
             hold_ms = v.get("hold_ms", 0)
+            
+            # Build base text
             if btn in ("hold_left", "hold_right"):
-                return f"{btn} {hold_ms}ms ({x}, {y})"
-            return f"{btn} ({x}, {y})"
+                text = f"{btn} {hold_ms}ms ({x}, {y})"
+            else:
+                text = f"{btn} ({x}, {y})"
+            
+            # Add schedule indicator if enabled
+            if v.get("schedule_enabled", False):
+                schedule_time = v.get("schedule_time", "??:??:??")
+                text = f"⏰{schedule_time} " + text
+            
+            return text
         elif self.action == "WAIT":
             ms = v.get("ms", 0)
             return f"{ms}ms"
@@ -4596,6 +4606,56 @@ class MainUI:
             hold_ms = v.get("hold_ms", 0)
             use_current_pos = v.get("use_current_pos", False)
             
+            # Check if this is a scheduled click
+            if v.get("schedule_enabled", False):
+                import datetime
+                schedule_time_str = v.get("schedule_time", "23:59:59")
+                
+                try:
+                    # Parse scheduled time
+                    time_parts = schedule_time_str.split(":")
+                    target_hour = int(time_parts[0])
+                    target_minute = int(time_parts[1])
+                    target_second = int(time_parts[2])
+                    
+                    log(f"[CLICK] Scheduled for {schedule_time_str}, waiting...")
+                    
+                    # Wait until scheduled time
+                    while True:
+                        now = datetime.datetime.now()
+                        
+                        # Check if stop/pause requested
+                        if self._playback_stop_event.is_set():
+                            log(f"[CLICK] Schedule cancelled (stop requested)")
+                            return
+                        
+                        while self._playback_pause_event.is_set():
+                            if self._playback_stop_event.is_set():
+                                return
+                            time.sleep(0.1)
+                        
+                        # Check if target time reached
+                        if (now.hour == target_hour and 
+                            now.minute == target_minute and 
+                            now.second == target_second):
+                            log(f"[CLICK] Scheduled time reached: {schedule_time_str}, executing click")
+                            break
+                        
+                        # Check if target time has passed (schedule for tomorrow)
+                        target_time = now.replace(hour=target_hour, minute=target_minute, second=target_second, microsecond=0)
+                        if now > target_time:
+                            log(f"[CLICK] Scheduled time {schedule_time_str} has passed today, will execute next occurrence")
+                            # Wait for next occurrence (could be tomorrow)
+                            # For now, wait 1 second and check again
+                            time.sleep(1)
+                            continue
+                        
+                        # Sleep for 0.5 second to avoid busy wait
+                        time.sleep(0.5)
+                    
+                except Exception as e:
+                    log(f"[CLICK] Schedule error: {e}, executing immediately")
+            
             # Determine target mode for this action
             # - Respect saved target_mode from user's choice (screen vs emulator)
             # - Legacy actions without target_mode: infer from screen_coords flag
@@ -6892,6 +6952,182 @@ class MainUI:
         
         btn_var.trace_add("write", update_hint)
         update_hint()  # Initial update
+        
+        # ============================================================
+        # SCHEDULE CLICK SECTION (NEW FEATURE)
+        # ============================================================
+        # Outer container with border for visibility
+        schedule_outer = tk.Frame(parent, bg=S.ACCENT_PURPLE, padx=2, pady=2)
+        schedule_outer.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_MD)
+        
+        schedule_container = tk.Frame(schedule_outer, bg=S.BG_CARD)
+        schedule_container.pack(fill="x")
+        
+        # Title row
+        schedule_title_frame = tk.Frame(schedule_container, bg=S.BG_CARD)
+        schedule_title_frame.pack(fill="x", padx=S.PAD_SM, pady=(S.PAD_SM, S.PAD_XS))
+        
+        tk.Label(schedule_title_frame, text="⏰ SCHEDULE CLICK", 
+                bg=S.BG_CARD, fg=S.ACCENT_PURPLE,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold")).pack(side="left")
+        
+        # Checkbox to enable schedule
+        schedule_enabled_var = tk.BooleanVar(value=value.get("schedule_enabled", False))
+        schedule_cb = tk.Checkbutton(schedule_title_frame, text="Enable", 
+                                    variable=schedule_enabled_var,
+                                    bg=S.BG_CARD, fg=S.ACCENT_GREEN, selectcolor=S.BG_INPUT,
+                                    activebackground=S.BG_CARD, activeforeground=S.ACCENT_GREEN,
+                                    font=(S.FONT_FAMILY, S.FONT_SIZE_SM))
+        schedule_cb.pack(side="left", padx=S.PAD_MD)
+        widgets["schedule_enabled"] = schedule_enabled_var
+        
+        # Current time display (always visible)
+        current_time_label = tk.Label(schedule_title_frame, text="", bg=S.BG_CARD, fg=S.ACCENT_BLUE,
+                                     font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold"))
+        current_time_label.pack(side="right", padx=S.PAD_SM)
+        
+        def update_current_time():
+            """Update current time display"""
+            import datetime
+            now = datetime.datetime.now()
+            current_time_label.config(text=f"🕐 NOW: {now.strftime('%H:%M:%S')}")
+            # Schedule next update in 1 second
+            try:
+                if dialog and hasattr(dialog, 'winfo_exists') and dialog.winfo_exists():
+                    dialog.after(1000, update_current_time)
+            except:
+                pass
+        
+        # Start time update loop immediately
+        if dialog and hasattr(dialog, 'after'):
+            update_current_time()
+        
+        # Time input row
+        schedule_input_frame = tk.Frame(schedule_container, bg=S.BG_CARD)
+        schedule_input_frame.pack(fill="x", padx=S.PAD_SM, pady=S.PAD_XS)
+        
+        tk.Label(schedule_input_frame, text="Set Time (24h):", bg=S.BG_CARD, fg=S.FG_SECONDARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=(0, S.PAD_SM))
+        
+        # Parse existing schedule time or default
+        schedule_time_str = value.get("schedule_time", "23:59:59")
+        time_parts = schedule_time_str.split(":")
+        
+        hour_var = tk.StringVar(value=time_parts[0] if len(time_parts) > 0 else "23")
+        minute_var = tk.StringVar(value=time_parts[1] if len(time_parts) > 1 else "59")
+        second_var = tk.StringVar(value=time_parts[2] if len(time_parts) > 2 else "59")
+        
+        # Hour input (00-23) - ALWAYS EDITABLE
+        hour_entry = S.create_entry(schedule_input_frame, textvariable=hour_var, width=4)
+        hour_entry.pack(side="left")
+        tk.Label(schedule_input_frame, text=":", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold")).pack(side="left")
+        
+        # Minute input (00-59) - ALWAYS EDITABLE
+        minute_entry = S.create_entry(schedule_input_frame, textvariable=minute_var, width=4)
+        minute_entry.pack(side="left")
+        tk.Label(schedule_input_frame, text=":", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold")).pack(side="left")
+        
+        # Second input (00-59) - ALWAYS EDITABLE
+        second_entry = S.create_entry(schedule_input_frame, textvariable=second_var, width=4)
+        second_entry.pack(side="left")
+        
+        widgets["schedule_hour"] = hour_var
+        widgets["schedule_minute"] = minute_var
+        widgets["schedule_second"] = second_var
+        
+        # Sync time button (NTP) - ALWAYS CLICKABLE
+        def sync_time_online():
+            """Sync time with NTP server"""
+            import socket
+            import struct
+            import datetime
+            
+            try:
+                # Use Google's NTP server
+                ntp_server = "time.google.com"
+                ntp_port = 123
+                
+                # NTP packet format
+                client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                client.settimeout(5)
+                
+                # NTP request packet
+                data = b'\x1b' + 47 * b'\0'
+                client.sendto(data, (ntp_server, ntp_port))
+                data, address = client.recvfrom(1024)
+                
+                # Parse NTP response
+                t = struct.unpack('!12I', data)[10]
+                t -= 2208988800  # Convert from NTP epoch to Unix epoch
+                
+                # Convert to local time
+                synced_time = datetime.datetime.fromtimestamp(t)
+                
+                # Update time inputs
+                hour_var.set(f"{synced_time.hour:02d}")
+                minute_var.set(f"{synced_time.minute:02d}")
+                second_var.set(f"{synced_time.second:02d}")
+                
+                # Show success message
+                from tkinter import messagebox
+                messagebox.showinfo("✅ Time Synced", 
+                    f"Đã đồng bộ với {ntp_server}\n"
+                    f"Giờ chuẩn: {synced_time.strftime('%H:%M:%S')}")
+                
+            except Exception as e:
+                from tkinter import messagebox
+                messagebox.showerror("❌ Sync Failed", 
+                    f"Không thể đồng bộ với NTP server:\n{str(e)}\n\n"
+                    f"Đang dùng giờ hệ thống.")
+                
+                # Fallback to system time
+                now = datetime.datetime.now()
+                hour_var.set(f"{now.hour:02d}")
+                minute_var.set(f"{now.minute:02d}")
+                second_var.set(f"{now.second:02d}")
+        
+        sync_btn = S.create_modern_button(schedule_input_frame, "🔄 Sync NTP", sync_time_online, "accent", width=10)
+        sync_btn.pack(side="left", padx=S.PAD_MD)
+        
+        # Use system time button
+        def use_system_time():
+            import datetime
+            now = datetime.datetime.now()
+            hour_var.set(f"{now.hour:02d}")
+            minute_var.set(f"{now.minute:02d}")
+            second_var.set(f"{now.second:02d}")
+        
+        sys_time_btn = S.create_modern_button(schedule_input_frame, "💻 System Time", use_system_time, "secondary", width=12)
+        sys_time_btn.pack(side="left", padx=S.PAD_XS)
+        
+        # Validation for time inputs
+        def validate_time_input(var, max_val):
+            """Validate hour/minute/second input"""
+            def on_change(*args):
+                val = var.get()
+                # Remove non-digits
+                val = ''.join(c for c in val if c.isdigit())
+                # Limit to 2 digits
+                if len(val) > 2:
+                    val = val[:2]
+                # Validate range
+                if val and int(val) > max_val:
+                    val = str(max_val)
+                var.set(val)
+            return on_change
+        
+        hour_var.trace_add("write", validate_time_input(hour_var, 23))
+        minute_var.trace_add("write", validate_time_input(minute_var, 59))
+        second_var.trace_add("write", validate_time_input(second_var, 59))
+        
+        # Info label
+        schedule_info = tk.Label(schedule_container, 
+                               text="💡 Tick 'Enable' để kích hoạt - Click sẽ chờ đến đúng giờ này mới thực hiện", 
+                               bg=S.BG_CARD, fg=S.FG_MUTED,
+                               font=(S.FONT_FAMILY, S.FONT_SIZE_XS))
+        schedule_info.pack(anchor="w", padx=S.PAD_SM, pady=(0, S.PAD_SM))
     
     def _render_wait_action_config(self, parent, widgets, value):
         """Render Wait action config (per spec 5.2)"""
@@ -7275,6 +7511,19 @@ class MainUI:
             mode = get_target_mode()
             if mode == "emulator":
                 result["target_mode"] = "emulator"
+            
+            # Add schedule data if enabled
+            if "schedule_enabled" in widgets:
+                schedule_enabled = widgets["schedule_enabled"].get()
+                if schedule_enabled:
+                    hour = widgets["schedule_hour"].get().zfill(2)
+                    minute = widgets["schedule_minute"].get().zfill(2)
+                    second = widgets["schedule_second"].get().zfill(2)
+                    result["schedule_enabled"] = True
+                    result["schedule_time"] = f"{hour}:{minute}:{second}"
+                else:
+                    result["schedule_enabled"] = False
+            
             return result
         elif action_type == "WAIT":
             return {"ms": widgets["ms"].get()}
@@ -12073,6 +12322,8 @@ class MainUI:
         header.pack(fill="x")
         header.pack_propagate(False)
         tk.Label(header, text="📖 Hướng Dẫn Sử Dụng", 
+                bg=S.BG_SECONDARY, fg=S.FG_PRIMARY).pack(expand=True)
+        tk.Label(header, text="⚠️ Bắt Buộc Bật ADB Giả Lập: Settings → Khác → Debug ADB", 
                 font=(S.FONT_FAMILY, 14, "bold"),
                 bg=S.BG_SECONDARY, fg=S.FG_PRIMARY).pack(expand=True)
         
@@ -12111,7 +12362,7 @@ class MainUI:
                 "title": "GIẢ LẬP ADB",
                 "color": S.ACCENT_GREEN,
                 "content": [
-                    "⚠️ Bắt Buộc: Settings → Khác → Debug ADB"
+                    "⚠️ Bắt Buộc: Settings → Khác → Debug ADB",
                     "Check → Set Worker → Add",
                     "Target Mode = Emulator",
                     "Tọa độ cửa sổ (Client Coordinates)",

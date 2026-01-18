@@ -1,0 +1,9 @@
+2026-01-17 19:06:24,987 | INFO    | [WorkerMgr] Loaded 0 assignments
+2026-01-17 19:06:26,225 | INFO    | [HOTKEY] Registered: ctrl+shift+r -> ctrl+shift+r
+2026-01-17 19:06:26,225 | INFO    | [HOTKEY] Registered: ctrl+shift+p -> ctrl+shift+p
+2026-01-17 19:06:26,225 | INFO    | [HOTKEY] Registered: ctrl+shift+space -> ctrl+shift+space
+2026-01-17 19:06:26,227 | INFO    | [HOTKEY] Registered: ctrl+shift+s -> ctrl+shift+s
+2026-01-17 19:06:26,281 | INFO    | [HOTKEY] GlobalHotkeyManager started
+2026-01-17 19:06:26,281 | INFO    | [UI] Global hotkeys registered
+2026-01-17 19:06:26,310 | INFO    | [UI] Loaded worker actions for 1 workers
+2026-01-17 19:06:26,523 | INFO    | [UI] Global hotkeys registered: {'record': 'F9', 'play': 'F10', 'pause': 'F11', 'stop': 'F12'}
