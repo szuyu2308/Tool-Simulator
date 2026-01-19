@@ -14,8 +14,84 @@ from core.worker import Worker
 from core.adb_manager import ADBManager
 from utils.logger import log
 
-def detect_ldplayer_windows():
-    """Detect active LDPlayer emulator windows - improved matching"""
+# =============================================================================
+# EMULATOR DETECTION - ADB-BASED (Most Reliable)
+# Only detect windows that have active ADB connections
+# =============================================================================
+
+# Known emulator ADB port patterns (for matching hwnd to adb device)
+EMULATOR_ADB_PORTS = {
+    # LDPlayer: emulator-5554, emulator-5556, ...
+    "emulator": {"type": "LDPlayer", "port_start": 5554, "port_end": 5600},
+    # NoxPlayer: 127.0.0.1:62001, 127.0.0.1:62025, ...
+    "62": {"type": "NoxPlayer", "port_start": 62001, "port_end": 62100},
+    # MEmu: 127.0.0.1:21503, 127.0.0.1:21513, ...
+    "21": {"type": "MEmu", "port_start": 21503, "port_end": 21600},
+    # MuMu: 127.0.0.1:7555, ...
+    "75": {"type": "MuMu", "port_start": 7555, "port_end": 7600},
+    # BlueStacks: 127.0.0.1:5555, ...
+    "55": {"type": "BlueStacks", "port_start": 5555, "port_end": 5600},
+}
+
+# Window class names for emulators (used to find window for ADB device)
+EMULATOR_WINDOW_CLASSES = [
+    "LDPlayerMainFrame", "LDPlayerMainWindow",  # LDPlayer
+    "Qt5QWindowIcon", "Qt5152QWindowIcon",  # Nox, MuMu, BlueStacks
+    "BlueStacksApp",  # BlueStacks
+    "neaborwndclass",  # MuMu
+    "QtWindow",  # MEmu
+]
+
+# Exclude these classes completely
+EXCLUDED_CLASSES = [
+    "TkTopLevel", "Tk",  # Tkinter (our UI)
+    "Chrome_WidgetWin_1",  # Chrome
+    "MozillaWindowClass",  # Firefox  
+    "CASCADIA_HOSTING_WINDOW_CLASS",  # Windows Terminal
+    "ConsoleWindowClass",  # CMD/PowerShell
+    "Notepad",  # Notepad
+    "CabinetWClass",  # File Explorer
+    "Shell_TrayWnd",  # Taskbar
+]
+
+
+def get_adb_devices():
+    """Get list of connected ADB devices"""
+    adb = ADBManager()
+    return adb.get_devices()
+
+
+def identify_emulator_type(device_id):
+    """Identify emulator type from ADB device ID"""
+    if not device_id:
+        return "Unknown"
+    
+    device_lower = device_id.lower()
+    
+    # LDPlayer: emulator-5554
+    if device_lower.startswith("emulator-"):
+        return "LDPlayer"
+    
+    # IP:port format
+    if ":" in device_id:
+        try:
+            port = int(device_id.split(":")[-1])
+            if 62001 <= port <= 62100:
+                return "NoxPlayer"
+            elif 21503 <= port <= 21600:
+                return "MEmu"
+            elif 7555 <= port <= 7600:
+                return "MuMu"
+            elif 5555 <= port <= 5600:
+                return "BlueStacks"
+        except:
+            pass
+    
+    return "Unknown"
+
+
+def get_all_visible_windows():
+    """Get all visible windows with their info"""
     windows = []
     
     def enum_handler(hwnd, _):
@@ -28,41 +104,31 @@ def detect_ldplayer_windows():
         
         class_name = win32gui.GetClassName(hwnd)
         
-        # EXCLUDE: Tkinter windows (from our own UI)
-        if class_name == "TkTopLevel" or class_name == "Tk":
+        # Skip excluded classes
+        if class_name in EXCLUDED_CLASSES:
             return
         
-        # Improved matching: check for common LDPlayer window characteristics
-        is_ldplayer = (
-            class_name == "LDPlayerMainFrame" or  # Official LDPlayer class
-            class_name == "LDPlayerMainWindow" or
-            ("LDPlayer" in title and class_name != "TkTopLevel") or  # Title match but not Tkinter
-            (title.startswith("LD") and len(title) < 50)  # Short LD* titles (not full app names)
-        )
-        
-        if is_ldplayer:
-            try:
-                rect = win32gui.GetWindowRect(hwnd)
-                x, y, right, bottom = rect
-                width = right - x
-                height = bottom - y
-                
-                # Filter by minimum size (LDPlayer emulator window should be reasonably large)
-                if width < 300 or height < 300:
-                    return
-                
-                windows.append({
-                    'hwnd': hwnd,
-                    'title': title,
-                    'class': class_name,
-                    'x': x,
-                    'y': y,
-                    'width': width,
-                    'height': height,
-                    'client_rect': (x, y, width, height)
-                })
-            except Exception as e:
-                log(f"[DETECT] Failed to get rect for {title}: {e}")
+        try:
+            rect = win32gui.GetWindowRect(hwnd)
+            x, y, right, bottom = rect
+            width = right - x
+            height = bottom - y
+            
+            # Filter by minimum size (emulator windows are large)
+            if width < 300 or height < 300:
+                return
+            
+            windows.append({
+                'hwnd': hwnd,
+                'title': title,
+                'class': class_name,
+                'x': x,
+                'y': y,
+                'width': width,
+                'height': height,
+            })
+        except:
+            pass
     
     try:
         win32gui.EnumWindows(enum_handler, None)
@@ -70,6 +136,116 @@ def detect_ldplayer_windows():
         log(f"[DETECT] EnumWindows failed: {e}")
     
     return windows
+
+
+def detect_emulator_windows(emulator_types=None):
+    """
+    Detect emulator windows by checking ADB devices first.
+    Only windows that correspond to ADB devices are returned.
+    
+    This is more reliable than window title matching.
+    """
+    # Step 1: Get all ADB devices
+    adb_devices = get_adb_devices()
+    
+    if not adb_devices:
+        log("[DETECT] No ADB devices found - no emulators detected")
+        return []
+    
+    log(f"[DETECT] Found {len(adb_devices)} ADB device(s): {adb_devices}")
+    
+    # Step 2: Get all visible windows that could be emulators
+    all_windows = get_all_visible_windows()
+    
+    # Filter to only emulator-like windows (by class name)
+    potential_emulators = []
+    for w in all_windows:
+        # Check if class name matches known emulator classes
+        if w['class'] in EMULATOR_WINDOW_CLASSES:
+            potential_emulators.append(w)
+        # Also check title for emulator keywords (as backup)
+        elif any(kw in w['title'] for kw in ['LDPlayer', 'BlueStacks', 'NoxPlayer', 'MuMu', 'MEmu']):
+            potential_emulators.append(w)
+    
+    log(f"[DETECT] Found {len(potential_emulators)} potential emulator window(s)")
+    
+    # Step 3: Match ADB devices to windows
+    # For now, we assume each ADB device has a window
+    # We return windows up to the number of ADB devices
+    
+    results = []
+    for i, device_id in enumerate(adb_devices):
+        emu_type = identify_emulator_type(device_id)
+        
+        # Try to find matching window
+        matched_window = None
+        
+        # For each potential emulator window, try to match by emulator type
+        for w in potential_emulators:
+            if w in [r for r in results]:  # Already used
+                continue
+            
+            # Match by class name or title
+            if emu_type == "LDPlayer" and ("LDPlayer" in w['class'] or "LDPlayer" in w['title']):
+                matched_window = w
+                break
+            elif emu_type == "NoxPlayer" and ("Nox" in w['title'] or "Qt5152" in w['class']):
+                matched_window = w
+                break
+            elif emu_type == "BlueStacks" and "BlueStacks" in w['title']:
+                matched_window = w
+                break
+            elif emu_type == "MuMu" and "MuMu" in w['title']:
+                matched_window = w
+                break
+            elif emu_type == "MEmu" and "MEmu" in w['title']:
+                matched_window = w
+                break
+        
+        # If no specific match, use next available window
+        if not matched_window and potential_emulators:
+            for w in potential_emulators:
+                if w not in [r for r in results]:
+                    matched_window = w
+                    break
+        
+        if matched_window:
+            results.append({
+                'hwnd': matched_window['hwnd'],
+                'title': matched_window['title'],
+                'class': matched_window['class'],
+                'emulator_type': emu_type,
+                'adb_device': device_id,
+                'x': matched_window['x'],
+                'y': matched_window['y'],
+                'width': matched_window['width'],
+                'height': matched_window['height'],
+                'client_rect': (matched_window['x'], matched_window['y'], 
+                               matched_window['width'], matched_window['height'])
+            })
+            log(f"[DETECT] Matched ADB {device_id} ({emu_type}) → {matched_window['title']}")
+    
+    log(f"[DETECT] Total detected: {len(results)} emulator(s)")
+    return results
+
+
+def detect_ldplayer_windows():
+    """Backward compatible function - now uses ADB-based detection"""
+    return detect_emulator_windows()
+
+
+# Keep old config for reference
+ENABLED_EMULATORS = ["LDPlayer", "BlueStacks", "NoxPlayer", "MuMu", "MEmu"]
+
+def get_enabled_emulators():
+    """Get list of enabled emulators"""
+    return ENABLED_EMULATORS
+
+def set_enabled_emulators(emulator_list):
+    """Set which emulators to detect"""
+    global ENABLED_EMULATORS
+    ENABLED_EMULATORS = emulator_list
+
 
 def query_ldplayer_devices():
     """Query ADB for LDPlayer device IDs"""

@@ -106,10 +106,8 @@ class CaptureOverlay:
         except Exception as e:
             log(f"[CAPTURE] Failed to show overlay: {e}")
             CaptureOverlay._is_active = False  # Reset on failure
-            try:
-                self._root.deiconify()  # Restore GUI
-            except:
-                pass
+            # Use safe restore method
+            self._safe_restore_gui()
             if callback:
                 callback(CaptureResult(success=False))
     
@@ -139,10 +137,8 @@ class CaptureOverlay:
         except Exception as e:
             log(f"[CAPTURE] Failed to show overlay: {e}")
             CaptureOverlay._is_active = False  # Reset on failure
-            try:
-                self._root.deiconify()  # Restore GUI
-            except:
-                pass
+            # Use safe restore method
+            self._safe_restore_gui()
             if callback:
                 callback(CaptureResult(success=False))
     
@@ -152,9 +148,23 @@ class CaptureOverlay:
         self._root.withdraw()
         self._root.update_idletasks()
         
-        # Get screen dimensions BEFORE creating overlay
+        # Get screen dimensions using multiple methods for debugging
         screen_w = self._root.winfo_screenwidth()
         screen_h = self._root.winfo_screenheight()
+        
+        # Also get via ctypes for comparison
+        import ctypes
+        user32 = ctypes.windll.user32
+        ctypes_w = user32.GetSystemMetrics(0)  # SM_CXSCREEN
+        ctypes_h = user32.GetSystemMetrics(1)  # SM_CYSCREEN
+        
+        log(f"[CAPTURE DEBUG] winfo screen: {screen_w}x{screen_h}")
+        log(f"[CAPTURE DEBUG] ctypes screen: {ctypes_w}x{ctypes_h}")
+        log(f"[CAPTURE DEBUG] root geometry: {self._root.winfo_geometry()}")
+        
+        # Use ctypes values (more reliable)
+        screen_w = ctypes_w
+        screen_h = ctypes_h
         
         # Create overlay window
         self._overlay = tk.Toplevel(self._root)
@@ -162,6 +172,7 @@ class CaptureOverlay:
         
         # Set geometry to cover full screen at position 0,0
         self._overlay.geometry(f"{screen_w}x{screen_h}+0+0")
+        log(f"[CAPTURE DEBUG] Overlay geometry SET: {screen_w}x{screen_h}+0+0")
         
         # Configure window
         self._overlay.configure(bg='gray20')
@@ -221,11 +232,23 @@ class CaptureOverlay:
         self._overlay.lift()
         self._overlay.focus_force()
         
-        # Grab all events (this is key for receiving mouse events)
+        # Grab ALL events globally (this ensures we receive mouse events even over other topmost windows)
         try:
-            self._overlay.grab_set()
-        except:
-            pass
+            self._overlay.grab_set_global()
+        except Exception as e:
+            log(f"[CAPTURE] grab_set_global failed: {e}, trying grab_set")
+            try:
+                self._overlay.grab_set()
+            except:
+                pass
+        
+        # Final debug: actual overlay size after all setup
+        self._overlay.update_idletasks()
+        actual_w = self._overlay.winfo_width()
+        actual_h = self._overlay.winfo_height()
+        actual_x = self._overlay.winfo_x()
+        actual_y = self._overlay.winfo_y()
+        log(f"[CAPTURE DEBUG] Overlay ACTUAL: {actual_w}x{actual_h} at ({actual_x},{actual_y})")
     
     def _on_click(self, event):
         """Handle mouse click"""
@@ -338,13 +361,8 @@ class CaptureOverlay:
         # Close overlay FIRST (this resets _is_active flag)
         self._close_overlay()
         
-        # Restore GUI
-        try:
-            self._root.deiconify()
-            self._root.lift()
-            self._root.focus_force()
-        except Exception as e:
-            log(f"[CAPTURE] Restore warning: {e}")
+        # Restore GUI - Multiple fallback methods for reliability with Nuitka builds
+        self._safe_restore_gui()
         
         # Callback with failure
         if self._callback:
@@ -355,7 +373,7 @@ class CaptureOverlay:
     def _finish_capture(self, screen_x: int, screen_y: int):
         """Finish single point capture"""
         self._close_overlay()
-        self._root.deiconify()
+        self._safe_restore_gui()
         
         # Convert to client coords if target window is set
         client_x, client_y = screen_x, screen_y
@@ -383,13 +401,52 @@ class CaptureOverlay:
             self._callback = None
             callback(result)
 
-    def _restore_gui(self):
-        """Restore the main GUI window."""
-        self._root.deiconify()
+    def _safe_restore_gui(self):
+        """Safely restore GUI window with multiple fallback methods for Nuitka builds"""
         try:
-            self._root.overrideredirect(False)
+            # Method 1: Standard deiconify
+            self._root.deiconify()
+            self._root.update_idletasks()
+            self._root.lift()
+            self._root.focus_force()
+            
+            # Force window to normal state (important for Nuitka builds)
+            try:
+                self._root.state('normal')
+            except:
+                pass
+                
+            # Additional update to ensure window is visible
+            self._root.update()
+            
         except Exception as e:
-            log(f"[CAPTURE] Failed to restore GUI: {e}")
+            log(f"[CAPTURE] Primary restore failed: {e}, trying fallback...")
+            
+            # Fallback: Use withdraw + deiconify cycle
+            try:
+                self._root.withdraw()
+                self._root.update_idletasks()
+                self._root.deiconify()
+                self._root.lift()
+                self._root.focus_force()
+                self._root.update()
+            except Exception as e2:
+                log(f"[CAPTURE] Fallback restore failed: {e2}")
+                
+                # Last resort: Force window visibility using Windows API
+                try:
+                    import ctypes
+                    hwnd = self._root.winfo_id()
+                    # SW_SHOWNORMAL = 1, SW_RESTORE = 9
+                    ctypes.windll.user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+                    ctypes.windll.user32.SetForegroundWindow(hwnd)
+                    log("[CAPTURE] Used Win32 API to restore window")
+                except Exception as e3:
+                    log(f"[CAPTURE] Win32 API restore failed: {e3}")
+    
+    def _restore_gui(self):
+        """Restore the main GUI window. (Deprecated - use _safe_restore_gui instead)"""
+        self._safe_restore_gui()
 
     def _finish_region_capture(self, x1: int, y1: int, x2: int, y2: int):
         """Finish region capture - capture from target window directly"""
@@ -497,12 +554,8 @@ class CaptureOverlay:
 
         log(f"[CAPTURE] Region captured: ({left}, {top}) - ({right}, {bottom}) {'client' if is_client else 'screen'}; img_path={img_path}")
 
-        # Restore GUI
-        try:
-            self._root.deiconify()
-            self._root.lift()
-        except Exception as e:
-            log(f"[CAPTURE] Restore error: {e}")
+        # Restore GUI - Use safe method
+        self._safe_restore_gui()
 
         # Callback
         if self._callback:

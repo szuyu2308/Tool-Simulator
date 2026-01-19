@@ -258,7 +258,8 @@ class FindImage:
             # If region specified, crop the screenshot to region
             if screen is not None and self.region:
                 x1, y1, x2, y2 = self.region
-                # Validate region bounds
+                
+                # Validate region bounds against window size
                 if y2 > screen.shape[0]:
                     y2 = screen.shape[0]
                 if x2 > screen.shape[1]:

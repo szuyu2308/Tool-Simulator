@@ -962,9 +962,15 @@ class MainUI:
                 for img_key, img_b64 in images.items():
                     try:
                         img_data = base64.b64decode(img_b64)
-                        img_path = os.path.join(temp_dir, img_key)
+                        # Ensure proper extension
+                        if not img_key.endswith(('.png', '.jpg', '.jpeg', '.bmp')):
+                            img_key_with_ext = img_key + '.png'
+                        else:
+                            img_key_with_ext = img_key
+                        img_path = os.path.join(temp_dir, img_key_with_ext)
                         with open(img_path, "wb") as f:
                             f.write(img_data)
+                        log(f"[UI] Extracted worker action image: {img_path}")
                     except Exception as e:
                         log(f"[UI] Failed to extract worker action image {img_key}: {e}")
             
@@ -980,13 +986,21 @@ class MainUI:
                             path = action_data.get("value", {}).get("template_path", "")
                             if path.startswith("@embedded:"):
                                 img_key = path.replace("@embedded:", "")
-                                action_data["value"]["template_path"] = os.path.join(temp_dir, img_key)
+                                # Ensure extension
+                                if not img_key.endswith(('.png', '.jpg', '.jpeg', '.bmp')):
+                                    img_key += '.png'
+                                resolved_path = os.path.join(temp_dir, img_key)
+                                action_data["value"]["template_path"] = resolved_path
+                                log(f"[UI] Resolved FIND_IMAGE template: {resolved_path}")
                         
                         if action_data.get("action") == "WAIT_SCREEN_CHANGE":
                             path = action_data.get("value", {}).get("reference_image", "")
                             if path.startswith("@embedded:"):
                                 img_key = path.replace("@embedded:", "")
-                                action_data["value"]["reference_image"] = os.path.join(temp_dir, img_key)
+                                if not img_key.endswith(('.png', '.jpg', '.jpeg', '.bmp')):
+                                    img_key += '.png'
+                                resolved_path = os.path.join(temp_dir, img_key)
+                                action_data["value"]["reference_image"] = resolved_path
                     
                     actions.append(Action.from_dict(action_data))
                 
@@ -1127,7 +1141,7 @@ class MainUI:
         sep1.pack(side="left", padx=S.PAD_SM, pady=2)
         
         # Target Window button (for capture) - Purple
-        self._target_btn_text = tk.StringVar(value="Màn hình")
+        self._target_btn_text = tk.StringVar(value="📺 Screen")  # Default: Full screen
         self.btn_target = S.create_toolbar_button(
             btn_group_left, "Màn hình", "📷", self._select_capture_target,
             color=S.BTN_SCREEN, width=10
@@ -1202,8 +1216,8 @@ class MainUI:
         
         for text, icon, cmd, color in [
             ("Làm mới", "🔄", self.refresh_workers, S.BTN_SECONDARY),
-            ("Cài đặt", "⚙", self.set_worker_dialog, S.ACCENT_BLUE),
-            ("Kiểm tra", "🔍", self.check_status, S.BTN_SECONDARY),
+            ("Set Worker", "⚙", self.set_worker_dialog, S.ACCENT_BLUE),
+            ("Check", "🔍", self.check_status, S.BTN_SECONDARY),
         ]:
             btn = tk.Button(btn_row1, text=f"{icon} {text}", command=cmd,
                            bg=color, fg=S.FG_PRIMARY,
@@ -1218,9 +1232,9 @@ class MainUI:
         btn_row2.pack(fill="x")
         
         for text, icon, cmd, color in [
-            ("Phát tất cả", "▶", self._play_all_workers, S.ACCENT_GREEN),
-            ("Dừng tất cả", "⏹", self._stop_all_workers, S.ACCENT_RED),
-            ("Sửa worker", "🎛", self._open_worker_editor, S.ACCENT_BLUE),
+            ("Play All", "▶", self._play_all_workers, S.ACCENT_GREEN),
+            ("Stop All", "⏹", self._stop_all_workers, S.ACCENT_RED),
+            ("Edit Worker", "🎛", self._open_worker_editor, S.ACCENT_BLUE),
             # ("Xóa", "🗑", self._remove_workers, S.BTN_SECONDARY),
         ]:
             btn = tk.Button(btn_row2, text=f"{icon} {text}", command=cmd,
@@ -1236,8 +1250,8 @@ class MainUI:
         btn_row3.pack(fill="x", pady=(S.PAD_XS, 0))
         
         for text, icon, cmd, color in [
-            ("Đồng bộ→Global", "📥", self._sync_selected_to_global, S.ACCENT_PURPLE),
-            ("Hoàn tác→Global", "🔄", self._revert_selected_to_global, S.ACCENT_ORANGE),
+            # ("Đồng bộ→Global", "📥", self._sync_selected_to_global, S.ACCENT_PURPLE),
+            # ("Hoàn tác→Global", "🔄", self._revert_selected_to_global, S.ACCENT_ORANGE),
         ]:
             btn = tk.Button(btn_row3, text=f"{icon} {text}", command=cmd,
                            bg=color, fg=S.FG_PRIMARY,
@@ -1293,8 +1307,8 @@ class MainUI:
             ("➕ Thêm", self._open_add_action_dialog, S.ACCENT_GREEN, 7),
             ("✏️ Sửa", self._edit_selected_action, S.ACCENT_BLUE, 7),
             ("🗑 Xóa", self._remove_action, S.ACCENT_RED, 6),
-            ("⬆", self._move_action_up, S.BTN_SECONDARY, 2),
-            ("⬇", self._move_action_down, S.BTN_SECONDARY, 2),
+            # ("⬆", self._move_action_up, S.BTN_SECONDARY, 2),
+            # ("⬇", self._move_action_down, S.BTN_SECONDARY, 2),
         ]
         
         for text, cmd, color, w in action_buttons_row1:
@@ -3053,6 +3067,36 @@ class MainUI:
                 return w
         return None
     
+    def _update_worker_resolution_from_adb(self, worker) -> bool:
+        """
+        Query ADB để lấy resolution thực và update Worker.
+        
+        Args:
+            worker: Worker object cần update
+            
+        Returns:
+            True nếu update thành công, False nếu không
+        """
+        if not worker.adb_device:
+            return False
+            
+        try:
+            from core.adb_manager import ADBManager
+            adb = ADBManager()
+            resolution = adb.query_resolution(worker.adb_device)
+            
+            if resolution:
+                old_res = (worker.res_width, worker.res_height)
+                worker.res_width, worker.res_height = resolution
+                log(f"[UI] Updated Worker {worker.id} resolution from ADB: {old_res} → {resolution}")
+                return True
+            else:
+                log(f"[UI] Could not query resolution for Worker {worker.id} via ADB")
+                return False
+        except Exception as e:
+            log(f"[UI] Failed to update resolution from ADB: {e}")
+            return False
+    
     def _detect_adb_serial(self, emulator_name: str, hwnd: Optional[int] = None) -> Optional[str]:
         """
         Detect ADB serial for emulator by matching with adb devices list.
@@ -3497,6 +3541,7 @@ class MainUI:
             self._hotkey_manager.start()
             log("[UI] Global hotkeys registered")
         except Exception as e:
+            return
             log(f"[UI] Failed to setup global hotkeys: {e}")
     
     def _toggle_record(self):
@@ -5226,7 +5271,31 @@ class MainUI:
                 threshold = v.get("threshold", 0.8)
                 retry_seconds = v.get("retry_seconds", 30)
                 
-                log(f"[FIND_IMAGE] Starting search, retry_seconds={retry_seconds}, threshold={threshold}")
+                # Check if template exists
+                if not template_path:
+                    log(f"[FIND_IMAGE] ERROR: No template path specified")
+                    return
+                    
+                if not os.path.exists(template_path):
+                    log(f"[FIND_IMAGE] ERROR: Template not found: {template_path}")
+                    # Try to handle goto_if_not_found
+                    goto_target = v.get("goto_if_not_found", "End")
+                    if goto_target and goto_target.startswith("→ "):
+                        goto_target = goto_target[2:]
+                    self._handle_goto(goto_target)
+                    return
+                
+                # crop_region is just metadata (where template was cropped from)
+                # We search the FULL window/screen, not limited to crop_region
+                # This is more reliable - template can appear anywhere
+                search_region = None
+                
+                if target_hwnd:
+                    log(f"[FIND_IMAGE] Searching FULL emulator window")
+                else:
+                    log(f"[FIND_IMAGE] Searching FULL screen")
+                
+                log(f"[FIND_IMAGE] Starting search, template={template_path}, retry_seconds={retry_seconds}, threshold={threshold}")
                 
                 # Initialize vars storage
                 if not hasattr(self, '_action_vars'):
@@ -5247,6 +5316,7 @@ class MainUI:
                     
                     finder = FindImage(
                         template_path=template_path,
+                        region=search_region,  # Use crop_region for search area
                         threshold=threshold,
                         timeout_ms=1000,  # Single scan timeout
                         target_hwnd=target_hwnd or 0
@@ -7837,7 +7907,6 @@ class MainUI:
         # Capture region button
         def capture_region():
             from core.capture_utils import CaptureOverlay
-            target_hwnd = getattr(self, '_capture_target_hwnd', None)
             
             def on_capture(result):
                 if result.success:
@@ -7846,7 +7915,8 @@ class MainUI:
                     x2_var.set(result.x2)
                     y2_var.set(result.y2)
             
-            overlay = CaptureOverlay(self.root, target_hwnd=target_hwnd)
+            # ALWAYS full screen overlay
+            overlay = CaptureOverlay(self.root, target_hwnd=None)
             overlay.capture_region(on_capture)
         
         tk.Button(coords_row, text="📍 Capture", command=capture_region,
@@ -8047,7 +8117,6 @@ class MainUI:
         # Capture region button
         def capture_region():
             from core.capture_utils import CaptureOverlay
-            target_hwnd = getattr(self, '_capture_target_hwnd', None)
             
             def on_capture(result):
                 if result.success:
@@ -8056,7 +8125,8 @@ class MainUI:
                     x2_var.set(result.x2)
                     y2_var.set(result.y2)
             
-            overlay = CaptureOverlay(self.root, target_hwnd=target_hwnd)
+            # ALWAYS full screen overlay
+            overlay = CaptureOverlay(self.root, target_hwnd=None)
             overlay.capture_region(on_capture)
         
         tk.Button(coords_row, text="📍 Capture", command=capture_region,
@@ -8412,6 +8482,12 @@ class MainUI:
             target_hwnd = getattr(self, '_capture_target_hwnd', None)
             target_name = getattr(self, '_capture_target_name', 'Screen (Full)')
             
+            # Log current target for debugging
+            if target_hwnd:
+                log(f"[UI] Crop with target: {target_name} (hwnd={target_hwnd})")
+            else:
+                log("[UI] Crop with target: Full Screen (no constraints)")
+            
             emu_bounds = None
             emu_resolution = None
             
@@ -8463,39 +8539,53 @@ class MainUI:
                     except:
                         return False
                 
-                # If we have emulator target, result.x/y are already CLIENT coordinates
-                # because CaptureOverlay converts via ScreenToClient when target_hwnd is set
-                if target_hwnd and emu_resolution:
-                    res_w, res_h = emu_resolution
+                # Check if crop region is INSIDE emulator bounds
+                # If yes → convert to local coords, if no → keep screen coords
+                if target_hwnd and emu_bounds and emu_resolution:
                     emu_x, emu_y, emu_x2, emu_y2 = emu_bounds
-                    client_w = emu_x2 - emu_x
-                    client_h = emu_y2 - emu_y
                     
-                    # result.x/y/x2/y2 are already client coords (0,0 relative to window)
-                    # Just need to scale to resolution if different from client size
-                    if result.client_coords:
-                        # Scale from client coords to resolution
-                        local_x1 = int(result.x * res_w / client_w) if client_w > 0 else result.x
-                        local_y1 = int(result.y * res_h / client_h) if client_h > 0 else result.y
-                        local_x2 = int(result.x2 * res_w / client_w) if client_w > 0 else result.x2
-                        local_y2 = int(result.y2 * res_h / client_h) if client_h > 0 else result.y2
-                    else:
-                        # Screen coords - convert manually
+                    # Check if crop is inside emulator region
+                    crop_inside = (result.x >= emu_x and result.y >= emu_y and 
+                                   result.x2 <= emu_x2 and result.y2 <= emu_y2)
+                    
+                    if crop_inside:
+                        # Convert screen coords to local emulator coords
+                        res_w, res_h = emu_resolution
+                        client_w = emu_x2 - emu_x
+                        client_h = emu_y2 - emu_y
+                        
+                        # Screen coords - convert to local and scale to resolution
                         local_x1 = int((result.x - emu_x) * res_w / client_w) if client_w > 0 else 0
                         local_y1 = int((result.y - emu_y) * res_h / client_h) if client_h > 0 else 0
                         local_x2 = int((result.x2 - emu_x) * res_w / client_w) if client_w > 0 else 0
                         local_y2 = int((result.y2 - emu_y) * res_h / client_h) if client_h > 0 else 0
-                    
-                    # Clamp to valid range
-                    local_x1 = max(0, min(res_w, local_x1))
-                    local_y1 = max(0, min(res_h, local_y1))
-                    local_x2 = max(0, min(res_w, local_x2))
-                    local_y2 = max(0, min(res_h, local_y2))
-                    
-                    # Update vars only if they still exist
+                        
+                        # Clamp to valid range
+                        local_x1 = max(0, min(res_w, local_x1))
+                        local_y1 = max(0, min(res_h, local_y1))
+                        local_x2 = max(0, min(res_w, local_x2))
+                        local_y2 = max(0, min(res_h, local_y2))
+                        
+                        log(f"[UI] Crop INSIDE emulator: screen({result.x},{result.y})-({result.x2},{result.y2}) → local({local_x1},{local_y1})-({local_x2},{local_y2})")
+                        
+                        try:
+                            crop_region_var.set(f"{local_x1},{local_y1},{local_x2},{local_y2}")
+                            screen_info_var.set(f"📍 Local: ({local_x1},{local_y1})-({local_x2},{local_y2}) [{res_w}x{res_h}]")
+                        except:
+                            pass
+                    else:
+                        # Crop is outside emulator - keep screen coords
+                        log(f"[UI] Crop OUTSIDE emulator: screen({result.x},{result.y})-({result.x2},{result.y2})")
+                        try:
+                            crop_region_var.set(f"{result.x},{result.y},{result.x2},{result.y2}")
+                            screen_info_var.set(f"📍 Screen: ({result.x},{result.y})-({result.x2},{result.y2}) [FULL]")
+                        except:
+                            pass
+                else:
+                    # No target - just use screen coords
                     try:
-                        crop_region_var.set(f"{local_x1},{local_y1},{local_x2},{local_y2}")
-                        screen_info_var.set(f"📍 Region: ({local_x1},{local_y1})-({local_x2},{local_y2})")
+                        crop_region_var.set(f"{result.x},{result.y},{result.x2},{result.y2}")
+                        screen_info_var.set(f"📍 Screen: ({result.x},{result.y})-({result.x2},{result.y2})")
                     except:
                         pass
                 
@@ -8519,9 +8609,10 @@ class MainUI:
                     except Exception as e:
                         log(f"[UI] Preview update skipped: {e}")
             
-            overlay = CaptureOverlay(self.root, target_hwnd=target_hwnd)
-            if emu_bounds:
-                overlay._constrain_bounds = emu_bounds
+            # ALWAYS full screen overlay - NO constrain bounds
+            # User can crop anywhere, coords will be converted if within emulator
+            overlay = CaptureOverlay(self.root, target_hwnd=None)  # No target = full screen
+            log(f"[UI] Crop overlay: FULL SCREEN (target for coord conversion: {target_name})")
             overlay.capture_region(on_crop)
         
         # Action buttons - compact uniform style
@@ -8553,6 +8644,54 @@ class MainUI:
         
         btn_crop = create_img_btn(btn_frame, "✂️ Crop", crop_screen, S.ACCENT_BLUE)
         btn_crop.pack(anchor="w", pady=1)
+        
+        # Full Screen Crop button (ignore emulator bounds)
+        def crop_fullscreen():
+            """Crop from full screen (ignoring any target window)"""
+            from core.capture_utils import CaptureOverlay
+            
+            if CaptureOverlay._is_active:
+                log("[UI] Warning: Previous capture was stuck, forcing reset")
+                CaptureOverlay.force_reset()
+            
+            def on_crop_fullscreen(result):
+                if not result.success:
+                    return
+                
+                # Screen coords - no conversion needed
+                local_x1, local_y1 = result.x, result.y
+                local_x2, local_y2 = result.x2, result.y2
+                
+                try:
+                    crop_region_var.set(f"{local_x1},{local_y1},{local_x2},{local_y2}")
+                    screen_info_var.set(f"📍 Region: ({local_x1},{local_y1})-({local_x2},{local_y2}) [SCREEN]")
+                except:
+                    pass
+                
+                if hasattr(result, 'img_path') and result.img_path:
+                    try:
+                        path_var.set(result.img_path)
+                    except:
+                        pass
+                        
+                if hasattr(result, 'pil_image') and result.pil_image:
+                    try:
+                        img = result.pil_image.copy()
+                        orig_size = f"{img.width}x{img.height}"
+                        img.thumbnail((130, 95))
+                        img_tk = ImageTk.PhotoImage(img)
+                        preview_label.config(image=img_tk, text="")
+                        preview_label.image = img_tk
+                        size_label.config(text=f"Size: {orig_size}")
+                    except Exception as e:
+                        log(f"[UI] Preview update skipped: {e}")
+            
+            # Capture full screen (no target_hwnd, no constrain_bounds)
+            overlay = CaptureOverlay(self.root, target_hwnd=None)
+            overlay.capture_region(on_crop_fullscreen)
+        
+        btn_fullscreen = create_img_btn(btn_frame, "📺 Screen", crop_fullscreen, S.ACCENT_PURPLE)
+        btn_fullscreen.pack(anchor="w", pady=1)
         
         # Screen info
         target_name = getattr(self, '_capture_target_name', 'Screen (Full)')
@@ -8965,9 +9104,8 @@ class MainUI:
                 if result.success:
                     motion_region_var.set(f"{result.x},{result.y},{result.x2},{result.y2}")
             
-            overlay = CaptureOverlay(self.root, target_hwnd=target_hwnd)
-            if emu_bounds:
-                overlay._constrain_bounds = emu_bounds
+            # ALWAYS full screen overlay - NO constrain bounds
+            overlay = CaptureOverlay(self.root, target_hwnd=None)
             overlay.capture_region(on_crop)
         
         tk.Button(motion_region_row, text="✂️ Crop", command=crop_motion_region,
@@ -10573,6 +10711,16 @@ class MainUI:
         btn_frame = tk.Frame(dialog)
         btn_frame.pack(fill="x", padx=15, pady=10)
         
+        def reset_to_screen():
+            """Reset capture target to full screen"""
+            self._capture_target_hwnd = None
+            self._capture_target_name = "Screen (Full)"
+            self._target_btn_text.set("📺 Screen")
+            log("[UI] Capture target reset to Screen (Full)")
+            dialog.destroy()
+            if callback:
+                callback()
+        
         def pick_window_focus():
             dialog.destroy()
             self._pick_window_by_focus(callback)
@@ -10585,7 +10733,7 @@ class MainUI:
                 self._capture_target_name = name
                 self._capture_target_hwnd = hwnd
                 if hwnd is None:
-                    self._target_btn_text.set("🎯 Screen")
+                    self._target_btn_text.set("📺 Screen")
                 else:
                     short_name = name[:12] + "..." if len(name) > 12 else name
                     self._target_btn_text.set(f"🎯 {short_name}")
@@ -10597,6 +10745,10 @@ class MainUI:
         # Window Focus button
         tk.Button(btn_frame, text="🎯 Window Focus", command=pick_window_focus,
                  bg="#2196F3", fg="white", font=("Arial", 10)).pack(side="left", padx=5)
+        
+        # Reset to Screen button
+        tk.Button(btn_frame, text="📺 Reset Screen", command=reset_to_screen,
+                 bg="#FF9800", fg="white", font=("Arial", 10)).pack(side="left", padx=5)
         
         # OK button
         tk.Button(btn_frame, text="✓ OK", command=confirm_selection,
@@ -11412,8 +11564,18 @@ class MainUI:
         from core.adb_manager import ADBManager
         from initialize_workers import detect_ldplayer_windows
         
+        # DEBUG: Log root window state before refresh
+        log(f"[DEBUG check_status] BEFORE refresh - root geometry: {self.root.winfo_geometry()}")
+        log(f"[DEBUG check_status] BEFORE refresh - root state: {self.root.state()}")
+        log(f"[DEBUG check_status] BEFORE refresh - screen: {self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}")
+        
         # Refresh workers first to ensure list is up-to-date
         self._refresh_workers_silent()
+        
+        # DEBUG: Log root window state after refresh
+        log(f"[DEBUG check_status] AFTER refresh - root geometry: {self.root.winfo_geometry()}")
+        log(f"[DEBUG check_status] AFTER refresh - root state: {self.root.state()}")
+        log(f"[DEBUG check_status] AFTER refresh - screen: {self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}")
         
         msg = "=== LDPlayer Detection ===\n\n"
         
@@ -11500,11 +11662,17 @@ class MainUI:
         from initialize_workers import detect_ldplayer_windows
         from core.worker import Worker
         
+        log(f"[DEBUG _refresh_workers_silent] START - root geometry: {self.root.winfo_geometry()}")
+        log(f"[DEBUG _refresh_workers_silent] START - screen: {self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}")
+        
         # Detect LDPlayer windows
         windows = detect_ldplayer_windows()
         
         if not windows:
+            log(f"[DEBUG _refresh_workers_silent] No windows found, returning False")
             return False
+        
+        log(f"[DEBUG _refresh_workers_silent] Found {len(windows)} windows")
         
         # Clean up stale assignments
         current_hwnds = [str(w['hwnd']) for w in windows]
@@ -11525,6 +11693,14 @@ class MainUI:
             if worker_id:
                 existing = [w for w in self.workers if w.id == worker_id]
                 if existing:
+                    # Update client rect and hwnd in case window moved/resized
+                    existing[0].hwnd = hwnd
+                    existing[0].client_rect = (window['x'], window['y'], window['width'], window['height'])
+                    existing[0].client_w = window['width']
+                    existing[0].client_h = window['height']
+                    # Update emulator_name from actual window title
+                    existing[0].emulator_name = window['title']
+                    existing[0]._window_title = window['title']
                     new_workers.append(existing[0])
                 else:
                     adb_serial = self._detect_adb_serial(window['title'], hwnd=hwnd)
@@ -11532,10 +11708,11 @@ class MainUI:
                         worker_id=worker_id,
                         hwnd=hwnd,
                         client_rect=(window['x'], window['y'], window['width'], window['height']),
-                        res_width=540, res_height=960,
+                        res_width=400, res_height=550,  # Default, will be updated from ADB
                         adb_device=adb_serial
                     )
                     worker.emulator_name = window['title']
+                    self._update_worker_resolution_from_adb(worker)  # Get real resolution
                     new_workers.append(worker)
             else:
                 temp_id = -(hwnd % 10000)
@@ -11544,16 +11721,20 @@ class MainUI:
                     worker_id=temp_id,
                     hwnd=hwnd,
                     client_rect=(window['x'], window['y'], window['width'], window['height']),
-                    res_width=540, res_height=960,
+                    res_width=400, res_height=550,  # Default, will be updated from ADB
                     adb_device=adb_serial
                 )
                 worker._window_title = window['title']
                 worker.emulator_name = window['title']
                 worker._is_assigned = False
+                self._update_worker_resolution_from_adb(worker)  # Get real resolution
                 new_workers.append(worker)
         
         self.workers = new_workers
         self._auto_refresh_status()
+        
+        log(f"[DEBUG _refresh_workers_silent] END - root geometry: {self.root.winfo_geometry()}")
+        log(f"[DEBUG _refresh_workers_silent] END - screen: {self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}")
         return True
 
     def refresh_workers(self):
@@ -11562,6 +11743,8 @@ class MainUI:
         from core.worker import Worker
         
         log("[UI] Refreshing workers...")
+        log(f"[DEBUG refresh_workers] START - root geometry: {self.root.winfo_geometry()}")
+        log(f"[DEBUG refresh_workers] START - screen: {self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}")
         
         # Detect LDPlayer windows
         windows = detect_ldplayer_windows()
@@ -11592,6 +11775,14 @@ class MainUI:
                 # Find existing worker or create new with assigned ID
                 existing = [w for w in self.workers if w.id == worker_id]
                 if existing:
+                    # Update client rect and hwnd in case window moved/resized
+                    existing[0].hwnd = hwnd
+                    existing[0].client_rect = (window['x'], window['y'], window['width'], window['height'])
+                    existing[0].client_w = window['width']
+                    existing[0].client_h = window['height']
+                    # Update emulator_name from actual window title
+                    existing[0].emulator_name = window['title']
+                    existing[0]._window_title = window['title']
                     new_workers.append(existing[0])
                 else:
                     # Detect ADB serial for this emulator
@@ -11602,11 +11793,12 @@ class MainUI:
                         worker_id=worker_id,
                         hwnd=hwnd,
                         client_rect=(window['x'], window['y'], window['width'], window['height']),
-                        res_width=540, res_height=960,
+                        res_width=400, res_height=550,  # Default, will be updated from ADB
                         adb_device=adb_serial
                     )
                     # Store emulator name
                     worker.emulator_name = window['title']
+                    self._update_worker_resolution_from_adb(worker)  # Get real resolution
                     new_workers.append(worker)
             else:
                 # Not assigned yet - create temp worker with negative ID (placeholder)
@@ -11617,13 +11809,14 @@ class MainUI:
                     worker_id=temp_id,
                     hwnd=hwnd,
                     client_rect=(window['x'], window['y'], window['width'], window['height']),
-                    res_width=540, res_height=960,
+                    res_width=400, res_height=550,  # Default, will be updated from ADB
                     adb_device=adb_serial
                 )
                 # Store window info for display
                 worker._window_title = window['title']
                 worker.emulator_name = window['title']
                 worker._is_assigned = False
+                self._update_worker_resolution_from_adb(worker)  # Get real resolution
                 new_workers.append(worker)
         
         self.workers = new_workers
@@ -11774,7 +11967,10 @@ class MainUI:
                         if not existing:
                             # Get window info
                             try:
-                                from core.tech import win32gui, ctypes, user32
+                                import ctypes
+                                from core.tech import win32gui
+                                user32 = ctypes.windll.user32
+                                
                                 rect = win32gui.GetWindowRect(hwnd)
                                 x, y, right, bottom = rect
                                 width, height = right - x, bottom - y
@@ -11793,11 +11989,12 @@ class MainUI:
                                     worker_id=worker_id,
                                     hwnd=hwnd,
                                     client_rect=(x, y, width, height),
-                                    res_width=540, res_height=960,
+                                    res_width=400, res_height=550,  # Default, will be updated from ADB
                                     adb_device=adb_serial
                                 )
                                 # Add emulator name as custom attribute
                                 worker.emulator_name = emulator_name
+                                self._update_worker_resolution_from_adb(worker)  # Get real resolution
                                 self.workers.append(worker)
                                 new_workers_created += 1
                                 log(f"[UI] Created Worker {worker_id} '{emulator_name}' (ADB: {adb_serial}) for hwnd={hwnd}")
@@ -11810,6 +12007,10 @@ class MainUI:
                 
                 if new_workers_created > 0:
                     msg += f"\n🆕 Tạo {new_workers_created} Worker mới"
+                
+                # NOTE: Không tự động set capture target nữa
+                # User phải chủ động chọn target qua "Select Target" button
+                # để tránh việc bị ràng buộc vào emulator bounds khi crop
                 
                 messagebox.showinfo("Thành công", msg)
                 log(f"[UI] Assigned {len(result)} LDPlayer(s) to Worker IDs")
@@ -11965,10 +12166,15 @@ class MainUI:
                 status = "READY"
                 worker_id_text = f"Worker {w.id}"
 
-            # Extract name from hwnd or stored title
-            if hasattr(w, '_window_title') and w._window_title:
+            # Extract name from emulator_name, _window_title, or fallback
+            name = None
+            if hasattr(w, 'emulator_name') and w.emulator_name:
+                name = w.emulator_name
+            elif hasattr(w, '_window_title') and w._window_title:
                 name = w._window_title
-            else:
+            
+            # Fallback if no name found
+            if not name:
                 name = f"LDPlayer-{w.id}" if w.id > 0 else f"LDPlayer (hwnd:{w.hwnd})"
             
             # Display ID: use actual worker_id if assigned, otherwise show index
@@ -12069,7 +12275,7 @@ class MainUI:
         
         dialog = tk.Toplevel(self.root)
         dialog.title("⚙ Cài đặt - Phím tắt")
-        dialog.geometry("450x500")
+        dialog.geometry("450x580")
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.resizable(False, False)
@@ -12161,6 +12367,26 @@ class MainUI:
                 font=(S.FONT_FAMILY, S.FONT_SIZE_SM), bg=S.BG_CARD, fg=S.FG_MUTED,
                 anchor="w").pack(padx=S.PAD_MD, pady=2, fill="x")
         
+        # ==================== DEBUG MODE ====================
+        debug_frame = tk.LabelFrame(dialog, text=" 🔧 Chế độ Debug (Nhà phát triển) ", 
+                                   font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
+                                   bg=S.BG_CARD, fg=S.ACCENT_PURPLE)
+        debug_frame.pack(fill="x", padx=S.PAD_XL, pady=S.PAD_MD)
+        
+        from utils.logger import is_debug_mode, set_debug_mode
+        
+        debug_var = tk.BooleanVar(value=is_debug_mode())
+        
+        debug_row = tk.Frame(debug_frame, bg=S.BG_CARD)
+        debug_row.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        
+        tk.Checkbutton(debug_row, text="Hiển thị Log Console (dành cho dev)", variable=debug_var,
+                      font=(S.FONT_FAMILY, S.FONT_SIZE_MD), bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                      selectcolor=S.BG_INPUT, activebackground=S.BG_CARD).pack(side="left")
+        
+        tk.Label(debug_frame, text="💡 Tắt khi gửi sản phẩm cho người dùng cuối",
+                font=(S.FONT_FAMILY, S.FONT_SIZE_XS), bg=S.BG_CARD, fg=S.FG_MUTED).pack(padx=S.PAD_MD, pady=2)
+        
         # Buttons
         btn_frame = tk.Frame(dialog, bg=S.BG_PRIMARY)
         btn_frame.pack(fill="x", padx=S.PAD_XL, pady=S.PAD_XL)
@@ -12172,6 +12398,10 @@ class MainUI:
             self._save_hotkey_settings()
             self._update_button_hotkey_text()
             self._register_global_hotkeys()
+            
+            # Save debug mode
+            set_debug_mode(debug_var.get())
+            
             dialog.destroy()
         
         def reset_defaults():

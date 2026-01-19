@@ -1,4 +1,8 @@
 {
-  "assignments": {},
-  "reverse": {}
+  "assignments": {
+    "592900": 1
+  },
+  "reverse": {
+    "1": "592900"
+  }
 }
