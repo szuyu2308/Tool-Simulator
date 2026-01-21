@@ -10,6 +10,7 @@ Implements: WaitTime, WaitPixelColor, WaitScreenChange, WaitHotkey, WaitFile
 from __future__ import annotations
 import time
 import os
+import sys
 import threading
 import subprocess
 import io
@@ -18,6 +19,13 @@ from typing import Optional, Tuple, Callable, Any
 from dataclasses import dataclass
 import ctypes
 from ctypes import wintypes
+from utils.subprocess_helper import run_hidden
+
+# Windows CREATE_NO_WINDOW flag
+if sys.platform == 'win32':
+    CREATE_NO_WINDOW = 0x08000000
+else:
+    CREATE_NO_WINDOW = 0
 
 from utils.logger import log
 
@@ -205,18 +213,20 @@ class WaitScreenChange(WaitAction):
         
         try:
             # exec-out returns raw PNG bytes
-            p = subprocess.run(
+            p = run_hidden(
                 ["adb", "-s", self.adb_serial, "exec-out", "screencap", "-p"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                timeout=max(5, int(self.timeout_ms / 1000)),
-                check=False,
+                timeout=5
             )
             if p.returncode != 0 or not p.stdout:
                 log(f"[WAIT] ADB screencap failed ({self.adb_serial}): {p.stderr.decode(errors='ignore')}")
                 return None
             
-            img = Image.open(io.BytesIO(p.stdout)).convert("RGBA")
+            # Create BytesIO and ensure it's at start
+            img_buffer = io.BytesIO(p.stdout)
+            img_buffer.seek(0)
+            img = Image.open(img_buffer).convert("RGBA")
             crop = img.crop((x1, y1, x2, y2))
             # Return BGRA bytes to match existing pixel loops
             return crop.tobytes("raw", "BGRA")
@@ -231,8 +241,10 @@ class WaitScreenChange(WaitAction):
             
             x1, y1, x2, y2 = self.region
             
-            # Prefer ADB capture if adb_serial provided (emulator coordinates)
+            # Debug: Log capture source
             if self.adb_serial:
+                log(f"[WAIT_SCREEN_CHANGE] Debug: Capture via ADB ({self.adb_serial})")
+                log(f"[WAIT_SCREEN_CHANGE] Debug: Region coords (Android): ({x1},{y1})-({x2},{y2}), size: {x2-x1}x{y2-y1}")
                 return self._capture_region_adb()
             
             # Convert client to screen coords if needed
@@ -241,15 +253,21 @@ class WaitScreenChange(WaitAction):
                 pt2 = wintypes.POINT(x2, y2)
                 user32.ClientToScreen(self.target_hwnd, ctypes.byref(pt1))
                 user32.ClientToScreen(self.target_hwnd, ctypes.byref(pt2))
+                log(f"[WAIT_SCREEN_CHANGE] Debug: Capture via MSS, client({x1},{y1})-({x2},{y2}) -> screen({pt1.x},{pt1.y})-({pt2.x},{pt2.y})")
                 x1, y1 = pt1.x, pt1.y
                 x2, y2 = pt2.x, pt2.y
+            else:
+                log(f"[WAIT_SCREEN_CHANGE] Debug: Capture via MSS, screen coords ({x1},{y1})-({x2},{y2})")
             
             with mss.mss() as sct:
                 monitor = {"left": x1, "top": y1, "width": x2 - x1, "height": y2 - y1}
                 img = sct.grab(monitor)
+                log(f"[WAIT_SCREEN_CHANGE] Debug: MSS captured {len(img.raw)} bytes")
                 return img.raw
         except Exception as e:
             log(f"[WAIT] Screen capture error: {e}")
+            import traceback
+            log(f"[WAIT] Traceback: {traceback.format_exc()}")
             return None
     
     def _analyze_colors(self, data: bytes) -> dict:
@@ -351,7 +369,7 @@ class WaitScreenChange(WaitAction):
         log(f"[WAIT_SCREEN_CHANGE] Monitoring changes...")
         
         start_time = time.time()
-        check_interval = 200  # Check every 200ms
+        check_interval = 50  # Check every 50ms (faster detection)
         check_count = 0
         
         while True:
@@ -375,24 +393,20 @@ class WaitScreenChange(WaitAction):
             diff = self._calculate_difference(initial_data, current_data)
             check_count += 1
             
-            # Analyze current colors every 5 checks (every ~1 second)
-            if check_count % 5 == 0:
+            # Check if changed - IMMEDIATELY return on detection
+            if diff >= self.threshold:
+                log(f"[WAIT_SCREEN_CHANGE] ✓ PASSED! {diff*100:.2f}% changed after {elapsed:.0f}ms (check #{check_count})")
+                return WaitResult(success=True,
+                                  message=f"Screen changed: {diff:.2%} difference")
+            
+            # Log only every 10 checks to reduce overhead (~5 seconds)
+            if check_count % 10 == 0:
                 current_colors = self._analyze_colors(current_data)
                 top_color = current_colors.get('top_colors', [{}])[0]
                 if top_color:
                     rgb = top_color.get('rgb', (0,0,0))
                     pct = top_color.get('percentage', 0)
-                    log(f"[WAIT_SCREEN_CHANGE] Check #{check_count}: {diff*100:.2f}% changed | Top color: RGB{rgb} ({pct:.1f}%)")
-            else:
-                log(f"[WAIT_SCREEN_CHANGE] Check #{check_count}: {diff*100:.2f}% changed (need {self.threshold*100:.1f}%)")
-            
-            if diff >= self.threshold:
-                # Log final color info when passed
-                final_colors = self._analyze_colors(current_data)
-                log(f"[WAIT_SCREEN_CHANGE] ✓ PASSED! Change detected: {diff*100:.2f}% after {elapsed:.0f}ms")
-                log(f"[WAIT_SCREEN_CHANGE] Final top color: RGB{final_colors.get('top_colors', [{}])[0].get('rgb', (0,0,0))}")
-                return WaitResult(success=True,
-                                  message=f"Screen changed: {diff:.2%} difference")
+                    log(f"[WAIT_SCREEN_CHANGE] Check #{check_count}: {diff*100:.2f}% changed | Top: RGB{rgb} ({pct:.0f}%)")
             
             time.sleep(check_interval / 1000.0)
 
@@ -452,18 +466,20 @@ class WaitColorDisappear(WaitAction):
             return None
         
         try:
-            p = subprocess.run(
+            p = run_hidden(
                 ["adb", "-s", self.adb_serial, "exec-out", "screencap", "-p"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                timeout=max(5, int(self.timeout_ms / 1000)),
-                check=False,
+                timeout=5
             )
             if p.returncode != 0 or not p.stdout:
                 log(f"[WAIT_COLOR] ADB screencap failed ({self.adb_serial}): {p.stderr.decode(errors='ignore')}")
                 return None
             
-            img = Image.open(io.BytesIO(p.stdout)).convert("RGBA")
+            # Create BytesIO and ensure it's at start
+            img_buffer = io.BytesIO(p.stdout)
+            img_buffer.seek(0)
+            img = Image.open(img_buffer).convert("RGBA")
             crop = img.crop((x1, y1, x2, y2))
             return crop.tobytes("raw", "BGRA")
         except Exception as e:

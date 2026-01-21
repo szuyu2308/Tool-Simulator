@@ -65,6 +65,7 @@ python -c "import numpy" >nul 2>&1 || (echo     ⚠️ Installing numpy... && pi
 python -c "import psutil" >nul 2>&1 || (echo     ⚠️ Installing psutil... && pip install psutil -q)
 python -c "import pyperclip" >nul 2>&1 || (echo     ⚠️ Installing pyperclip... && pip install pyperclip -q)
 python -c "import dxcam" >nul 2>&1 || (echo     ⚠️ Installing dxcam... && pip install dxcam -q)
+python -c "import uiautomator2" >nul 2>&1 || (echo     ⚠️ Installing uiautomator2... && pip install uiautomator2 -q)
 echo     ✅ Dependencies OK
 
 :: Check for C compiler
@@ -117,10 +118,40 @@ if exist "app.onefile-build" rmdir /s /q "app.onefile-build" 2>nul
 echo     ✅ Đã dọn dẹp
 
 :: ============================================================
+:: CHECK/BUNDLE ADB
+:: ============================================================
+echo.
+echo [4/5] Kiểm tra ADB...
+:: Try to find ADB from LDPlayer
+set "ADB_FOUND=0"
+set "ADB_SOURCE="
+
+if exist "C:\Program Files\LDPlayer\LDPlayer9\adb.exe" (
+    set "ADB_SOURCE=C:\Program Files\LDPlayer\LDPlayer9\adb.exe"
+    set "ADB_FOUND=1"
+) else if exist "C:\Program Files\LDPlayer\LDPlayer4.0\adb.exe" (
+    set "ADB_SOURCE=C:\Program Files\LDPlayer\LDPlayer4.0\adb.exe"
+    set "ADB_FOUND=1"
+) else if exist "C:\Program Files (x86)\LDPlayer\LDPlayer9\adb.exe" (
+    set "ADB_SOURCE=C:\Program Files (x86)\LDPlayer\LDPlayer9\adb.exe"
+    set "ADB_FOUND=1"
+)
+
+if "%ADB_FOUND%"=="1" (
+    echo     ✅ Tìm thấy ADB tại: %ADB_SOURCE%
+    if not exist "files" mkdir files
+    copy /Y "%ADB_SOURCE%" "files\adb.exe" >nul 2>&1
+    echo     ✅ ADB đã được copy vào files folder
+) else (
+    echo     ⚠️ Không tìm thấy ADB trong thư mục LDPlayer
+    echo     Ứng dụng sẽ thử dùng ADB từ PATH
+)
+
+:: ============================================================
 :: SET APP CONFIG BASED ON DEBUG MODE
 :: ============================================================
 echo.
-echo [4/5] Thiết lập app config...
+echo [5/5] Thiết lập app config...
 if not exist "data" mkdir data
 
 if "%DEBUG_MODE%"=="0" (
@@ -136,7 +167,7 @@ echo     ✅ Config đã được thiết lập
 :: BUILD WITH NUITKA
 :: ============================================================
 echo.
-echo [5/5] 🔨 Đang build với Nuitka...
+echo [6/6] 🔨 Đang build với Nuitka...
 echo     ⏳ Quá trình này mất 3-15 phút (lần đầu lâu hơn)
 
 if "%DEBUG_MODE%"=="1" (
@@ -178,6 +209,11 @@ python -m nuitka ^
     --include-package=psutil ^
     --include-package=pyperclip ^
     --include-package=dxcam ^
+    --include-package=uiautomator2 ^
+    --include-package=adbutils ^
+    --include-package=lxml ^
+    --include-package=requests ^
+    --include-package=retry2 ^
     --include-package=win32gui ^
     --include-package=win32ui ^
     --include-package=win32con ^
@@ -206,6 +242,7 @@ python -m nuitka ^
     --include-module=pynput.mouse._win32 ^
     --include-data-dir=data=data ^
     --include-data-dir=profiles=profiles ^
+    --include-data-dir=files=files ^
     --include-data-files=%ICON_FILE%=%ICON_FILE% ^
     --follow-imports ^
     --prefer-source-code ^

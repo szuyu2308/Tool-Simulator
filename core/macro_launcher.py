@@ -3,9 +3,16 @@ import threading
 import time
 import os
 import signal
+import sys
 
 from core.tech import win32gui
 from utils.logger import log
+
+# Windows CREATE_NO_WINDOW flag
+if sys.platform == 'win32':
+    CREATE_NO_WINDOW = 0x08000000
+else:
+    CREATE_NO_WINDOW = 0
 
 
 class MacroLauncher:
@@ -43,7 +50,8 @@ class MacroLauncher:
             proc = subprocess.Popen(
                 [self.macro_exe_path, macro_file],
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.DEVNULL,
+                creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0
             )
             self.process_map[wid] = proc
             log(f"[MACRO] Spawn macro worker {wid} | PID={proc.pid}")

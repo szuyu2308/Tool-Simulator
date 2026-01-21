@@ -2,9 +2,16 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk, simpledialog
 import json
 import os
+import sys
 import uuid
 import threading
 import time
+
+# Windows CREATE_NO_WINDOW flag for subprocess
+if sys.platform == 'win32':
+    CREATE_NO_WINDOW = 0x08000000
+else:
+    CREATE_NO_WINDOW = 0
 
 # Đường dẫn tuyệt đối tới thư mục macros (tương đối với vị trí script/exe)
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -851,6 +858,7 @@ class MainUI:
         self._playback_stop_event = threading.Event()
         self._playback_pause_event = threading.Event()
         self._current_action_index = 0
+        self._repeat_counters = {}  # Track REPEAT counts: {action_index: remaining_count}
         self._target_hwnd: Optional[int] = None  # Target window for recording
 
         # Recording toolbar
@@ -3122,7 +3130,8 @@ class MainUI:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                timeout=3
+                timeout=3,
+                creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0
             )
             
             if result.returncode != 0:
@@ -4230,6 +4239,7 @@ class MainUI:
         self._playback_stop_event.clear()
         self._playback_pause_event.clear()
         self._current_action_index = 0
+        self._repeat_counters = {}  # Reset repeat counters for new playback
         
         # Clear previous worker threads
         self._worker_playback_threads.clear()
@@ -4548,26 +4558,78 @@ class MainUI:
         """Send keyboard key using Win32 API - handles modifiers properly"""
         import ctypes
         
-        # Virtual key codes
+        # Virtual key codes - comprehensive with aliases
         VK_MAP = {
-            # Modifiers
-            'alt': 0x12, 'alt_l': 0x12, 'alt_r': 0x12,
-            'ctrl': 0x11, 'ctrl_l': 0x11, 'ctrl_r': 0x11,
+            # Modifiers and aliases
+            'alt': 0x12, 'alt_l': 0x12, 'alt_r': 0x12, 'menu': 0x12,
+            'ctrl': 0x11, 'ctrl_l': 0x11, 'ctrl_r': 0x11, 'control': 0x11, 'control_l': 0x11, 'control_r': 0x11,
             'shift': 0x10, 'shift_l': 0x10, 'shift_r': 0x10,
-            'win': 0x5B,
-            # Navigation
-            'tab': 0x09, 'enter': 0x0D, 'space': 0x20,
-            'backspace': 0x08, 'delete': 0x2E, 'escape': 0x1B,
-            'home': 0x24, 'end': 0x23,
-            'page_up': 0x21, 'page_down': 0x22,
-            'up': 0x26, 'down': 0x28, 'left': 0x25, 'right': 0x27,
-            'insert': 0x2D,
+            'win': 0x5B, 'windows': 0x5B, 'super': 0x5B, 'cmd': 0x5B, 'command': 0x5B,
+            
+            # Navigation keys and aliases
+            'tab': 0x09,
+            'enter': 0x0D, 'return': 0x0D, 'ret': 0x0D,
+            'space': 0x20, 'spacebar': 0x20, ' ': 0x20,
+            'backspace': 0x08, 'back': 0x08, 'bs': 0x08,
+            'delete': 0x2E, 'del': 0x2E,
+            'escape': 0x1B, 'esc': 0x1B,
+            'home': 0x24,
+            'end': 0x23,
+            'page_up': 0x21, 'pageup': 0x21, 'pgup': 0x21, 'prior': 0x21,
+            'page_down': 0x22, 'pagedown': 0x22, 'pgdn': 0x22, 'next': 0x22,
+            'up': 0x26, 'arrow_up': 0x26, 'uparrow': 0x26,
+            'down': 0x28, 'arrow_down': 0x28, 'downarrow': 0x28,
+            'left': 0x25, 'arrow_left': 0x25, 'leftarrow': 0x25,
+            'right': 0x27, 'arrow_right': 0x27, 'rightarrow': 0x27,
+            'insert': 0x2D, 'ins': 0x2D,
+            
             # Function keys
             'f1': 0x70, 'f2': 0x71, 'f3': 0x72, 'f4': 0x73,
             'f5': 0x74, 'f6': 0x75, 'f7': 0x76, 'f8': 0x77,
             'f9': 0x78, 'f10': 0x79, 'f11': 0x7A, 'f12': 0x7B,
-            # Lock keys
-            'caps_lock': 0x14, 'num_lock': 0x90, 'scroll_lock': 0x91,
+            'f13': 0x7C, 'f14': 0x7D, 'f15': 0x7E, 'f16': 0x7F,
+            
+            # Lock keys and aliases
+            'caps_lock': 0x14, 'capslock': 0x14, 'caps': 0x14,
+            'num_lock': 0x90, 'numlock': 0x90,
+            'scroll_lock': 0x91, 'scrolllock': 0x91, 'scroll': 0x91,
+            
+            # Numpad keys
+            'numpad0': 0x60, 'num0': 0x60, 'kp_0': 0x60,
+            'numpad1': 0x61, 'num1': 0x61, 'kp_1': 0x61,
+            'numpad2': 0x62, 'num2': 0x62, 'kp_2': 0x62,
+            'numpad3': 0x63, 'num3': 0x63, 'kp_3': 0x63,
+            'numpad4': 0x64, 'num4': 0x64, 'kp_4': 0x64,
+            'numpad5': 0x65, 'num5': 0x65, 'kp_5': 0x65,
+            'numpad6': 0x66, 'num6': 0x66, 'kp_6': 0x66,
+            'numpad7': 0x67, 'num7': 0x67, 'kp_7': 0x67,
+            'numpad8': 0x68, 'num8': 0x68, 'kp_8': 0x68,
+            'numpad9': 0x69, 'num9': 0x69, 'kp_9': 0x69,
+            'multiply': 0x6A, 'numpad*': 0x6A, 'kp_multiply': 0x6A,
+            'add': 0x6B, 'numpad+': 0x6B, 'kp_add': 0x6B,
+            'subtract': 0x6D, 'numpad-': 0x6D, 'kp_subtract': 0x6D,
+            'decimal': 0x6E, 'numpad.': 0x6E, 'kp_decimal': 0x6E,
+            'divide': 0x6F, 'numpad/': 0x6F, 'kp_divide': 0x6F,
+            
+            # Media keys
+            'volume_mute': 0xAD, 'mute': 0xAD,
+            'volume_down': 0xAE, 'volumedown': 0xAE,
+            'volume_up': 0xAF, 'volumeup': 0xAF,
+            'media_next': 0xB0, 'next_track': 0xB0,
+            'media_prev': 0xB1, 'prev_track': 0xB1,
+            'media_stop': 0xB2,
+            'media_play_pause': 0xB3, 'play_pause': 0xB3,
+            
+            # Browser keys
+            'browser_back': 0xA6, 'browser_forward': 0xA7,
+            'browser_refresh': 0xA8, 'browser_stop': 0xA9,
+            'browser_search': 0xAA, 'browser_favorites': 0xAB,
+            'browser_home': 0xAC,
+            
+            # Misc keys
+            'print_screen': 0x2C, 'printscreen': 0x2C, 'prtsc': 0x2C, 'snapshot': 0x2C,
+            'pause': 0x13, 'break': 0x13,
+            'apps': 0x5D, 'context_menu': 0x5D, 'menu_key': 0x5D,
         }
         
         MODIFIER_KEYS = {'alt', 'alt_l', 'alt_r', 'ctrl', 'ctrl_l', 'ctrl_r', 'shift', 'shift_l', 'shift_r', 'win'}
@@ -4722,7 +4784,7 @@ class MainUI:
             # Get input method from settings
             input_method = self._input_settings.get("click_method", "SetCursorPos")
             
-            # Validate input method with target mode
+            # Validate input method with target mode - all ADB methods require emulator
             if input_method in ("PostMessage", "ADB Tap") and target_mode != "emulator":
                 log(f"[CLICK] {input_method} requires Emulator mode, fallback to SetCursorPos")
                 input_method = "SetCursorPos"
@@ -4733,105 +4795,193 @@ class MainUI:
                 cursor_pt = wintypes.POINT()
                 ctypes.windll.user32.GetCursorPos(ctypes.byref(cursor_pt))
                 screen_x, screen_y = cursor_pt.x, cursor_pt.y
+                client_x, client_y = screen_x, screen_y  # Initialize for fallback cases
                 log(f"[CLICK] Using current mouse position: ({screen_x},{screen_y})")
-            elif input_method == "SetCursorPos":
-                # SetCursorPos needs screen coordinates
-                if effective_hwnd:
-                    # Convert client coords to screen coords
-                    pt = wintypes.POINT(int(x), int(y))
-                    ctypes.windll.user32.ClientToScreen(effective_hwnd, ctypes.byref(pt))
-                    screen_x, screen_y = pt.x, pt.y
-                    log(f"[CLICK] SetCursorPos: client({x},{y}) -> screen({screen_x},{screen_y}) [hwnd={effective_hwnd}]")
-                else:
-                    # Screen mode: coords are already screen coords
-                    screen_x, screen_y = int(x), int(y)
-                    log(f"[CLICK] SetCursorPos: using screen coords ({screen_x},{screen_y})")
             else:
-                # PostMessage/ADB: Use client coords directly (no conversion needed)
+                # Initialize from action coordinates
                 client_x, client_y = int(x), int(y)
-                log(f"[CLICK] {input_method}: using client coords ({client_x},{client_y})")
+                screen_x, screen_y = int(x), int(y)
+                
+                # Convert coordinates if needed based on input method
+                if input_method == "SetCursorPos":
+                    # SetCursorPos needs screen coordinates
+                    if effective_hwnd:
+                        # Convert client coords to screen coords
+                        pt = wintypes.POINT(int(x), int(y))
+                        ctypes.windll.user32.ClientToScreen(effective_hwnd, ctypes.byref(pt))
+                        screen_x, screen_y = pt.x, pt.y
+                        log(f"[CLICK] SetCursorPos: client({x},{y}) -> screen({screen_x},{screen_y}) [hwnd={effective_hwnd}]")
+                    else:
+                        # Screen mode: coords are already screen coords
+                        screen_x, screen_y = int(x), int(y)
+                        log(f"[CLICK] SetCursorPos: using screen coords ({screen_x},{screen_y})")
+                else:
+                    log(f"[CLICK] {input_method}: using client coords ({client_x},{client_y})")
             
             # Execute click based on input method
+            # Check if this is an ADB-based method
             if input_method == "ADB Tap" and adb_serial and effective_hwnd:
-                # METHOD 1: ADB Input Tap - Direct to emulator (uses client coords)
+                # METHOD 1: ADB Tap - Use uiautomator2 (same as FIND_IMAGE)
+                # 1. uiautomator2 (uses accessibility framework)
+                # 2. Sendevent fallback (raw hardware events)
+                # 3. SetCursorPos fallback
                 import subprocess
+                tap_success = False
+                
+                # Method 1: Try uiautomator2 first (most reliable, uses accessibility)
                 try:
-                    # Use input swipe (synchronous, more reliable than tap)
-                    # swipe from point to same point = tap with duration
+                    import uiautomator2 as u2
+                    
+                    # Get window client area size
+                    user32 = ctypes.windll.user32
+                    rect = wintypes.RECT()
+                    user32.GetClientRect(effective_hwnd, ctypes.byref(rect))
+                    client_width = rect.right - rect.left
+                    client_height = rect.bottom - rect.top
+                    
+                    # Get Android display size
+                    cmd_size = f"adb -s {adb_serial} shell wm size"
+                    size_result = subprocess.run(cmd_size, shell=True, capture_output=True, text=True, timeout=2,
+                                                creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
+                    import re
+                    match = re.search(r'(\d+)x(\d+)', size_result.stdout)
+                    if match:
+                        android_width, android_height = int(match.group(1)), int(match.group(2))
+                    else:
+                        android_width, android_height = 400, 550
+                    
+                    log(f"[CLICK] Window client: {client_width}x{client_height}, Android: {android_width}x{android_height}")
+                    
+                    # Calculate offset and scale
+                    offset_x = 0
+                    offset_y = 0
+                    scale_x = 1.0
+                    scale_y = 1.0
+                    
+                    if client_height > android_height:
+                        offset_y = client_height - android_height
+                        log(f"[CLICK] Detected Y offset: {offset_y}px (toolbar)")
+                    
+                    if client_width != android_width or client_height != android_height:
+                        scale_x = android_width / client_width
+                        scale_y = android_height / (client_height - offset_y) if (client_height - offset_y) > 0 else 1.0
+                    
+                    # Transform coordinates
+                    android_x = int((client_x - offset_x) * scale_x)
+                    android_y = int((client_y - offset_y) * scale_y)
+                    
+                    # Clamp to valid range
+                    android_x = max(0, min(android_x, android_width - 1))
+                    android_y = max(0, min(android_y, android_height - 1))
+                    
+                    log(f"[CLICK] uiautomator2: client({client_x},{client_y}) -> android({android_x},{android_y})")
+                    
+                    # Connect and click with duration
+                    d = u2.connect(adb_serial)
                     hold_duration = hold_ms if hold_ms > 0 else 100
-                    cmd = f"adb -s {adb_serial} shell input swipe {client_x} {client_y} {client_x} {client_y} {hold_duration}"
-                    log(f"[CLICK] ADB executing: {cmd}")
-                    result = subprocess.run(cmd, shell=True, check=True, timeout=3, 
-                                          capture_output=True, text=True)
-                    log(f"[CLICK] ADB swipe executed: ({client_x},{client_y}) duration={hold_duration}ms")
-                    if result.stdout:
-                        log(f"[CLICK] ADB stdout: {result.stdout.strip()}")
-                    if result.stderr:
-                        log(f"[CLICK] ADB stderr: {result.stderr.strip()}")
-                except subprocess.TimeoutExpired:
-                    log(f"[CLICK] ADB tap timeout, trying sendevent method...")
-                    # Try sendevent (low-level method)
+                    
+                    if hold_duration > 200:
+                        # Long press
+                        d.long_click(android_x, android_y, hold_duration / 1000.0)
+                    else:
+                        # Normal tap
+                        d.click(android_x, android_y)
+                    
+                    tap_success = True
+                    log(f"[CLICK] uiautomator2 tap SUCCESS at android({android_x},{android_y}) duration={hold_duration}ms")
+                    
+                except Exception as e:
+                    log(f"[CLICK] uiautomator2 failed: {e}, trying sendevent...")
+                    
+                    # Method 2: Fallback to sendevent
                     try:
-                        # Get screen dimensions
+                        touch_device = "/dev/input/event2"
+                        max_x, max_y = 549, 399
+                        
                         cmd_size = f"adb -s {adb_serial} shell wm size"
-                        result_size = subprocess.run(cmd_size, shell=True, capture_output=True, text=True, timeout=2)
-                        # Parse: "Physical size: 1920x1080"
+                        result_size = subprocess.run(cmd_size, shell=True, capture_output=True, text=True, timeout=2,
+                                                    creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
                         import re
                         match = re.search(r'(\d+)x(\d+)', result_size.stdout)
                         if match:
-                            width, height = int(match.group(1)), int(match.group(2))
-                            # sendevent uses absolute coordinates (0-32767 range)
-                            abs_x = int((client_x * 32767) / width)
-                            abs_y = int((client_y * 32767) / height)
-                            
-                            # Find touch device
-                            cmd_devices = f"adb -s {adb_serial} shell getevent -p"
-                            result_devices = subprocess.run(cmd_devices, shell=True, capture_output=True, text=True, timeout=2)
-                            touch_device = "/dev/input/event2"  # Default, common for emulators
-                            for line in result_devices.stdout.split('\n'):
-                                if 'add device' in line.lower() and 'touch' in line.lower():
-                                    parts = line.split(':')
-                                    if len(parts) > 1:
-                                        touch_device = parts[1].strip()
-                                        break
-                            
-                            log(f"[CLICK] ADB sendevent: device={touch_device}, abs({abs_x},{abs_y})")
-                            
-                            # Send touch events (EV_ABS=3, ABS_MT_POSITION_X=53, ABS_MT_POSITION_Y=54, EV_SYN=0)
-                            commands = [
-                                f"adb -s {adb_serial} shell sendevent {touch_device} 3 57 1",  # ABS_MT_TRACKING_ID
-                                f"adb -s {adb_serial} shell sendevent {touch_device} 3 53 {abs_x}",  # ABS_MT_POSITION_X
-                                f"adb -s {adb_serial} shell sendevent {touch_device} 3 54 {abs_y}",  # ABS_MT_POSITION_Y
-                                f"adb -s {adb_serial} shell sendevent {touch_device} 0 0 0",  # EV_SYN
-                                f"adb -s {adb_serial} shell sendevent {touch_device} 3 57 -1",  # ABS_MT_TRACKING_ID (release)
-                                f"adb -s {adb_serial} shell sendevent {touch_device} 0 0 0",  # EV_SYN
-                            ]
-                            for cmd in commands:
-                                subprocess.run(cmd, shell=True, timeout=1, capture_output=True)
-                            # Wait for emulator to process the input
-                            time.sleep(0.15)
-                            log(f"[CLICK] ADB sendevent executed: ({client_x},{client_y})")
+                            screen_width, screen_height = int(match.group(1)), int(match.group(2))
                         else:
-                            raise Exception("Cannot parse screen size")
+                            screen_width, screen_height = 400, 550
+                        
+                        # Get window client size and calculate offset (same as uiautomator2)
+                        user32 = ctypes.windll.user32
+                        rect = wintypes.RECT()
+                        user32.GetClientRect(effective_hwnd, ctypes.byref(rect))
+                        client_width = rect.right - rect.left
+                        client_height = rect.bottom - rect.top
+                        
+                        # Calculate Y offset (toolbar)
+                        offset_y = max(0, client_height - screen_height)
+                        
+                        # Apply offset to coordinates BEFORE scaling
+                        adjusted_x = client_x
+                        adjusted_y = max(0, client_y - offset_y)
+                        
+                        # Now scale to touch device coordinates
+                        abs_x = int((adjusted_x * max_x) / screen_width)
+                        abs_y = int((adjusted_y * max_y) / screen_height)
+                        abs_x = max(0, min(abs_x, max_x))
+                        abs_y = max(0, min(abs_y, max_y))
+                        
+                        log(f"[CLICK] Sendevent: client({client_x},{client_y}) offset_y={offset_y} -> adjusted({adjusted_x},{adjusted_y}) -> touch({abs_x},{abs_y})")
+                        
+                        EV_ABS, EV_SYN, EV_KEY = 3, 0, 1
+                        ABS_MT_SLOT, ABS_MT_TRACKING_ID = 47, 57
+                        ABS_MT_POSITION_X, ABS_MT_POSITION_Y = 53, 54
+                        ABS_MT_PRESSURE, BTN_TOUCH = 58, 330
+                        SYN_REPORT = 0
+                        
+                        touch_down = [
+                            f"sendevent {touch_device} {EV_ABS} {ABS_MT_SLOT} 0",
+                            f"sendevent {touch_device} {EV_ABS} {ABS_MT_TRACKING_ID} 1",
+                            f"sendevent {touch_device} {EV_ABS} {ABS_MT_POSITION_X} {abs_x}",
+                            f"sendevent {touch_device} {EV_ABS} {ABS_MT_POSITION_Y} {abs_y}",
+                            f"sendevent {touch_device} {EV_ABS} {ABS_MT_PRESSURE} 1",
+                            f"sendevent {touch_device} {EV_KEY} {BTN_TOUCH} 1",
+                            f"sendevent {touch_device} {EV_SYN} {SYN_REPORT} 0"
+                        ]
+                        
+                        touch_up = [
+                            f"sendevent {touch_device} {EV_ABS} {ABS_MT_TRACKING_ID} -1",
+                            f"sendevent {touch_device} {EV_KEY} {BTN_TOUCH} 0",
+                            f"sendevent {touch_device} {EV_SYN} {SYN_REPORT} 0"
+                        ]
+                        
+                        cmd_down = f"adb -s {adb_serial} shell \"{' && '.join(touch_down)}\""
+                        result_down = subprocess.run(cmd_down, shell=True, timeout=2, capture_output=True, text=True,
+                                                    creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
+                        
+                        if result_down.returncode == 0:
+                            hold_duration = hold_ms if hold_ms > 0 else 100
+                            time.sleep(hold_duration / 1000.0)
+                            
+                            cmd_up = f"adb -s {adb_serial} shell \"{' && '.join(touch_up)}\""
+                            result_up = subprocess.run(cmd_up, shell=True, timeout=2, capture_output=True, text=True,
+                                                      creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
+                            
+                            if result_up.returncode == 0:
+                                tap_success = True
+                                log(f"[CLICK] Sendevent SUCCESS at ({client_x},{client_y})")
+                                
                     except Exception as e2:
-                        log(f"[CLICK] ADB sendevent failed: {e2}, fallback to SetCursorPos")
-                        input_method = "SetCursorPos"
-                        if effective_hwnd:
-                            pt = wintypes.POINT(client_x, client_y)
-                            ctypes.windll.user32.ClientToScreen(effective_hwnd, ctypes.byref(pt))
-                            screen_x, screen_y = pt.x, pt.y
-                        else:
-                            screen_x, screen_y = client_x, client_y
-                except Exception as e:
-                    log(f"[CLICK] ADB tap failed: {e}, fallback to SetCursorPos")
-                    input_method = "SetCursorPos"  # Fallback - need to recalculate screen coords
+                        log(f"[CLICK] Sendevent also failed: {e2}")
+                
+                # Final fallback to SetCursorPos
+                if not tap_success:
+                    log(f"[CLICK] All ADB methods failed, fallback to SetCursorPos")
+                    input_method = "SetCursorPos"
                     if effective_hwnd:
                         pt = wintypes.POINT(client_x, client_y)
                         ctypes.windll.user32.ClientToScreen(effective_hwnd, ctypes.byref(pt))
                         screen_x, screen_y = pt.x, pt.y
                     else:
                         screen_x, screen_y = client_x, client_y
-            
+                    
             if input_method == "PostMessage" and effective_hwnd:
                 # METHOD 2: PostMessage - Windows message (no cursor movement, uses client coords)
                 lparam = (client_y << 16) | (client_x & 0xFFFF)
@@ -4904,9 +5054,9 @@ class MainUI:
                     ctypes.windll.user32.mouse_event(0x0010, 0, 0, 0, 0)
             
             # Log final result
-            if input_method in ("PostMessage", "ADB Tap"):
+            if input_method == "PostMessage":
                 log(f"[CLICK] {btn} executed with {input_method} at client({client_x},{client_y}) [target={target_mode}]")
-            else:
+            elif input_method == "SetCursorPos":
                 log(f"[CLICK] {btn} executed with SetCursorPos at screen({screen_x},{screen_y}) [target={target_mode}]")
         
         elif action.action == "KEY_PRESS":
@@ -4991,7 +5141,7 @@ class MainUI:
                     
                     try:
                         log(f"[WHEEL] ADB executing: {cmd}")
-                        result = subprocess.run(cmd, shell=True, timeout=3, capture_output=True, text=True)
+                        result = subprocess.run(cmd, shell=True, timeout=3, capture_output=True, text=True, creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
                         log(f"[WHEEL] ADB scroll {direction} executed at ({client_x},{client_y})")
                         if result.stderr:
                             log(f"[WHEEL] ADB stderr: {result.stderr.strip()}")
@@ -5110,10 +5260,73 @@ class MainUI:
             region = v.get("region", (0, 0, 100, 100))
             timeout_seconds = v.get("timeout_seconds", v.get("timeout_ms", 30000) // 1000)
             
-            log(f"[WAIT_SCREEN_CHANGE] Starting, timeout={timeout_seconds}s, region={region}")
+            # Convert region coords if using ADB (screen coords -> Android coords)
+            android_region = region
+            log(f"[WAIT_SCREEN_CHANGE] Debug: adb_serial={adb_serial}, target_hwnd={target_hwnd}")
+            if adb_serial and target_hwnd:
+                try:
+                    import subprocess
+                    x1, y1, x2, y2 = region
+                    
+                    # Get window rect on screen
+                    rect = wintypes.RECT()
+                    ctypes.windll.user32.GetWindowRect(target_hwnd, ctypes.byref(rect))
+                    win_left, win_top = rect.left, rect.top
+                    
+                    # Get client rect
+                    client_rect = wintypes.RECT()
+                    ctypes.windll.user32.GetClientRect(target_hwnd, ctypes.byref(client_rect))
+                    client_width = client_rect.right - client_rect.left
+                    client_height = client_rect.bottom - client_rect.top
+                    
+                    # Get client area offset (title bar + border)
+                    pt = wintypes.POINT(0, 0)
+                    ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt))
+                    client_left, client_top = pt.x, pt.y
+                    
+                    # Get Android resolution
+                    cmd_size = f"adb -s {adb_serial} shell wm size"
+                    size_result = subprocess.run(cmd_size, shell=True, capture_output=True, text=True, timeout=2,
+                                                creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
+                    import re
+                    match = re.search(r'(\d+)x(\d+)', size_result.stdout)
+                    if match:
+                        android_width, android_height = int(match.group(1)), int(match.group(2))
+                    else:
+                        android_width, android_height = 400, 550
+                    
+                    # Calculate toolbar offset
+                    offset_y = max(0, client_height - android_height)
+                    
+                    # Convert screen coords to client coords, then to Android coords
+                    local_x1 = x1 - client_left
+                    local_y1 = y1 - client_top - offset_y  # Subtract toolbar offset
+                    local_x2 = x2 - client_left
+                    local_y2 = y2 - client_top - offset_y
+                    
+                    # Scale to Android resolution
+                    scale_x = android_width / client_width if client_width > 0 else 1.0
+                    scale_y = android_height / (client_height - offset_y) if (client_height - offset_y) > 0 else 1.0
+                    
+                    android_x1 = max(0, min(int(local_x1 * scale_x), android_width))
+                    android_y1 = max(0, min(int(local_y1 * scale_y), android_height))
+                    android_x2 = max(0, min(int(local_x2 * scale_x), android_width))
+                    android_y2 = max(0, min(int(local_y2 * scale_y), android_height))
+                    
+                    android_region = (android_x1, android_y1, android_x2, android_y2)
+                    
+                    log(f"[WAIT_SCREEN_CHANGE] Coord conversion:")
+                    log(f"  Screen: {region} -> Android: {android_region}")
+                    log(f"  Window client: {client_width}x{client_height}, Android: {android_width}x{android_height}")
+                    log(f"  Offset Y (toolbar): {offset_y}px")
+                except Exception as e:
+                    log(f"[WAIT_SCREEN_CHANGE] Coord conversion failed: {e}, using original region")
+                    android_region = region
+            
+            log(f"[WAIT_SCREEN_CHANGE] Starting, timeout={timeout_seconds}s, region={android_region}")
             
             wait = WaitScreenChange(
-                region=tuple(region) if isinstance(region, list) else region,
+                region=tuple(android_region) if isinstance(android_region, list) else android_region,
                 threshold=v.get("threshold", 0.05),
                 timeout_ms=timeout_seconds * 1000,
                 target_hwnd=target_hwnd or 0,
@@ -5202,10 +5415,67 @@ class MainUI:
             timeout_ms = v.get("timeout_ms", 30000)
             stable_count_exit = v.get("stable_count_exit", 0)
             
+            # Convert region coords if using ADB (screen coords -> Android coords)
+            android_region = region
+            if adb_serial and target_hwnd:
+                try:
+                    import subprocess
+                    x1, y1, x2, y2 = region
+                    
+                    # Get client rect  
+                    client_rect = wintypes.RECT()
+                    ctypes.windll.user32.GetClientRect(target_hwnd, ctypes.byref(client_rect))
+                    client_width = client_rect.right - client_rect.left
+                    client_height = client_rect.bottom - client_rect.top
+                    
+                    # Get client area offset
+                    pt = wintypes.POINT(0, 0)
+                    ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt))
+                    client_left, client_top = pt.x, pt.y
+                    
+                    # Get Android resolution
+                    cmd_size = f"adb -s {adb_serial} shell wm size"
+                    size_result = subprocess.run(cmd_size, shell=True, capture_output=True, text=True, timeout=2,
+                                                creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
+                    import re
+                    match = re.search(r'(\d+)x(\d+)', size_result.stdout)
+                    if match:
+                        android_width, android_height = int(match.group(1)), int(match.group(2))
+                    else:
+                        android_width, android_height = 400, 550
+                    
+                    # Calculate toolbar offset
+                    offset_y = max(0, client_height - android_height)
+                    
+                    # Convert screen coords to Android coords
+                    local_x1 = x1 - client_left
+                    local_y1 = y1 - client_top - offset_y
+                    local_x2 = x2 - client_left
+                    local_y2 = y2 - client_top - offset_y
+                    
+                    scale_x = android_width / client_width if client_width > 0 else 1.0
+                    scale_y = android_height / (client_height - offset_y) if (client_height - offset_y) > 0 else 1.0
+                    
+                    android_x1 = max(0, min(int(local_x1 * scale_x), android_width))
+                    android_y1 = max(0, min(int(local_y1 * scale_y), android_height))
+                    android_x2 = max(0, min(int(local_x2 * scale_x), android_width))
+                    android_y2 = max(0, min(int(local_y2 * scale_y), android_height))
+                    
+                    android_region = (android_x1, android_y1, android_x2, android_y2)
+                    log(f"[WAIT_COLOR_DISAPPEAR] Coord conversion:")
+                    log(f"  Screen: {region}, client_left={client_left}, client_top={client_top}")
+                    log(f"  Client: {client_width}x{client_height}, offset_y={offset_y}")
+                    log(f"  Local: ({local_x1},{local_y1})-({local_x2},{local_y2})")
+                    log(f"  Scale: x={scale_x:.3f}, y={scale_y:.3f}")
+                    log(f"  Android: {android_region} (max: {android_width}x{android_height})")
+                except Exception as e:
+                    log(f"[WAIT_COLOR_DISAPPEAR] Coord conversion failed: {e}")
+                    android_region = region
+            
             # Only use target_rgb if not auto-detect mode
             if auto_detect:
                 wait = WaitColorDisappear(
-                    region=tuple(region) if isinstance(region, list) else region,
+                    region=tuple(android_region) if isinstance(android_region, list) else android_region,
                     tolerance=tolerance,
                     disappear_threshold=disappear_threshold,
                     timeout_ms=timeout_ms,
@@ -5218,7 +5488,7 @@ class MainUI:
             else:
                 target_rgb = v.get("target_rgb", (255, 255, 255))
                 wait = WaitColorDisappear(
-                    region=tuple(region) if isinstance(region, list) else region,
+                    region=tuple(android_region) if isinstance(android_region, list) else android_region,
                     target_rgb=tuple(target_rgb) if isinstance(target_rgb, list) else target_rgb,
                     tolerance=tolerance,
                     disappear_threshold=disappear_threshold,
@@ -5435,83 +5705,162 @@ class MainUI:
                                     input_method = self._input_settings.get("find_image_click_method", "SetCursorPos")
                                     
                                     if input_method == "ADB Tap" and adb_serial and target_hwnd:
-                                        # ADB Tap: Direct Android input with sendevent fallback
+                                        # ADB Tap: Try multiple methods to bypass anti-cheat
+                                        # 1. uiautomator2 (uses accessibility framework)
+                                        # 2. Sendevent (raw hardware events)
+                                        # 3. SetCursorPos fallback
+                                        tap_success = False
                                         import subprocess
+                                        
+                                        # Method 1: Try uiautomator2 first (most reliable, uses accessibility)
                                         try:
-                                            # Use input swipe (synchronous, more reliable than tap)
-                                            # swipe from point to same point = tap with duration
-                                            cmd = f"adb -s {adb_serial} shell input swipe {client_click_x} {client_click_y} {client_click_x} {client_click_y} 100"
-                                            log(f"[FIND_IMAGE] ADB executing: {cmd}")
-                                            result = subprocess.run(cmd, shell=True, check=True, timeout=3, 
-                                                                  capture_output=True, text=True)
-                                            log(f"[FIND_IMAGE] ADB swipe executed: ({client_click_x},{client_click_y}) duration=100ms")
-                                            if result.stdout:
-                                                log(f"[FIND_IMAGE] ADB stdout: {result.stdout.strip()}")
-                                            if result.stderr:
-                                                log(f"[FIND_IMAGE] ADB stderr: {result.stderr.strip()}")
-                                        except subprocess.TimeoutExpired:
-                                            log(f"[FIND_IMAGE] ADB tap timeout, trying sendevent method...")
-                                            # Try sendevent (low-level method)
-                                            try:
-                                                # Get screen dimensions
-                                                cmd_size = f"adb -s {adb_serial} shell wm size"
-                                                result_size = subprocess.run(cmd_size, shell=True, capture_output=True, text=True, timeout=2)
-                                                # Parse: "Physical size: 1920x1080"
-                                                import re
-                                                match_size = re.search(r'(\d+)x(\d+)', result_size.stdout)
-                                                if match_size:
-                                                    width, height = int(match_size.group(1)), int(match_size.group(2))
-                                                    # sendevent uses absolute coordinates (0-32767 range)
-                                                    abs_x = int((client_click_x * 32767) / width)
-                                                    abs_y = int((client_click_y * 32767) / height)
-                                                    
-                                                    # Find touch device
-                                                    cmd_devices = f"adb -s {adb_serial} shell getevent -p"
-                                                    result_devices = subprocess.run(cmd_devices, shell=True, capture_output=True, text=True, timeout=2)
-                                                    touch_device = "/dev/input/event2"  # Default, common for emulators
-                                                    for line in result_devices.stdout.split('\n'):
-                                                        if 'add device' in line.lower() and 'touch' in line.lower():
-                                                            parts = line.split(':')
-                                                            if len(parts) > 1:
-                                                                touch_device = parts[1].strip()
-                                                                break
-                                                    
-                                                    log(f"[FIND_IMAGE] ADB sendevent: device={touch_device}, abs({abs_x},{abs_y})")
-                                                    
-                                                    # Send touch events
-                                                    commands = [
-                                                        f"adb -s {adb_serial} shell sendevent {touch_device} 3 57 1",
-                                                        f"adb -s {adb_serial} shell sendevent {touch_device} 3 53 {abs_x}",
-                                                        f"adb -s {adb_serial} shell sendevent {touch_device} 3 54 {abs_y}",
-                                                        f"adb -s {adb_serial} shell sendevent {touch_device} 0 0 0",
-                                                        f"adb -s {adb_serial} shell sendevent {touch_device} 3 57 -1",
-                                                        f"adb -s {adb_serial} shell sendevent {touch_device} 0 0 0",
-                                                    ]
-                                                    for cmd in commands:
-                                                        subprocess.run(cmd, shell=True, timeout=1, capture_output=True)
-                                                    # Wait for emulator to process the input
-                                                    time.sleep(0.15)
-                                                    log(f"[FIND_IMAGE] ADB sendevent executed: ({client_click_x},{client_click_y})")
-                                                else:
-                                                    raise Exception("Cannot parse screen size")
-                                            except Exception as e2:
-                                                log(f"[FIND_IMAGE] ADB sendevent failed: {e2}, using SetCursorPos fallback")
-                                                # Fallback to SetCursorPos
-                                                if worker and hasattr(worker, '_input_manager'):
-                                                    from ctypes import wintypes
-                                                    import ctypes
-                                                    pt = wintypes.POINT(int(client_click_x), int(client_click_y))
-                                                    ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt))
-                                                    success = worker._input_manager.click(
-                                                        client_x=client_click_x,
-                                                        client_y=client_click_y,
-                                                        button=button_type,
-                                                        humanize_delay_min=50,
-                                                        humanize_delay_max=150
-                                                    )
+                                            import uiautomator2 as u2
+                                            import ctypes
+                                            from ctypes import wintypes
+                                            
+                                            # Get window client area size
+                                            user32 = ctypes.windll.user32
+                                            rect = wintypes.RECT()
+                                            user32.GetClientRect(target_hwnd, ctypes.byref(rect))
+                                            client_width = rect.right - rect.left
+                                            client_height = rect.bottom - rect.top
+                                            
+                                            # Get Android display size
+                                            cmd_size = f"adb -s {adb_serial} shell wm size"
+                                            size_result = subprocess.run(cmd_size, shell=True, capture_output=True, text=True, timeout=2,
+                                                                        creationflags=0x08000000 if sys.platform == 'win32' else 0)
+                                            import re
+                                            match = re.search(r'(\d+)x(\d+)', size_result.stdout)
+                                            if match:
+                                                android_width, android_height = int(match.group(1)), int(match.group(2))
+                                            else:
+                                                android_width, android_height = 400, 550
+                                            
+                                            log(f"[FIND_IMAGE] Window client: {client_width}x{client_height}, Android: {android_width}x{android_height}")
+                                            
+                                            # Calculate offset and scale
+                                            # If client area is larger than Android display, there's a toolbar/border
+                                            # Offset is typically at the top (Y offset)
+                                            offset_x = 0
+                                            offset_y = 0
+                                            scale_x = 1.0
+                                            scale_y = 1.0
+                                            
+                                            if client_height > android_height:
+                                                # Toolbar at top - calculate offset
+                                                offset_y = client_height - android_height
+                                                log(f"[FIND_IMAGE] Detected Y offset: {offset_y}px (toolbar)")
+                                            
+                                            if client_width != android_width or client_height != android_height:
+                                                # Need to scale coordinates
+                                                scale_x = android_width / client_width
+                                                scale_y = android_height / (client_height - offset_y) if (client_height - offset_y) > 0 else 1.0
+                                            
+                                            # Transform coordinates
+                                            android_x = int((client_click_x - offset_x) * scale_x)
+                                            android_y = int((client_click_y - offset_y) * scale_y)
+                                            
+                                            # Clamp to valid range
+                                            android_x = max(0, min(android_x, android_width - 1))
+                                            android_y = max(0, min(android_y, android_height - 1))
+                                            
+                                            log(f"[FIND_IMAGE] uiautomator2: client({client_click_x},{client_click_y}) -> android({android_x},{android_y})")
+                                            
+                                            # Connect and click
+                                            d = u2.connect(adb_serial)
+                                            d.click(android_x, android_y)
+                                            
+                                            tap_success = True
+                                            log(f"[FIND_IMAGE] uiautomator2 tap SUCCESS at android({android_x},{android_y})")
+                                            
                                         except Exception as e:
-                                            log(f"[FIND_IMAGE] ADB tap failed: {e}, using SetCursorPos fallback")
-                                            # Fallback to SetCursorPos
+                                            log(f"[FIND_IMAGE] uiautomator2 failed: {e}, trying sendevent...")
+                                            
+                                            # Method 2: Fallback to sendevent
+                                            try:
+                                                # Get screen dimensions from wm size
+                                                cmd_size = f"adb -s {adb_serial} shell wm size"
+                                                result_size = subprocess.run(cmd_size, shell=True, capture_output=True, text=True, timeout=2,
+                                                                            creationflags=0x08000000 if sys.platform == 'win32' else 0)
+                                                
+                                                import re
+                                                match = re.search(r'(\d+)x(\d+)', result_size.stdout)
+                                                if match:
+                                                    screen_width, screen_height = int(match.group(1)), int(match.group(2))
+                                                else:
+                                                    screen_width, screen_height = 400, 550
+                                                
+                                                # Use hardcoded touch device and max values for LDPlayer
+                                                touch_device = "/dev/input/event2"
+                                                max_x, max_y = 549, 399
+                                                
+                                                # Get window client size and calculate offset (same as uiautomator2)
+                                                user32 = ctypes.windll.user32
+                                                rect = wintypes.RECT()
+                                                user32.GetClientRect(target_hwnd, ctypes.byref(rect))
+                                                client_width = rect.right - rect.left
+                                                client_height = rect.bottom - rect.top
+                                                
+                                                # Calculate Y offset (toolbar)
+                                                offset_y = max(0, client_height - screen_height)
+                                                
+                                                # Apply offset to coordinates BEFORE scaling
+                                                adjusted_x = client_click_x
+                                                adjusted_y = max(0, client_click_y - offset_y)
+                                                
+                                                # Now scale to touch device coordinates
+                                                abs_x = int((adjusted_x * max_x) / screen_width)
+                                                abs_y = int((adjusted_y * max_y) / screen_height)
+                                                abs_x = max(0, min(abs_x, max_x))
+                                                abs_y = max(0, min(abs_y, max_y))
+                                                
+                                                log(f"[FIND_IMAGE] Sendevent: client({client_click_x},{client_click_y}) offset_y={offset_y} -> adjusted({adjusted_x},{adjusted_y}) -> touch({abs_x},{abs_y})")
+                                                
+                                                # Sendevent commands
+                                                EV_ABS, EV_SYN, EV_KEY = 3, 0, 1
+                                                ABS_MT_SLOT, ABS_MT_TRACKING_ID = 47, 57
+                                                ABS_MT_POSITION_X, ABS_MT_POSITION_Y = 53, 54
+                                                ABS_MT_PRESSURE, BTN_TOUCH = 58, 330
+                                                SYN_REPORT = 0
+                                                
+                                                touch_down = [
+                                                    f"sendevent {touch_device} {EV_ABS} {ABS_MT_SLOT} 0",
+                                                    f"sendevent {touch_device} {EV_ABS} {ABS_MT_TRACKING_ID} 1",
+                                                    f"sendevent {touch_device} {EV_ABS} {ABS_MT_POSITION_X} {abs_x}",
+                                                    f"sendevent {touch_device} {EV_ABS} {ABS_MT_POSITION_Y} {abs_y}",
+                                                    f"sendevent {touch_device} {EV_ABS} {ABS_MT_PRESSURE} 1",
+                                                    f"sendevent {touch_device} {EV_KEY} {BTN_TOUCH} 1",
+                                                    f"sendevent {touch_device} {EV_SYN} {SYN_REPORT} 0"
+                                                ]
+                                                
+                                                touch_up = [
+                                                    f"sendevent {touch_device} {EV_ABS} {ABS_MT_TRACKING_ID} -1",
+                                                    f"sendevent {touch_device} {EV_KEY} {BTN_TOUCH} 0",
+                                                    f"sendevent {touch_device} {EV_SYN} {SYN_REPORT} 0"
+                                                ]
+                                                
+                                                cmd_down = f"adb -s {adb_serial} shell \"{' && '.join(touch_down)}\""
+                                                result_down = subprocess.run(cmd_down, shell=True, timeout=2, capture_output=True, text=True,
+                                                                            creationflags=0x08000000 if sys.platform == 'win32' else 0)
+                                                
+                                                if result_down.returncode == 0:
+                                                    import time as time_module
+                                                    time_module.sleep(0.1)
+                                                    
+                                                    cmd_up = f"adb -s {adb_serial} shell \"{' && '.join(touch_up)}\""
+                                                    result_up = subprocess.run(cmd_up, shell=True, timeout=2, capture_output=True, text=True,
+                                                                              creationflags=0x08000000 if sys.platform == 'win32' else 0)
+                                                    
+                                                    if result_up.returncode == 0:
+                                                        tap_success = True
+                                                        log(f"[FIND_IMAGE] Sendevent SUCCESS at ({client_click_x},{client_click_y})")
+                                                        
+                                            except Exception as e2:
+                                                log(f"[FIND_IMAGE] Sendevent also failed: {e2}")
+                                        
+                                        # Final fallback to SetCursorPos
+                                        if not tap_success:
+                                            log(f"[FIND_IMAGE] All ADB methods failed, using SetCursorPos fallback")
                                             if worker and hasattr(worker, '_input_manager'):
                                                 success = worker._input_manager.click(
                                                     client_x=client_click_x,
@@ -5735,6 +6084,58 @@ class MainUI:
             else:  # humanize
                 # Type each character with configurable delays
                 self._type_text_humanize(text, speed_ms)
+        
+        # ==================== FLOW CONTROL ACTIONS ====================
+        
+        elif action.action == "LABEL":
+            # LABEL is just a marker - no execution needed
+            label_name = v.get("name", "")
+            log(f"[LABEL] Marker: '{label_name}'")
+            pass
+        
+        elif action.action == "GOTO":
+            # GOTO jumps to specified label
+            target = v.get("target", "Next")
+            if target and target.startswith("→ "):
+                target = target[2:]
+            log(f"[GOTO] Jumping to: '{target}'")
+            self._handle_goto(target)
+        
+        elif action.action == "REPEAT":
+            # REPEAT loops back to label N times, then goes to goto destination
+            count = v.get("count", 1)
+            label = v.get("start_label", "") or v.get("label", "")  # Support both field names
+            goto_after = v.get("goto", "Next") or v.get("end_label", "Next")
+            
+            # Clean up label name
+            if label and label.startswith("→ "):
+                label = label[2:]
+            if goto_after and goto_after.startswith("→ "):
+                goto_after = goto_after[2:]
+            
+            # Get current action index for tracking
+            repeat_key = self._current_action_index
+            
+            # Initialize counter if first time hitting this REPEAT
+            if repeat_key not in self._repeat_counters:
+                self._repeat_counters[repeat_key] = count
+                log(f"[REPEAT] Initialized counter: {count} iterations, label='{label}', goto='{goto_after}'")
+            
+            remaining = self._repeat_counters[repeat_key]
+            
+            if remaining > 0:
+                # Decrement counter and jump to label
+                self._repeat_counters[repeat_key] = remaining - 1
+                log(f"[REPEAT] Iteration {count - remaining + 1}/{count}, jumping to '{label}' (remaining: {remaining - 1})")
+                if label:
+                    self._handle_goto(label)
+                else:
+                    log(f"[REPEAT] Warning: No label specified, continuing to next")
+            else:
+                # Counter exhausted, go to destination and reset counter
+                log(f"[REPEAT] Completed {count} iterations, going to '{goto_after}'")
+                del self._repeat_counters[repeat_key]  # Reset for next time
+                self._handle_goto(goto_after)
     
     def _handle_goto(self, target: str):
         """Handle goto logic for flow control (FIND_IMAGE, conditions, etc.)"""
@@ -6948,8 +7349,9 @@ class MainUI:
             m = method_var.get()
             target = target_mode_var.get()
             
-            # Validate method with target mode
-            if m in ("PostMessage", "ADB Tap") and target != "emulator":
+            # Validate method with target mode - all ADB methods require emulator
+            adb_methods = ("PostMessage", "ADB Tap", "ADB Sendevent A", "ADB Sendevent B", "ADB Minitouch")
+            if m in adb_methods and target != "emulator":
                 method_info.config(text="⚠️ Yêu cầu Target = Emulator (Worker)", fg=S.ACCENT_RED)
                 return
             
@@ -6958,8 +7360,7 @@ class MainUI:
             elif m == "PostMessage":
                 method_info.config(text="(Không di chuyển - song song - chỉ Emulator)", fg=S.ACCENT_GREEN)
             elif m == "ADB Tap":
-                method_info.config(text="(ADB trực tiếp - song song - chỉ Emulator)", fg=S.ACCENT_GREEN)
-        
+                method_info.config(text="(Auto - tự chọn method tốt nhất)", fg=S.ACCENT_GREEN)
         def save_method(*args):
             # Warn if workers are running
             if self._playback_running or any(self._worker_stop_events):
@@ -8923,8 +9324,8 @@ class MainUI:
         current_find_method = self._input_settings.get("find_image_click_method", "SetCursorPos")
         find_method_var = tk.StringVar(value=current_find_method)
         find_method_combo = ttk.Combobox(input_method_row, textvariable=find_method_var,
-                                         values=["SetCursorPos", "PostMessage", "ADB Tap"],
-                                         state="readonly", width=15)
+                                         values=["SetCursorPos", "PostMessage", "ADB Tap", "ADB Sendevent A", "ADB Sendevent B", "ADB Minitouch"],
+                                         state="readonly", width=18)
         find_method_combo.pack(side="left", padx=5)
         
         # Info label
@@ -8939,7 +9340,13 @@ class MainUI:
             elif m == "PostMessage":
                 find_method_info.config(text="(Không di chuyển - song song)", fg=S.ACCENT_GREEN)
             elif m == "ADB Tap":
-                find_method_info.config(text="(ADB trực tiếp - song song)", fg=S.ACCENT_GREEN)
+                find_method_info.config(text="(Auto - tự chọn method)", fg=S.ACCENT_GREEN)
+            elif m == "ADB Sendevent A":
+                find_method_info.config(text="(Protocol A - BTN_TOUCH)", fg=S.ACCENT_CYAN)
+            elif m == "ADB Sendevent B":
+                find_method_info.config(text="(Protocol B - Slot)", fg=S.ACCENT_CYAN)
+            elif m == "ADB Minitouch":
+                find_method_info.config(text="(High-performance)", fg=S.ACCENT_PURPLE)
         
         def save_find_method(*args):
             # Warn if workers are running
@@ -9467,7 +9874,7 @@ class MainUI:
         end_row = tk.Frame(repeat_frame, bg=S.BG_CARD)
         end_row.pack(fill="x", pady=S.PAD_XS)
         
-        tk.Label(end_row, text="From label:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+        tk.Label(end_row, text="Jump to label:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
                 font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(side="left")
         
         start_var = tk.StringVar(value=value.get("start_label", ""))
@@ -9479,20 +9886,22 @@ class MainUI:
         # Refresh on click
         start_combo.bind("<Button-1>", lambda e: start_combo.configure(values=get_label_list()))
         
-        tk.Label(end_row, text="to label:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+        tk.Label(end_row, text="After done:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
                 font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(side="left", padx=(S.PAD_SM, 0))
         
-        end_var = tk.StringVar(value=value.get("end_label", ""))
+        # Goto options: Next, Start, End, Exit macro, or label names
+        goto_options = ["Next", "Start", "End", "Exit macro"] + get_label_list()
+        end_var = tk.StringVar(value=value.get("end_label", "Next"))
         end_combo = ttk.Combobox(end_row, textvariable=end_var, width=15,
-                                 values=get_label_list())
+                                 values=goto_options)
         end_combo.pack(side="left", padx=S.PAD_SM)
         widgets["end_label"] = end_var
         
         # Refresh on click
-        end_combo.bind("<Button-1>", lambda e: end_combo.configure(values=get_label_list()))
+        end_combo.bind("<Button-1>", lambda e: end_combo.configure(values=["Next", "Start", "End", "Exit macro"] + get_label_list()))
         
         # Info
-        tk.Label(repeat_frame, text="💡 Actions between start_label and end_label will loop N times",
+        tk.Label(repeat_frame, text="💡 Loop N times: Jump to label, then go to 'After done' when finished",
                 bg=S.BG_CARD, fg=S.FG_MUTED,
                 font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(anchor="w", pady=(S.PAD_SM, 0))
     
@@ -10399,33 +10808,65 @@ class MainUI:
         widgets["hotkey_order"] = order_var
     
     def _render_repeat_config(self, parent, widgets, edit_cmd=None):
-        """Render Repeat configuration"""
+        """Render Repeat configuration - Loop back to label N times"""
         count_val = 1
-        until_val = ""
+        label_val = ""
+        goto_val = "Next"
         
-        if edit_cmd and isinstance(edit_cmd, RepeatCommand):
-            count_val = edit_cmd.count
-            until_val = edit_cmd.until_condition_expr or ""
+        if edit_cmd:
+            if isinstance(edit_cmd, RepeatCommand):
+                count_val = edit_cmd.count
+                label_val = getattr(edit_cmd, 'start_label', '') or ""
+                goto_val = getattr(edit_cmd, 'end_label', 'Next') or "Next"
+            elif hasattr(edit_cmd, 'get'):  # Dict-like
+                count_val = edit_cmd.get('count', 1)
+                label_val = edit_cmd.get('start_label', '') or ""
+                goto_val = edit_cmd.get('end_label', 'Next') or "Next"
+        
+        # Helper to get available labels
+        def get_label_list():
+            labels = []
+            for act in self.actions:
+                if act.action == "LABEL":
+                    name = act.value.get("name", "") if isinstance(act.value, dict) else ""
+                    if name:
+                        labels.append(name)
+                if act.label:
+                    labels.append(act.label)
+            return labels
         
         # Count
         count_frame = tk.Frame(parent)
         count_frame.pack(fill="x", padx=10, pady=5)
         tk.Label(count_frame, text="Count:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
         count_var = tk.IntVar(value=count_val)
-        tk.Spinbox(count_frame, from_=0, to=9999, textvariable=count_var, width=8).pack(side="left")
+        tk.Spinbox(count_frame, from_=1, to=9999, textvariable=count_var, width=8).pack(side="left")
         widgets["count"] = count_var
-        tk.Label(count_frame, text="(0 = infinite)", fg="gray", font=("Arial", 8)).pack(side="left", padx=5)
+        tk.Label(count_frame, text="iterations", fg="gray", font=("Arial", 8)).pack(side="left", padx=5)
         
-        # Until condition
-        until_frame = tk.Frame(parent)
-        until_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(until_frame, text="Until Condition:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
-        until_var = tk.StringVar(value=until_val)
-        tk.Entry(until_frame, textvariable=until_var, width=35).pack(side="left")
-        widgets["until_condition"] = until_var
+        # Jump to label
+        label_frame = tk.Frame(parent)
+        label_frame.pack(fill="x", padx=10, pady=5)
+        tk.Label(label_frame, text="Jump to label:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        label_var = tk.StringVar(value=label_val)
+        label_combo = ttk.Combobox(label_frame, textvariable=label_var, width=20, values=get_label_list())
+        label_combo.pack(side="left")
+        widgets["start_label"] = label_var
+        label_combo.bind("<Button-1>", lambda e: label_combo.configure(values=get_label_list()))
         
-        tk.Label(parent, text="(Inner commands: Use nested editor - coming soon)", 
-                fg="gray", font=("Arial", 8)).pack(pady=10)
+        # After done (goto)
+        goto_frame = tk.Frame(parent)
+        goto_frame.pack(fill="x", padx=10, pady=5)
+        tk.Label(goto_frame, text="After done:", font=("Arial", 9)).pack(side="left", padx=(0, 5))
+        goto_options = ["Next", "Start", "End", "Exit macro"] + get_label_list()
+        goto_var = tk.StringVar(value=goto_val)
+        goto_combo = ttk.Combobox(goto_frame, textvariable=goto_var, width=20, values=goto_options)
+        goto_combo.pack(side="left")
+        widgets["end_label"] = goto_var
+        goto_combo.bind("<Button-1>", lambda e: goto_combo.configure(values=["Next", "Start", "End", "Exit macro"] + get_label_list()))
+        
+        tk.Label(parent, text="💡 Loop: Jump to label N times, then go to 'After done'", 
+                fg="gray", font=("Arial", 8)).pack(pady=5, anchor="w", padx=10)
     
     def _render_condition_config(self, parent, widgets, edit_cmd=None):
         """Render Condition configuration"""
@@ -12366,7 +12807,6 @@ class MainUI:
         tk.Label(toolbar_info_frame, text="⚠️ Chỉ hoạt động khi mini toolbar được focus", 
                 font=(S.FONT_FAMILY, S.FONT_SIZE_SM), bg=S.BG_CARD, fg=S.FG_MUTED,
                 anchor="w").pack(padx=S.PAD_MD, pady=2, fill="x")
-        
         # ==================== DEBUG MODE ====================
         debug_frame = tk.LabelFrame(dialog, text=" 🔧 Chế độ Debug (Nhà phát triển) ", 
                                    font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
@@ -12977,7 +13417,6 @@ class MainUI:
         else:
             text = f"⏸ ({pause_key})" if pause_key else "⏸ Pause"
             self._playback_pause_btn.config(text=text, bg="#FF9800")
-
     # ================= LEGACY COMMAND METHODS (for backward compatibility) =================
     
     def add_command(self):

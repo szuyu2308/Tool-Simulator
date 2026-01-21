@@ -1,7 +1,16 @@
 import subprocess
 import re
 import os
+import sys
 from utils.logger import log
+
+# For Windows: Hide console window when running subprocess
+if sys.platform == 'win32':
+    import ctypes
+    # CREATE_NO_WINDOW flag
+    CREATE_NO_WINDOW = 0x08000000
+else:
+    CREATE_NO_WINDOW = 0
 
 class ADBManager:
     """Quản lý ADB kết nối tới LDPlayer emulator
@@ -21,9 +30,40 @@ class ADBManager:
     
     def _find_adb(self):
         """Tìm ADB executable trong PATH hoặc LDPlayer directory"""
+        # Cách 0: Check bundled ADB (trong files/ folder của exe)
+        # PyInstaller extracts to sys._MEIPASS when --onefile
+        bundled_paths = []
+        
+        # For PyInstaller --onefile (temp directory)
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            # Running in PyInstaller bundle
+            base_path = sys._MEIPASS
+            bundled_paths.append(os.path.join(base_path, "files", "adb.exe"))
+            log(f"[ADB] PyInstaller mode, base path: {base_path}")
+        
+        # For normal Python or PyInstaller --onedir
+        bundled_paths.extend([
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "files", "adb.exe"),
+            os.path.join(os.getcwd(), "files", "adb.exe"),
+            os.path.join(os.path.dirname(sys.executable if getattr(sys, 'frozen', False) else __file__), "files", "adb.exe"),
+        ])
+        
+        for path in bundled_paths:
+            abs_path = os.path.abspath(path)
+            if os.path.exists(abs_path):
+                log(f"[ADB] Using bundled ADB: {abs_path}")
+                return abs_path
+            else:
+                log(f"[ADB] Checked: {abs_path} - not found")
+        
         # Cách 1: Check PATH
         try:
-            result = subprocess.run(["adb", "version"], capture_output=True, timeout=2)
+            result = subprocess.run(
+                ["adb", "version"],
+                capture_output=True,
+                timeout=2,
+                creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+            )
             if result.returncode == 0:
                 return "adb"
         except Exception:
@@ -31,14 +71,14 @@ class ADBManager:
         
         # Cách 2: Check LDPlayer directory
         possible_paths = [
-            r"C:\Program Files\LDPlayer\LDPlayer4.0\adb",
-            r"C:\Program Files\LDPlayer\LDPlayer9\adb",
+            r"C:\Program Files\LDPlayer\LDPlayer9\adb.exe",
+            r"C:\Program Files\LDPlayer\LDPlayer4.0\adb.exe",
             r"C:\Program Files (x86)\LDPlayer\LDPlayer9\adb.exe",
         ]
         
         for path in possible_paths:
-            if os.path.exists(path + ".exe") or os.path.exists(path):
-                return path if os.path.exists(path) else path + ".exe"
+            if os.path.exists(path):
+                return path
         
         return None
     
@@ -52,7 +92,8 @@ class ADBManager:
                 [self.adb_path, "devices"],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
+                creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0
             )
             
             devices = []
@@ -98,7 +139,8 @@ class ADBManager:
                     [self.adb_path, "-s", device_id, "shell", "wm", "size"],
                     capture_output=True,
                     text=True,
-                    timeout=5
+                    timeout=5,
+                    creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0
                 )
                 
                 if result.returncode == 0:
@@ -121,7 +163,8 @@ class ADBManager:
                     [self.adb_path, "-s", device_id, "shell", "dumpsys", "display"],
                     capture_output=True,
                     text=True,
-                    timeout=5
+                    timeout=5,
+                    creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0
                 )
                 
                 if result.returncode == 0:
@@ -156,7 +199,8 @@ class ADBManager:
                 [self.adb_path, "connect", device_address],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
+                creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0
             )
             
             if "connected" in result.stdout.lower():
@@ -168,4 +212,3 @@ class ADBManager:
         except Exception as e:
             log(f"[ADB] Connection error: {e}")
             return False
-
