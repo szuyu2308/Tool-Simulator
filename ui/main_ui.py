@@ -1325,6 +1325,14 @@ class MainUI:
         # Update button text with hotkeys
         self._update_button_hotkey_text()
 
+        # ===== FOOTER: Signature =====
+        footer_frame = tk.Frame(root, bg=S.BG_PRIMARY)
+        footer_frame.pack(side="bottom", fill="x", pady=(0, 2))
+        
+        tk.Label(footer_frame, text="Copyright © 2026 Szuyu. All rights reserved. Developed for internal automation. Unauthorized distribution is prohibited.", 
+                 font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "italic"),
+                 bg=S.BG_PRIMARY, fg=S.FG_MUTED).pack(side="top", pady=2)
+
         # ===== MAIN CONTAINER: Two panels side by side =====
         container = tk.Frame(root, bg=S.BG_PRIMARY)
         container.pack(fill="both", expand=True, padx=S.PAD_SM, pady=(0, S.PAD_SM))
