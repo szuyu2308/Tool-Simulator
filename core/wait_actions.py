@@ -426,7 +426,8 @@ class WaitColorDisappear(WaitAction):
                  target_hwnd: int = 0,
                  auto_detect: bool = False,
                  auto_detect_count: int = 3,
-                 stable_count_exit: int = 0,
+                 stable_count_exit: int = 3,
+                 sample_count: int = 5,
                  adb_serial: Optional[str] = None):
         """
         Args:
@@ -438,7 +439,8 @@ class WaitColorDisappear(WaitAction):
             target_hwnd: Target window handle
             auto_detect: Auto-detect top colors from baseline
             auto_detect_count: Number of top colors to track (default 3)
-            stable_count_exit: If N consecutive checks have identical values, exit (0 = disabled)
+            stable_count_exit: If N consecutive checks have identical values, exit (default 3)
+            sample_count: Number of samples to analyze for auto-detect (default 5)
             adb_serial: If set, capture via ADB screencap using emulator coordinates
         """
         self.region = region
@@ -450,6 +452,7 @@ class WaitColorDisappear(WaitAction):
         self.auto_detect = auto_detect
         self.auto_detect_count = auto_detect_count
         self.stable_count_exit = stable_count_exit
+        self.sample_count = sample_count
         self.adb_serial = adb_serial
         self.tracked_colors = []  # Will be populated if auto_detect=True
     
@@ -617,11 +620,12 @@ class WaitColorDisappear(WaitAction):
         if self.auto_detect:
             log(f"[WAIT_COLOR_DISAPPEAR] 🔍 Auto-detecting ANIMATED colors (spin arc)...")
             
-            # Take 5 samples over 2 seconds
+            # Take samples over ~2 seconds
             samples = []
-            sample_interval = 0.4  # 400ms between samples = 2 seconds total
+            total_sample_time = 2.0  # seconds
+            sample_interval = total_sample_time / max(1, self.sample_count - 1) if self.sample_count > 1 else 0.4
             
-            for i in range(5):
+            for i in range(self.sample_count):
                 if stop_event.is_set():
                     return WaitResult(success=False, message="Stopped by user")
                 
@@ -641,9 +645,9 @@ class WaitColorDisappear(WaitAction):
                                    for color, count in color_counts.items()}
                 samples.append(color_percentages)
                 
-                log(f"[WAIT_COLOR_DISAPPEAR] Sample {i+1}/5: {len(color_counts)} unique colors")
+                log(f"[WAIT_COLOR_DISAPPEAR] Sample {i+1}/{self.sample_count}: {len(color_counts)} unique colors")
                 
-                if i < 4:  # Don't sleep after last sample
+                if i < self.sample_count - 1:  # Don't sleep after last sample
                     time.sleep(sample_interval)
             
             # Calculate variance for each color

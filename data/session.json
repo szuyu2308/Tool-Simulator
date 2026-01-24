@@ -1,0 +1,66 @@
+{
+  "version": "1.0",
+  "actions": [
+    {
+      "id": "baf01171",
+      "enabled": true,
+      "action": "FIND_IMAGE",
+      "value": {
+        "template_path": "",
+        "threshold": 0.8,
+        "crop_region": "",
+        "mouse_action_enabled": true,
+        "mouse_type": "Left click",
+        "click_position": "Centered",
+        "save_xy_enabled": false,
+        "save_x_var": "$foundX",
+        "save_y_var": "$foundY",
+        "goto_if_found": "Next",
+        "goto_found_label": "",
+        "motion_guard_enabled": false,
+        "motion_threshold": 1.0,
+        "motion_stable_count": 5,
+        "motion_timeout_ms": 10000,
+        "goto_motion_timeout": "Next",
+        "retry_seconds": 30,
+        "goto_if_not_found": "Next",
+        "goto_notfound_label": "",
+        "adb_tap_hold_ms": 100
+      },
+      "label": "",
+      "comment": ""
+    },
+    {
+      "id": "f25ca5c4",
+      "enabled": true,
+      "action": "FIND_IMAGE",
+      "value": {
+        "template_path": "",
+        "threshold": 0.8,
+        "crop_region": "",
+        "mouse_action_enabled": true,
+        "mouse_type": "Left click",
+        "click_position": "Centered",
+        "save_xy_enabled": false,
+        "save_x_var": "$foundX",
+        "save_y_var": "$foundY",
+        "goto_if_found": "Next",
+        "goto_found_label": "",
+        "motion_guard_enabled": false,
+        "motion_threshold": 1.0,
+        "motion_stable_count": 5,
+        "motion_timeout_ms": 10000,
+        "goto_motion_timeout": "Next",
+        "retry_seconds": 30,
+        "goto_if_not_found": "Next",
+        "goto_notfound_label": "",
+        "adb_tap_hold_ms": 100
+      },
+      "label": "",
+      "comment": ""
+    }
+  ],
+  "images": {},
+  "last_save_dir": "",
+  "last_load_dir": ""
+}

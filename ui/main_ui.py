@@ -697,11 +697,12 @@ class Action:
     comment: str = ""
     
     def to_dict(self) -> dict:
+        import copy
         return {
             "id": self.id,
             "enabled": self.enabled,
             "action": self.action,
-            "value": self.value,
+            "value": copy.deepcopy(self.value),  # Deep copy to prevent modification
             "label": self.label,
             "comment": self.comment
         }
@@ -894,6 +895,7 @@ class MainUI:
         self._build_ui()
         self._load_macros()
         self._load_worker_actions()  # Load saved worker actions
+        self._load_session()  # Restore last session actions
         self._auto_refresh_status()
 
         # Register global hotkeys on startup
@@ -901,6 +903,125 @@ class MainUI:
         
         # Show guide dialog on startup (if enabled)
         self._show_guide_on_startup()
+        
+        # Register close handler to save session on exit
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+    
+    def _on_close(self):
+        """Save session and close app"""
+        try:
+            self._save_session()
+            log("[UI] Session saved on exit")
+        except Exception as e:
+            log(f"[UI] Failed to save session on exit: {e}")
+        self.root.destroy()
+    
+    def _save_session(self):
+        """Save current actions to session file for next startup"""
+        session_file = "data/session.json"
+        if not self.actions:
+            # No actions to save, remove old session file
+            if os.path.exists(session_file):
+                os.remove(session_file)
+            return
+        
+        import copy
+        import base64
+        
+        try:
+            os.makedirs("data", exist_ok=True)
+            
+            # Build session data with embedded images
+            actions_data = []
+            images_embedded = {}
+            image_count = 0
+            
+            for action in self.actions:
+                action_dict = action.to_dict()
+                
+                # Embed FIND_IMAGE templates
+                if action.action == "FIND_IMAGE" and action.value.get("template_path"):
+                    old_path = action.value["template_path"]
+                    if not old_path.startswith("@embedded:") and os.path.exists(old_path):
+                        with open(old_path, "rb") as img_file:
+                            img_data = base64.b64encode(img_file.read()).decode('utf-8')
+                        import re
+                        filename = os.path.basename(old_path)
+                        clean_filename = re.sub(r'^(img_\d{3}_)+', '', filename)
+                        if not clean_filename:
+                            clean_filename = f"image_{image_count:03d}.png"
+                        img_key = f"session_img_{image_count:03d}_{clean_filename}"
+                        images_embedded[img_key] = img_data
+                        action_dict["value"]["template_path"] = f"@embedded:{img_key}"
+                        image_count += 1
+                
+                actions_data.append(action_dict)
+            
+            session_data = {
+                "version": "1.0",
+                "actions": actions_data,
+                "images": images_embedded,
+                "last_save_dir": getattr(self, '_last_save_dir', ''),
+                "last_load_dir": getattr(self, '_last_load_dir', '')
+            }
+            
+            with open(session_file, "w", encoding="utf-8") as f:
+                json.dump(session_data, f, indent=2, ensure_ascii=False)
+            
+            log(f"[UI] Session saved: {len(self.actions)} actions, {image_count} images")
+        except Exception as e:
+            log(f"[UI] Failed to save session: {e}")
+    
+    def _load_session(self):
+        """Load session from last app run"""
+        session_file = "data/session.json"
+        if not os.path.exists(session_file):
+            return
+        
+        try:
+            with open(session_file, "r", encoding="utf-8") as f:
+                session_data = json.load(f)
+            
+            actions_data = session_data.get("actions", [])
+            images = session_data.get("images", {})
+            
+            if not actions_data:
+                return
+            
+            # Restore last used directories
+            self._last_save_dir = session_data.get("last_save_dir", '')
+            self._last_load_dir = session_data.get("last_load_dir", '')
+            
+            # Extract embedded images to temp
+            if images:
+                import base64
+                import tempfile
+                temp_dir = os.path.join(tempfile.gettempdir(), "macro_images", "session")
+                os.makedirs(temp_dir, exist_ok=True)
+                
+                for img_key, img_b64 in images.items():
+                    try:
+                        img_data = base64.b64decode(img_b64)
+                        img_path = os.path.join(temp_dir, img_key)
+                        with open(img_path, "wb") as f:
+                            f.write(img_data)
+                    except Exception as e:
+                        log(f"[UI] Failed to extract session image {img_key}: {e}")
+                
+                # Update paths in actions
+                for action_data in actions_data:
+                    if action_data.get("action") == "FIND_IMAGE":
+                        template_path = action_data.get("value", {}).get("template_path", "")
+                        if template_path.startswith("@embedded:"):
+                            img_key = template_path.replace("@embedded:", "")
+                            action_data["value"]["template_path"] = os.path.join(temp_dir, img_key)
+            
+            self.actions = [Action.from_dict(a) for a in actions_data]
+            self._refresh_action_list()
+            
+            log(f"[UI] Session restored: {len(self.actions)} actions")
+        except Exception as e:
+            log(f"[UI] Failed to load session: {e}")
     
     # ================= INPUT METHOD SETTINGS =================
     
@@ -1218,14 +1339,19 @@ class MainUI:
         worker_btn_frame = tk.Frame(worker_frame, bg=S.BG_CARD)
         worker_btn_frame.pack(fill="x", padx=S.PAD_XS, pady=S.PAD_XS)
 
-        # Row 1: Main actions
-        btn_row1 = tk.Frame(worker_btn_frame, bg=S.BG_CARD)
-        btn_row1.pack(fill="x", pady=(0, S.PAD_XS))
-        
+       # --- CẤU TRÚC MỚI: Chia làm 2 cột ---
+
+        # 1. Tạo Frame chứa các nút nhỏ bên trái (Refresh, Set Worker, Play, Stop)
+        left_frame = tk.Frame(worker_btn_frame, bg=S.BG_CARD)
+        left_frame.pack(side="left", fill="y") # Chỉ fill chiều dọc
+
+        # --- Row 1 (trong left_frame): Refresh & Set Worker ---
+        btn_row1 = tk.Frame(left_frame, bg=S.BG_CARD)
+        btn_row1.pack(fill="x", pady=(0, S.PAD_XS)) # Padding dưới để tách row 1 và 2
+
         for text, icon, cmd, color in [
             ("Làm mới", "🔄", self.refresh_workers, S.BTN_SECONDARY),
             ("Set Worker", "⚙", self.set_worker_dialog, S.ACCENT_BLUE),
-            ("Check", "🔍", self.check_status, S.BTN_SECONDARY),
         ]:
             btn = tk.Button(btn_row1, text=f"{icon} {text}", command=cmd,
                            bg=color, fg=S.FG_PRIMARY,
@@ -1235,15 +1361,13 @@ class MainUI:
             btn.bind("<Enter>", lambda e, b=btn: b.config(bg=S.BG_TERTIARY))
             btn.bind("<Leave>", lambda e, b=btn, c=color: b.config(bg=c))
 
-        # Row 2: Additional actions
-        btn_row2 = tk.Frame(worker_btn_frame, bg=S.BG_CARD)
+        # --- Row 2 (trong left_frame): Play All & Stop All ---
+        btn_row2 = tk.Frame(left_frame, bg=S.BG_CARD)
         btn_row2.pack(fill="x")
-        
+
         for text, icon, cmd, color in [
             ("Play All", "▶", self._play_all_workers, S.ACCENT_GREEN),
             ("Stop All", "⏹", self._stop_all_workers, S.ACCENT_RED),
-            ("Edit Worker", "🎛", self._open_worker_editor, S.ACCENT_BLUE),
-            # ("Xóa", "🗑", self._remove_workers, S.BTN_SECONDARY),
         ]:
             btn = tk.Button(btn_row2, text=f"{icon} {text}", command=cmd,
                            bg=color, fg=S.FG_PRIMARY,
@@ -1252,6 +1376,21 @@ class MainUI:
             btn.pack(side="left", padx=S.PAD_XS)
             btn.bind("<Enter>", lambda e, b=btn: b.config(bg=S.BG_TERTIARY))
             btn.bind("<Leave>", lambda e, b=btn, c=color: b.config(bg=c))
+
+        # 2. Tạo nút Check to bự bên phải (nằm ngoài left_frame)
+        btn_check = tk.Button(worker_btn_frame, text="🔍 Check Giả Lập", command=self.check_status,
+                           bg=S.ACCENT_CYAN, fg=S.FG_PRIMARY,
+                           font=(S.FONT_FAMILY, S.FONT_SIZE_SM + 1, "bold"), # Font to hơn chút cho đẹp
+                           relief="flat", cursor="hand2")
+        
+        # side="left": Nằm tiếp theo sau left_frame
+        # fill="both": Dãn ra cả chiều ngang và dọc
+        # expand=True: Chiếm hết chỗ trống còn lại
+        btn_check.pack(side="left", fill="both", expand=True, padx=(S.PAD_XS, 0))
+
+        # Hiệu ứng hover cho nút Check
+        btn_check.bind("<Enter>", lambda e, b=btn_check: b.config(bg=S.BG_TERTIARY))
+        btn_check.bind("<Leave>", lambda e, b=btn_check, c=S.ACCENT_CYAN: b.config(bg=c))
         
         # Row 3: Bulk Action Management
         btn_row3 = tk.Frame(worker_btn_frame, bg=S.BG_CARD)
@@ -1292,7 +1431,7 @@ class MainUI:
         scrollbar.pack(side=tk.RIGHT, fill="y")
 
         self.worker_tree.bind("<Button-3>", self._on_worker_tree_right_click)
-        self.worker_tree.bind("<Double-1>", lambda e: self._open_worker_editor())
+        # Double-click to open worker editor removed per user request
         self.worker_tree.bind("<Control-a>", self._select_all_workers)
         self.worker_tree_items = {}
         
@@ -1315,6 +1454,8 @@ class MainUI:
             ("➕ Thêm", self._open_add_action_dialog, S.ACCENT_GREEN, 7),
             ("✏️ Sửa", self._edit_selected_action, S.ACCENT_BLUE, 7),
             ("🗑 Xóa", self._remove_action, S.ACCENT_RED, 6),
+            ("💾 Save", self._save_actions, S.ACCENT_PURPLE, 7),
+            ("📂 Load", self._load_actions, S.ACCENT_ORANGE, 7),
             # ("⬆", self._move_action_up, S.BTN_SECONDARY, 2),
             # ("⬇", self._move_action_down, S.BTN_SECONDARY, 2),
         ]
@@ -1329,22 +1470,22 @@ class MainUI:
             btn.bind("<Leave>", lambda e, b=btn, c=color: b.config(bg=c))
 
         # Row 2: File operations
-        action_row2 = tk.Frame(action_btn_frame, bg=S.BG_CARD)
-        action_row2.pack(fill="x")
+        # action_row1 = tk.Frame(action_btn_frame, bg=S.BG_CARD)
+        # action_row1.pack(fill="x")
 
-        action_buttons_row2 = [
-            ("💾 Lưu", self._save_actions, S.BTN_PRIMARY, 7),
-            ("📂 Tải", self._load_actions, S.BTN_SECONDARY, 7),
-        ]
+        # action_buttons_row1 = [
+        #     ("💾 Lưu", self._save_actions, S.BTN_PRIMARY, 7),
+        #     ("📂 Tải", self._load_actions, S.BTN_SECONDARY, 7),
+        # ]
         
-        for text, cmd, color, w in action_buttons_row2:
-            btn = tk.Button(action_row2, text=text, command=cmd,
-                           bg=color, fg=S.FG_PRIMARY,
-                           font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
-                           relief="flat", cursor="hand2", width=w)
-            btn.pack(side="left", padx=S.PAD_XS)
-            btn.bind("<Enter>", lambda e, b=btn: b.config(bg=S.BG_TERTIARY))
-            btn.bind("<Leave>", lambda e, b=btn, c=color: b.config(bg=c))
+        # for text, cmd, color, w in action_buttons_row1:
+        #     btn = tk.Button(action_row1, text=text, command=cmd,
+        #                    bg=color, fg=S.FG_PRIMARY,
+        #                    font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+        #                    relief="flat", cursor="hand2", width=w)
+        #     btn.pack(side="left", padx=S.PAD_XS)
+        #     btn.bind("<Enter>", lambda e, b=btn: b.config(bg=S.BG_TERTIARY))
+        #     btn.bind("<Leave>", lambda e, b=btn, c=color: b.config(bg=c))
 
         # Action Treeview with proper columns
         action_tree_frame = tk.Frame(action_frame, bg=S.BG_CARD)
@@ -1635,9 +1776,7 @@ class MainUI:
                            command=lambda: self._sync_workers_to_global(selected_worker_ids))
             menu.add_command(label="🔄 Hoàn tác đã chọn → Global", 
                            command=lambda: self._revert_workers_to_global(selected_worker_ids))
-            menu.add_separator()
-            menu.add_command(label="🎛️ Sửa hàng loạt (Multi-Worker Editor)", 
-                           command=self._open_worker_editor)
+            # Multi-Worker Editor removed per user request
         
         # Display menu at cursor position
         try:
@@ -1839,8 +1978,53 @@ class MainUI:
             return worker.emulator_name
         return f"Worker {worker_id}"
     
+    def _resolve_goto_target_for_worker(self, target: str, actions: list) -> int:
+        """Resolve goto target string to action index for worker playback.
+        
+        Args:
+            target: Goto target string ('Next', 'Start', 'End', 'Previous', or label name)
+            actions: List of Action objects
+            
+        Returns:
+            Target index (0-based). Returns -1 for 'End' to signal loop exit.
+            Returns -2 for 'Exit macro' to signal stop.
+        """
+        if not target:
+            return None  # Continue to next (default)
+        
+        target = target.strip()
+        
+        if target == "Next":
+            return None  # Signal to continue to next action
+        elif target == "Start":
+            return 0  # Jump to first action
+        elif target == "End":
+            return -1  # Signal to exit loop
+        elif target == "Exit macro":
+            return -2  # Signal to stop playback
+        elif target == "Previous":
+            return -3  # Special: handled in loop (current - 1)
+        else:
+            # Find label by name
+            label_name = target.replace("→ ", "").strip()
+            
+            for idx, act in enumerate(actions):
+                act_label = ""
+                # Check LABEL action's value.name
+                if hasattr(act, 'action') and act.action == "LABEL":
+                    act_label = act.value.get("name", "") if isinstance(act.value, dict) else ""
+                # Also check action.label field (any action can have a label)
+                if not act_label and hasattr(act, 'label') and act.label:
+                    act_label = act.label
+                    
+                if act_label == label_name:
+                    return idx  # Return 0-based index
+            
+            log(f"[GOTO] Warning: Label '{label_name}' not found in actions")
+            return None  # Label not found, continue to next
+    
     def _start_independent_worker_playback(self, worker_id: int, actions: list, target_hwnd: int = None):
-        """Start independent playback thread for a worker with real-time status tracking"""
+        """Start independent playback thread for a worker with real-time status tracking and goto support"""
         def playback_thread():
             stop_event = threading.Event()
             # Store stop event for this worker
@@ -1851,6 +2035,11 @@ class MainUI:
             # Initialize status tracking dict (shared across threads)
             if not hasattr(self, '_worker_play_status'):
                 self._worker_play_status = {}
+            
+            # Initialize goto result storage for this worker
+            if not hasattr(self, '_worker_goto_targets'):
+                self._worker_goto_targets = {}
+            self._worker_goto_targets[worker_id] = None
             
             self._worker_play_status[worker_id] = {
                 'current_action': 'Starting...',
@@ -1872,15 +2061,32 @@ class MainUI:
                 total_actions = len(actions)
                 log(f"[{worker_name}] ▶ Started: {total_actions} actions")
                 
-                # Execute actions independently
-                for idx, action in enumerate(actions, 1):
+                # Use while loop instead of for to support goto
+                current_idx = 0
+                
+                while current_idx < total_actions:
                     if stop_event.is_set():
                         self._worker_play_status[worker_id]['status'] = 'Stopped'
-                        log(f"[{worker_name}] ⏹ Stopped by user at {idx-1}/{total_actions} ({(idx-1)/total_actions*100:.0f}%)")
+                        log(f"[{worker_name}] ⏹ Stopped by user at {current_idx}/{total_actions} ({current_idx/total_actions*100:.0f}%)")
                         break
                     
+                    action = actions[current_idx]
+                    display_idx = current_idx + 1  # 1-based for display
+                    
+                    # Skip disabled actions (same as _playback_loop)
+                    if hasattr(action, 'enabled') and not action.enabled:
+                        log(f"[{worker_name}] {display_idx}/{total_actions} - SKIPPED (disabled)")
+                        current_idx += 1
+                        continue
+                    
+                    # Check pause (if using global pause)
+                    while hasattr(self, '_playback_pause_event') and self._playback_pause_event.is_set():
+                        if stop_event.is_set():
+                            break
+                        time.sleep(0.1)
+                    
                     # Calculate progress
-                    progress = (idx / total_actions) * 100
+                    progress = (display_idx / total_actions) * 100
                     
                     # Execute action using _execute_action with adb_serial
                     try:
@@ -1891,16 +2097,49 @@ class MainUI:
                         # Update status dict for real-time UI
                         self._worker_play_status[worker_id].update({
                             'current_action': action_label,
-                            'current_idx': idx,
+                            'current_idx': display_idx,
                             'progress': progress
                         })
                         
-                        log(f"[{worker_name}] {idx}/{total_actions} ({progress:.0f}%) - {action_type}")
-                        self._execute_action(action, target_hwnd or 0, adb_serial=adb_serial)
+                        log(f"[{worker_name}] {display_idx}/{total_actions} ({progress:.0f}%) - {action_type}")
+                        
+                        # Clear any previous goto target for this worker
+                        self._worker_goto_targets[worker_id] = None
+                        
+                        # Execute action - it may set goto target via _set_worker_goto_target
+                        self._execute_action_for_worker(action, target_hwnd or 0, adb_serial=adb_serial, worker_id=worker_id)
+                        
+                        # Check if action set a goto target
+                        goto_target_str = self._worker_goto_targets.get(worker_id)
+                        if goto_target_str:
+                            resolved_idx = self._resolve_goto_target_for_worker(goto_target_str, actions)
+                            
+                            if resolved_idx == -1:  # End
+                                log(f"[{worker_name}] ⏭ GOTO End - stopping playback")
+                                break
+                            elif resolved_idx == -2:  # Exit macro
+                                log(f"[{worker_name}] ⏹ GOTO Exit macro - stopping playback")
+                                stop_event.set()
+                                break
+                            elif resolved_idx == -3:  # Previous
+                                new_idx = max(0, current_idx - 1)
+                                log(f"[{worker_name}] ↩ GOTO Previous: {current_idx+1} → {new_idx+1}")
+                                current_idx = new_idx
+                                continue
+                            elif resolved_idx is not None:
+                                # Jump to specific index
+                                log(f"[{worker_name}] ↪ GOTO '{goto_target_str}': {current_idx+1} → {resolved_idx+1}")
+                                current_idx = resolved_idx
+                                continue
+                        
+                        # Normal progression to next action
+                        current_idx += 1
+                        
                     except Exception as e:
-                        log(f"[{worker_name}] ✗ Error at {idx}/{total_actions}: {e}")
+                        log(f"[{worker_name}] ✗ Error at {display_idx}/{total_actions}: {e}")
+                        current_idx += 1  # Continue to next on error
                 
-                if not stop_event.is_set():
+                if not stop_event.is_set() and current_idx >= total_actions:
                     self._worker_play_status[worker_id]['status'] = 'Complete'
                     log(f"[{worker_name}] ✓ Complete: {total_actions}/{total_actions} (100%)")
             except Exception as e:
@@ -1909,9 +2148,33 @@ class MainUI:
             finally:
                 if hasattr(self, '_worker_stop_events') and worker_id in self._worker_stop_events:
                     del self._worker_stop_events[worker_id]
+                if hasattr(self, '_worker_goto_targets') and worker_id in self._worker_goto_targets:
+                    del self._worker_goto_targets[worker_id]
         
         thread = threading.Thread(target=playback_thread, daemon=True, name=f"Worker-{worker_id}-Playback")
         thread.start()
+    
+    def _execute_action_for_worker(self, action, target_hwnd: int, adb_serial: str = None, worker_id: int = None):
+        """Execute action with worker context for proper goto handling.
+        
+        This wrapper sets _current_worker_context before calling _execute_action,
+        allowing _handle_goto to store goto targets for the worker instead of
+        modifying UI-level _current_action_index.
+        
+        Args:
+            action: Action to execute
+            target_hwnd: Target window handle
+            adb_serial: ADB device serial
+            worker_id: Worker ID for context
+        """
+        # Set worker context so _handle_goto knows to store goto target
+        self._current_worker_context = worker_id
+        
+        try:
+            self._execute_action(action, target_hwnd, adb_serial=adb_serial)
+        finally:
+            # Clear worker context
+            self._current_worker_context = None
     
     def _stop_all_workers(self):
         """Stop all workers"""
@@ -5224,12 +5487,116 @@ class MainUI:
         
         elif action.action == "GROUP":
             # Execute grouped actions
-            nested_actions = [Action.from_dict(a) for a in v.get("actions", [])]
-            log(f"[Playback] Executing GROUP '{v.get('name', '')}' with {len(nested_actions)} actions")
-            for nested in nested_actions:
+            log(f"[Playback] GROUP raw value: {v}")
+            actions_list = v.get("actions", [])
+            log(f"[Playback] GROUP actions_list type={type(actions_list)}, len={len(actions_list) if actions_list else 0}")
+            if actions_list:
+                nested_actions = [Action.from_dict(a) for a in actions_list]
+                log(f"[Playback] Executing GROUP '{v.get('name', '')}' with {len(nested_actions)} actions")
+                for i, nested in enumerate(nested_actions):
+                    if self._playback_stop_event.is_set():
+                        break
+                    log(f"[Playback] GROUP action {i+1}/{len(nested_actions)}: {nested.action}")
+                    self._execute_action(nested, target_hwnd, adb_serial=adb_serial)
+            else:
+                log(f"[Playback] GROUP '{v.get('name', '')}' has NO nested actions - skipping")
+        
+        elif action.action == "EMBED_MACRO":
+            # Load and execute macro file(s) inline
+            # Support both single macro_name and multi-select macro_names list
+            macro_names = v.get("macro_names", [])
+            if not macro_names:
+                single = v.get("macro_name", "")
+                if single:
+                    macro_names = [single]
+            
+            continue_on_error = v.get("continue_on_error", True)
+            inherit_variables = v.get("inherit_variables", True)
+            
+            if not macro_names:
+                log(f"[EMBED_MACRO] ERROR: No macro(s) specified")
+                return
+            
+            import base64
+            import tempfile
+            
+            log(f"[EMBED_MACRO] Will execute {len(macro_names)} macro(s) in order")
+            
+            for macro_idx, macro_name in enumerate(macro_names, 1):
                 if self._playback_stop_event.is_set():
                     break
-                self._execute_action(nested, target_hwnd, adb_serial=adb_serial)
+                
+                log(f"[EMBED_MACRO] === Macro {macro_idx}/{len(macro_names)}: {macro_name} ===")
+                
+                # Find the macro file
+                macro_path = None
+                if os.path.isabs(macro_name) and os.path.exists(macro_name):
+                    macro_path = macro_name
+                else:
+                    for ext in ['.macro', '.json', '']:
+                        test_path = os.path.join(MACROS_DIR, macro_name + ext)
+                        if os.path.exists(test_path):
+                            macro_path = test_path
+                            break
+                        test_path = os.path.join(MACROS_DIR, macro_name)
+                        if os.path.exists(test_path):
+                            macro_path = test_path
+                            break
+                
+                if not macro_path or not os.path.exists(macro_path):
+                    log(f"[EMBED_MACRO] ERROR: Macro not found: {macro_name}")
+                    if not continue_on_error:
+                        raise Exception(f"Macro not found: {macro_name}")
+                    continue
+                
+                try:
+                    with open(macro_path, "r", encoding="utf-8") as f:
+                        macro_data = json.load(f)
+                    
+                    images = macro_data.get("images", {})
+                    actions_data = macro_data.get("actions", [])
+                    
+                    # Extract images to temp if needed
+                    if images:
+                        temp_dir = os.path.join(tempfile.gettempdir(), "macro_images", 
+                                               os.path.splitext(os.path.basename(macro_path))[0])
+                        os.makedirs(temp_dir, exist_ok=True)
+                        
+                        for img_key, img_b64 in images.items():
+                            try:
+                                img_data = base64.b64decode(img_b64)
+                                img_path = os.path.join(temp_dir, img_key)
+                                with open(img_path, "wb") as img_f:
+                                    img_f.write(img_data)
+                            except Exception as e:
+                                log(f"[EMBED_MACRO] Failed to extract image {img_key}: {e}")
+                        
+                        for action_data in actions_data:
+                            if action_data.get("action") == "FIND_IMAGE":
+                                template_path = action_data.get("value", {}).get("template_path", "")
+                                if template_path.startswith("@embedded:"):
+                                    img_key = template_path.replace("@embedded:", "")
+                                    action_data["value"]["template_path"] = os.path.join(temp_dir, img_key)
+                    
+                    embedded_actions = [Action.from_dict(a) for a in actions_data]
+                    log(f"[EMBED_MACRO] Executing {len(embedded_actions)} actions")
+                    
+                    for i, embedded_action in enumerate(embedded_actions):
+                        if self._playback_stop_event.is_set():
+                            break
+                        try:
+                            self._execute_action(embedded_action, target_hwnd, adb_serial=adb_serial)
+                        except Exception as e:
+                            log(f"[EMBED_MACRO] Action {i+1} failed: {e}")
+                            if not continue_on_error:
+                                raise
+                    
+                    log(f"[EMBED_MACRO] Completed macro: {macro_name}")
+                    
+                except Exception as e:
+                    log(f"[EMBED_MACRO] ERROR in macro '{macro_name}': {e}")
+                    if not continue_on_error:
+                        raise
         
         # V2 Wait Actions
         elif action.action == "WAIT_TIME":
@@ -5260,68 +5627,9 @@ class MainUI:
             region = v.get("region", (0, 0, 100, 100))
             timeout_seconds = v.get("timeout_seconds", v.get("timeout_ms", 30000) // 1000)
             
-            # Convert region coords if using ADB (screen coords -> Android coords)
+            # Coords from ADB capture are already Android-native, use directly
             android_region = region
-            log(f"[WAIT_SCREEN_CHANGE] Debug: adb_serial={adb_serial}, target_hwnd={target_hwnd}")
-            if adb_serial and target_hwnd:
-                try:
-                    import subprocess
-                    x1, y1, x2, y2 = region
-                    
-                    # Get window rect on screen
-                    rect = wintypes.RECT()
-                    ctypes.windll.user32.GetWindowRect(target_hwnd, ctypes.byref(rect))
-                    win_left, win_top = rect.left, rect.top
-                    
-                    # Get client rect
-                    client_rect = wintypes.RECT()
-                    ctypes.windll.user32.GetClientRect(target_hwnd, ctypes.byref(client_rect))
-                    client_width = client_rect.right - client_rect.left
-                    client_height = client_rect.bottom - client_rect.top
-                    
-                    # Get client area offset (title bar + border)
-                    pt = wintypes.POINT(0, 0)
-                    ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt))
-                    client_left, client_top = pt.x, pt.y
-                    
-                    # Get Android resolution
-                    cmd_size = f"adb -s {adb_serial} shell wm size"
-                    size_result = subprocess.run(cmd_size, shell=True, capture_output=True, text=True, timeout=2,
-                                                creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
-                    import re
-                    match = re.search(r'(\d+)x(\d+)', size_result.stdout)
-                    if match:
-                        android_width, android_height = int(match.group(1)), int(match.group(2))
-                    else:
-                        android_width, android_height = 400, 550
-                    
-                    # Calculate toolbar offset
-                    offset_y = max(0, client_height - android_height)
-                    
-                    # Convert screen coords to client coords, then to Android coords
-                    local_x1 = x1 - client_left
-                    local_y1 = y1 - client_top - offset_y  # Subtract toolbar offset
-                    local_x2 = x2 - client_left
-                    local_y2 = y2 - client_top - offset_y
-                    
-                    # Scale to Android resolution
-                    scale_x = android_width / client_width if client_width > 0 else 1.0
-                    scale_y = android_height / (client_height - offset_y) if (client_height - offset_y) > 0 else 1.0
-                    
-                    android_x1 = max(0, min(int(local_x1 * scale_x), android_width))
-                    android_y1 = max(0, min(int(local_y1 * scale_y), android_height))
-                    android_x2 = max(0, min(int(local_x2 * scale_x), android_width))
-                    android_y2 = max(0, min(int(local_y2 * scale_y), android_height))
-                    
-                    android_region = (android_x1, android_y1, android_x2, android_y2)
-                    
-                    log(f"[WAIT_SCREEN_CHANGE] Coord conversion:")
-                    log(f"  Screen: {region} -> Android: {android_region}")
-                    log(f"  Window client: {client_width}x{client_height}, Android: {android_width}x{android_height}")
-                    log(f"  Offset Y (toolbar): {offset_y}px")
-                except Exception as e:
-                    log(f"[WAIT_SCREEN_CHANGE] Coord conversion failed: {e}, using original region")
-                    android_region = region
+            log(f"[WAIT_SCREEN_CHANGE] Using Android coords: {android_region}")
             
             log(f"[WAIT_SCREEN_CHANGE] Starting, timeout={timeout_seconds}s, region={android_region}")
             
@@ -5413,64 +5721,12 @@ class MainUI:
             tolerance = v.get("tolerance", 30)
             disappear_threshold = v.get("disappear_threshold", 0.01)
             timeout_ms = v.get("timeout_ms", 30000)
-            stable_count_exit = v.get("stable_count_exit", 0)
+            stable_count_exit = v.get("stable_count_exit", 3)
+            sample_count = v.get("sample_count", 5)
             
-            # Convert region coords if using ADB (screen coords -> Android coords)
+            # Coords from ADB capture are already Android-native, use directly
             android_region = region
-            if adb_serial and target_hwnd:
-                try:
-                    import subprocess
-                    x1, y1, x2, y2 = region
-                    
-                    # Get client rect  
-                    client_rect = wintypes.RECT()
-                    ctypes.windll.user32.GetClientRect(target_hwnd, ctypes.byref(client_rect))
-                    client_width = client_rect.right - client_rect.left
-                    client_height = client_rect.bottom - client_rect.top
-                    
-                    # Get client area offset
-                    pt = wintypes.POINT(0, 0)
-                    ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt))
-                    client_left, client_top = pt.x, pt.y
-                    
-                    # Get Android resolution
-                    cmd_size = f"adb -s {adb_serial} shell wm size"
-                    size_result = subprocess.run(cmd_size, shell=True, capture_output=True, text=True, timeout=2,
-                                                creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
-                    import re
-                    match = re.search(r'(\d+)x(\d+)', size_result.stdout)
-                    if match:
-                        android_width, android_height = int(match.group(1)), int(match.group(2))
-                    else:
-                        android_width, android_height = 400, 550
-                    
-                    # Calculate toolbar offset
-                    offset_y = max(0, client_height - android_height)
-                    
-                    # Convert screen coords to Android coords
-                    local_x1 = x1 - client_left
-                    local_y1 = y1 - client_top - offset_y
-                    local_x2 = x2 - client_left
-                    local_y2 = y2 - client_top - offset_y
-                    
-                    scale_x = android_width / client_width if client_width > 0 else 1.0
-                    scale_y = android_height / (client_height - offset_y) if (client_height - offset_y) > 0 else 1.0
-                    
-                    android_x1 = max(0, min(int(local_x1 * scale_x), android_width))
-                    android_y1 = max(0, min(int(local_y1 * scale_y), android_height))
-                    android_x2 = max(0, min(int(local_x2 * scale_x), android_width))
-                    android_y2 = max(0, min(int(local_y2 * scale_y), android_height))
-                    
-                    android_region = (android_x1, android_y1, android_x2, android_y2)
-                    log(f"[WAIT_COLOR_DISAPPEAR] Coord conversion:")
-                    log(f"  Screen: {region}, client_left={client_left}, client_top={client_top}")
-                    log(f"  Client: {client_width}x{client_height}, offset_y={offset_y}")
-                    log(f"  Local: ({local_x1},{local_y1})-({local_x2},{local_y2})")
-                    log(f"  Scale: x={scale_x:.3f}, y={scale_y:.3f}")
-                    log(f"  Android: {android_region} (max: {android_width}x{android_height})")
-                except Exception as e:
-                    log(f"[WAIT_COLOR_DISAPPEAR] Coord conversion failed: {e}")
-                    android_region = region
+            log(f"[WAIT_COLOR_DISAPPEAR] Using Android coords: {android_region}")
             
             # Only use target_rgb if not auto-detect mode
             if auto_detect:
@@ -5483,6 +5739,7 @@ class MainUI:
                     auto_detect=True,
                     auto_detect_count=v.get("auto_detect_count", 3),
                     stable_count_exit=stable_count_exit,
+                    sample_count=sample_count,
                     adb_serial=adb_serial
                 )
             else:
@@ -5496,6 +5753,7 @@ class MainUI:
                     target_hwnd=target_hwnd or 0,
                     auto_detect=False,
                     stable_count_exit=stable_count_exit,
+                    sample_count=sample_count,
                     adb_serial=adb_serial
                 )
             
@@ -5766,12 +6024,23 @@ class MainUI:
                                             
                                             log(f"[FIND_IMAGE] uiautomator2: client({client_click_x},{client_click_y}) -> android({android_x},{android_y})")
                                             
-                                            # Connect and click
+                                            # Get hold duration from action value (default 100ms)
+                                            hold_duration = v.get("adb_tap_hold_ms", 100)
+                                            
+                                            # Connect and click with duration
                                             d = u2.connect(adb_serial)
-                                            d.click(android_x, android_y)
+                                            
+                                            if hold_duration > 200:
+                                                # Long press for >200ms
+                                                log(f"[FIND_IMAGE] uiautomator2 LONG PRESS {hold_duration}ms at android({android_x},{android_y})")
+                                                d.long_click(android_x, android_y, hold_duration / 1000.0)
+                                            else:
+                                                # Normal click
+                                                log(f"[FIND_IMAGE] uiautomator2 TAP {hold_duration}ms at android({android_x},{android_y})")
+                                                d.click(android_x, android_y)
                                             
                                             tap_success = True
-                                            log(f"[FIND_IMAGE] uiautomator2 tap SUCCESS at android({android_x},{android_y})")
+                                            log(f"[FIND_IMAGE] uiautomator2 tap SUCCESS")
                                             
                                         except Exception as e:
                                             log(f"[FIND_IMAGE] uiautomator2 failed: {e}, trying sendevent...")
@@ -6137,13 +6406,32 @@ class MainUI:
                 del self._repeat_counters[repeat_key]  # Reset for next time
                 self._handle_goto(goto_after)
     
-    def _handle_goto(self, target: str):
-        """Handle goto logic for flow control (FIND_IMAGE, conditions, etc.)"""
+    def _handle_goto(self, target: str, worker_id: int = None):
+        """Handle goto logic for flow control (FIND_IMAGE, conditions, etc.)
+        
+        Args:
+            target: Goto target string
+            worker_id: If provided, store goto target for worker instead of modifying UI state
+        """
         if not target:
             return
         
         target = target.strip()
         
+        # Check if in worker context mode
+        effective_worker_id = worker_id
+        if effective_worker_id is None and hasattr(self, '_current_worker_context'):
+            effective_worker_id = self._current_worker_context
+        
+        # If in worker context, store goto target for worker playback loop to handle
+        if effective_worker_id is not None:
+            if not hasattr(self, '_worker_goto_targets'):
+                self._worker_goto_targets = {}
+            self._worker_goto_targets[effective_worker_id] = target
+            log(f"[GOTO] Worker {effective_worker_id}: Setting goto target to '{target}'")
+            return
+        
+        # Original UI-level goto handling (for single worker UI playback)
         if target == "Next":
             # Continue to next action (default behavior)
             pass
@@ -6621,15 +6909,19 @@ class MainUI:
             messagebox.showwarning("Warning", "No actions to save")
             return
         
-        # Ask for save location
+        # Ask for save location - remember last used directory
+        initial_dir = getattr(self, '_last_save_dir', MACROS_DIR)
         filepath = filedialog.asksaveasfilename(
             title="Lưu Macro",
-            initialdir=MACROS_DIR,
+            initialdir=initial_dir,
             defaultextension=".macro",
             filetypes=[("Macro files", "*.macro"), ("JSON files", "*.json"), ("All files", "*.*")]
         )
         if not filepath:
             return
+        
+        # Remember this directory for next time
+        self._last_save_dir = os.path.dirname(filepath)
         
         import base64
         
@@ -6639,39 +6931,59 @@ class MainUI:
             images_embedded = {}
             image_count = 0
             
-            for action in self.actions:
-                action_dict = action.to_dict()
+            def embed_action_images(action_dict, images_embedded, image_count):
+                """Recursively embed images in action (handles nested GROUP actions)"""
+                import re
                 
-                # Handle FIND_IMAGE - embed template as base64
-                if action.action == "FIND_IMAGE" and action.value.get("template_path"):
-                    old_path = action.value["template_path"]
-                    if os.path.exists(old_path):
-                        # Read image and encode to base64
+                # Handle FIND_IMAGE
+                if action_dict.get("action") == "FIND_IMAGE" and action_dict.get("value", {}).get("template_path"):
+                    old_path = action_dict["value"]["template_path"]
+                    log(f"[SAVE] FIND_IMAGE template_path: {old_path}")
+                    if old_path.startswith("@embedded:"):
+                        log(f"[SAVE] Already embedded, keeping reference")
+                    elif os.path.exists(old_path):
                         with open(old_path, "rb") as img_file:
                             img_data = base64.b64encode(img_file.read()).decode('utf-8')
                         
-                        # Generate unique key
                         filename = os.path.basename(old_path)
-                        img_key = f"img_{image_count:03d}_{filename}"
+                        clean_filename = re.sub(r'^(img_\d{3}_)+', '', filename)
+                        if not clean_filename:
+                            clean_filename = f"image_{image_count:03d}.png"
+                        img_key = f"img_{image_count:03d}_{clean_filename}"
                         images_embedded[img_key] = img_data
-                        
-                        # Update reference in action
                         action_dict["value"]["template_path"] = f"@embedded:{img_key}"
                         image_count += 1
+                        log(f"[SAVE] Embedded image: {filename} -> {img_key}")
+                    else:
+                        log(f"[SAVE] ⚠️ Image NOT FOUND: {old_path} - keeping path as-is")
                 
-                # Handle WAIT_SCREEN_CHANGE - embed reference image
-                if action.action == "WAIT_SCREEN_CHANGE" and action.value.get("reference_image"):
-                    old_path = action.value["reference_image"]
+                # Handle WAIT_SCREEN_CHANGE
+                if action_dict.get("action") == "WAIT_SCREEN_CHANGE" and action_dict.get("value", {}).get("reference_image"):
+                    old_path = action_dict["value"]["reference_image"]
                     if os.path.exists(old_path):
                         with open(old_path, "rb") as img_file:
                             img_data = base64.b64encode(img_file.read()).decode('utf-8')
                         
                         filename = os.path.basename(old_path)
-                        img_key = f"img_{image_count:03d}_{filename}"
+                        clean_filename = re.sub(r'^(img_\d{3}_)+', '', filename)
+                        if not clean_filename:
+                            clean_filename = f"image_{image_count:03d}.png"
+                        img_key = f"img_{image_count:03d}_{clean_filename}"
                         images_embedded[img_key] = img_data
                         action_dict["value"]["reference_image"] = f"@embedded:{img_key}"
                         image_count += 1
                 
+                # Handle GROUP - recursively process nested actions
+                if action_dict.get("action") == "GROUP" and action_dict.get("value", {}).get("actions"):
+                    for nested_action in action_dict["value"]["actions"]:
+                        image_count = embed_action_images(nested_action, images_embedded, image_count)
+                
+                return image_count
+            
+            # Process all actions - including nested ones in GROUP
+            for action in self.actions:
+                action_dict = action.to_dict()
+                image_count = embed_action_images(action_dict, images_embedded, image_count)
                 actions_data.append(action_dict)
             
             # Save single file
@@ -6704,37 +7016,51 @@ class MainUI:
             messagebox.showerror("Error", f"Failed to save: {e}")
     
     def _load_actions(self):
-        """Load actions from .macro file or legacy formats"""
-        filepath = filedialog.askopenfilename(
-            title="Tải Macro",
-            initialdir=MACROS_DIR,
+        """Load actions from .macro file(s) - supports multiple file selection"""
+        # Remember last used directory
+        initial_dir = getattr(self, '_last_load_dir', MACROS_DIR)
+        filepaths = filedialog.askopenfilenames(  # Changed to askopenfilenames
+            title="Tải Macro (Có thể chọn nhiều files)",
+            initialdir=initial_dir,
             filetypes=[
                 ("Macro files", "*.macro"),
                 ("JSON files", "*.json"),
                 ("All files", "*.*")
             ]
         )
-        if not filepath:
+        if not filepaths:
             return
         
-        try:
-            with open(filepath, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            
-            # Check format version
-            fmt = data.get("format", "")
-            images = data.get("images", {})
-            actions_data = data.get("actions", [])
-            
-            if fmt == "embedded" and images:
-                # New format - extract embedded images to temp
-                self._load_embedded_macro(filepath, data)
-            else:
-                # Legacy format - load directly
-                self._load_legacy_macro(filepath, data)
+        # Remember this directory for next time
+        self._last_load_dir = os.path.dirname(filepaths[0])
+        
+        # Load all selected files in order
+        total_loaded = 0
+        for filepath in filepaths:
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    data = json.load(f)
                 
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to load: {e}")
+                # Check format version
+                fmt = data.get("format", "")
+                images = data.get("images", {})
+                actions_data = data.get("actions", [])
+                
+                if fmt == "embedded" and images:
+                    # New format - extract embedded images to temp
+                    self._load_embedded_macro(filepath, data)
+                else:
+                    # Legacy format - load directly
+                    self._load_legacy_macro(filepath, data)
+                
+                total_loaded += len(actions_data)
+                log(f"[UI] Loaded {len(actions_data)} actions from {os.path.basename(filepath)}")
+                    
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to load {os.path.basename(filepath)}: {e}")
+        
+        if len(filepaths) > 1:
+            messagebox.showinfo("Success", f"✅ Đã load {len(filepaths)} files với tổng {total_loaded} actions!")
     
     def _load_embedded_macro(self, filepath, data):
         """Load macro with embedded base64 images"""
@@ -6750,41 +7076,56 @@ class MainUI:
         os.makedirs(temp_dir, exist_ok=True)
         
         # Extract images
+        log(f"[LOAD] Extracting {len(images)} images to {temp_dir}")
         for img_key, img_b64 in images.items():
             try:
                 img_data = base64.b64decode(img_b64)
                 img_path = os.path.join(temp_dir, img_key)
                 with open(img_path, "wb") as f:
                     f.write(img_data)
+                log(f"[LOAD] Extracted: {img_key} -> {img_path}")
             except Exception as e:
                 log(f"[UI] Failed to extract image {img_key}: {e}")
         
         # Update action paths to extracted images
-        for action_data in actions_data:
+        log(f"[LOAD] Updating {len(actions_data)} action paths...")
+        
+        def update_embedded_paths(action_data, temp_dir):
+            """Recursively update @embedded: paths in action (handles nested GROUP actions)"""
             # Handle FIND_IMAGE
             if action_data.get("action") == "FIND_IMAGE":
                 template_path = action_data.get("value", {}).get("template_path", "")
                 if template_path.startswith("@embedded:"):
                     img_key = template_path.replace("@embedded:", "")
-                    action_data["value"]["template_path"] = os.path.join(temp_dir, img_key)
+                    new_path = os.path.join(temp_dir, img_key)
+                    action_data["value"]["template_path"] = new_path
+                    log(f"[LOAD] Resolved FIND_IMAGE: {img_key} -> {new_path}")
             
             # Handle WAIT_SCREEN_CHANGE
             if action_data.get("action") == "WAIT_SCREEN_CHANGE":
                 ref_path = action_data.get("value", {}).get("reference_image", "")
                 if ref_path.startswith("@embedded:"):
                     img_key = ref_path.replace("@embedded:", "")
-                    action_data["value"]["reference_image"] = os.path.join(temp_dir, img_key)
+                    new_path = os.path.join(temp_dir, img_key)
+                    action_data["value"]["reference_image"] = new_path
+                    log(f"[LOAD] Resolved WAIT_SCREEN_CHANGE: {img_key} -> {new_path}")
+            
+            # Handle GROUP - recursively update nested actions
+            if action_data.get("action") == "GROUP" and action_data.get("value", {}).get("actions"):
+                log(f"[LOAD] Processing GROUP with {len(action_data['value']['actions'])} nested actions")
+                for nested_action in action_data["value"]["actions"]:
+                    update_embedded_paths(nested_action, temp_dir)
         
-        self.actions = [Action.from_dict(a) for a in actions_data]
+        # Process all actions - including nested ones in GROUP
+        for action_data in actions_data:
+            update_embedded_paths(action_data, temp_dir)
+        
+        # Append to existing actions instead of replacing
+        new_actions = [Action.from_dict(a) for a in actions_data]
+        self.actions.extend(new_actions)
         self._refresh_action_list()
         
-        macro_name = data.get("name", os.path.basename(filepath))
-        image_count = len(images)
-        messagebox.showinfo("Success", 
-            f"✅ Loaded macro '{macro_name}'\n"
-            f"📝 Actions: {len(self.actions)}\n"
-            f"🖼️ Images: {image_count} (extracted)")
-        log(f"[UI] Loaded embedded macro: {filepath}")
+        log(f"[UI] Loaded embedded macro: {filepath} - {len(new_actions)} actions, {len(images)} images")
     
     def _load_legacy_macro(self, filepath, data):
         """Load legacy format macro (folder-based or simple JSON)"""
@@ -6799,12 +7140,12 @@ class MainUI:
                     abs_path = os.path.join(folder, template_path)
                     action_data["value"]["template_path"] = abs_path
         
-        self.actions = [Action.from_dict(a) for a in actions_data]
+        # Append to existing actions instead of replacing
+        new_actions = [Action.from_dict(a) for a in actions_data]
+        self.actions.extend(new_actions)
         self._refresh_action_list()
         
-        macro_name = data.get("name", os.path.basename(filepath))
-        messagebox.showinfo("Success", f"✅ Loaded macro '{macro_name}'\n📝 Actions: {len(self.actions)}")
-        log(f"[UI] Loaded legacy macro: {filepath}")
+        log(f"[UI] Loaded legacy macro: {filepath} - {len(new_actions)} actions")
 
     # ================= ADD ACTION DIALOG (per spec 5 - V2 expanded) =================
     
@@ -6817,8 +7158,8 @@ class MainUI:
         """
         dialog = tk.Toplevel(self.root)
         dialog.title("Thêm Action" if edit_index is None else "Sửa Action")
-        dialog.geometry("920x850")  # Full size to show all content
-        dialog.minsize(900, 800)
+        dialog.geometry("700x850")  # Full size to show all content
+        dialog.minsize(780, 800)
         dialog.transient(self.root)
         dialog.grab_set()
         
@@ -6868,7 +7209,7 @@ class MainUI:
             "Input": ["KEY_PRESS", "COMBOKEY", "TEXT"],
             "Image": ["FIND_IMAGE", "CAPTURE_IMAGE"],
             "Wait": ["WAIT", "WAIT_TIME", "WAIT_PIXEL_COLOR", "WAIT_SCREEN_CHANGE", "WAIT_COLOR_DISAPPEAR", "WAIT_COMBOKEY", "WAIT_FILE"],
-            "Flow": ["LABEL", "GOTO", "REPEAT", "EMBED_MACRO", "GROUP", "SET_VARIABLE", "COMMENT"]
+            "Flow": ["REPEAT", "EMBED_MACRO", "GROUP"]
         }
         
         # Category button display (icon + short text) and colors
@@ -7017,10 +7358,23 @@ class MainUI:
         config_canvas.pack(side="left", fill="both", expand=True, padx=S.PAD_SM, pady=(0, S.PAD_XS))
         config_scrollbar.pack(side="right", fill="y")
         
-        # Enable mousewheel scrolling
+        # Enable mousewheel scrolling (with safety check)
         def on_mousewheel(event):
-            config_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            try:
+                if config_canvas.winfo_exists():
+                    config_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            except:
+                pass  # Canvas was destroyed
         config_canvas.bind_all("<MouseWheel>", on_mousewheel)
+        
+        # Unbind on dialog close (via X button)
+        def on_dialog_close():
+            try:
+                config_canvas.unbind_all("<MouseWheel>")
+            except:
+                pass
+            dialog.destroy()
+        dialog.protocol("WM_DELETE_WINDOW", on_dialog_close)
         
         config_widgets = {}
         
@@ -8080,7 +8434,8 @@ class MainUI:
                 "tolerance": widgets["tolerance"].get(),
                 "disappear_threshold": widgets["disappear_threshold"].get() / 100.0,  # Convert % to decimal
                 "timeout_ms": widgets["timeout_ms"].get(),
-                "stable_count_exit": widgets.get("stable_count_exit", tk.IntVar(value=0)).get(),
+                "stable_count_exit": widgets.get("stable_count_exit", tk.IntVar(value=3)).get(),
+                "sample_count": widgets.get("sample_count", tk.IntVar(value=5)).get(),
                 "goto_if_found": widgets.get("goto_if_found", tk.StringVar(value="Next")).get(),
                 "goto_if_not_found": widgets.get("goto_if_not_found", tk.StringVar(value="End")).get(),
                 "auto_detect": widgets.get("auto_detect", tk.BooleanVar(value=False)).get(),
@@ -8129,6 +8484,8 @@ class MainUI:
                 "retry_seconds": widgets.get("retry_seconds", tk.IntVar(value=30)).get(),
                 "goto_if_not_found": widgets.get("goto_if_not_found", tk.StringVar(value="Next")).get(),
                 "goto_notfound_label": widgets.get("goto_notfound_label", tk.StringVar()).get(),
+                # ADB Tap options
+                "adb_tap_hold_ms": widgets.get("adb_tap_hold_ms", tk.IntVar(value=100)).get(),
             }
             
             # Parse motion_region from string to list
@@ -8166,8 +8523,21 @@ class MainUI:
                 "end_label": widgets.get("end_label", tk.StringVar(value="")).get()
             }
         elif action_type == "EMBED_MACRO":
+            # Support both single macro and multi-select list
+            selected_macros = widgets.get("_selected_macros", [])
+            single_name = widgets["macro_name"].get() if widgets.get("macro_name") else ""
+            
+            # Use selected list if available, otherwise fall back to single
+            if selected_macros:
+                macro_names = list(selected_macros)
+            elif single_name:
+                macro_names = [single_name]
+            else:
+                macro_names = []
+            
             return {
-                "macro_name": widgets["macro_name"].get(),
+                "macro_name": macro_names[0] if macro_names else "",  # Backward compat
+                "macro_names": macro_names,  # New: ordered list
                 "continue_on_error": widgets.get("continue_on_error", tk.BooleanVar(value=True)).get(),
                 "inherit_variables": widgets.get("inherit_variables", tk.BooleanVar(value=True)).get()
             }
@@ -8305,22 +8675,130 @@ class MainUI:
         tk.Entry(coords_row, textvariable=y2_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
                 insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=2)
         
-        # Capture region button
-        def capture_region():
-            from core.capture_utils import CaptureOverlay
+        # Capture region button - uses ADB screenshot for Android-native coords
+        def capture_from_adb():
+            """Capture region directly from ADB screenshot - returns Android coords"""
+            # Auto-detect ADB device
+            adb_serial = None
+            try:
+                import subprocess
+                result = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=2,
+                                       creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
+                if result.returncode == 0:
+                    lines = result.stdout.strip().split('\n')
+                    for line in lines[1:]:
+                        parts = line.strip().split('\t')
+                        if len(parts) >= 2 and parts[1] == 'device':
+                            adb_serial = parts[0]
+                            break
+            except Exception as e:
+                log(f"[CAPTURE] ADB check failed: {e}")
             
-            def on_capture(result):
-                if result.success:
-                    x1_var.set(result.x)
-                    y1_var.set(result.y)
-                    x2_var.set(result.x2)
-                    y2_var.set(result.y2)
+            if not adb_serial:
+                from tkinter import messagebox
+                messagebox.showwarning("Không có ADB", "Không tìm thấy thiết bị ADB nào.\nVui lòng khởi động giả lập trước.")
+                return
             
-            # ALWAYS full screen overlay
-            overlay = CaptureOverlay(self.root, target_hwnd=None)
-            overlay.capture_region(on_capture)
+            try:
+                import subprocess
+                from PIL import Image, ImageTk
+                import io
+                
+                log(f"[CAPTURE] Getting ADB screenshot from {adb_serial}...")
+                from utils.subprocess_helper import run_hidden
+                p = run_hidden(
+                    ["adb", "-s", adb_serial, "exec-out", "screencap", "-p"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=5
+                )
+                if p.returncode != 0 or not p.stdout:
+                    log(f"[CAPTURE] ADB screenshot failed")
+                    from tkinter import messagebox
+                    messagebox.showerror("Lỗi", "Không thể chụp màn hình từ giả lập")
+                    return
+                
+                img_buffer = io.BytesIO(p.stdout)
+                img = Image.open(img_buffer)
+                img_width, img_height = img.size
+                
+                # Create popup for cropping
+                crop_popup = tk.Toplevel(dialog if dialog else self.root)
+                crop_popup.title(f"📐 Chọn vùng giám sát ({img_width}x{img_height})")
+                crop_popup.geometry(f"{min(img_width+20, 800)}x{min(img_height+80, 700)}")
+                crop_popup.transient(dialog if dialog else self.root)
+                crop_popup.grab_set()
+                crop_popup.configure(bg=S.BG_PRIMARY)
+                
+                # Scale image if too large
+                scale = 1.0
+                max_display = 600
+                if img_width > max_display or img_height > max_display:
+                    scale = min(max_display / img_width, max_display / img_height)
+                    display_img = img.resize((int(img_width * scale), int(img_height * scale)), Image.LANCZOS)
+                else:
+                    display_img = img
+                
+                tk_img = ImageTk.PhotoImage(display_img)
+                canvas = tk.Canvas(crop_popup, width=display_img.width, height=display_img.height, 
+                                  bg=S.BG_CARD, highlightthickness=0)
+                canvas.pack(padx=10, pady=10)
+                canvas.create_image(0, 0, anchor="nw", image=tk_img)
+                canvas._img = tk_img
+                
+                selection = {"start_x": 0, "start_y": 0, "rect_id": None}
+                
+                def on_press(e):
+                    selection["start_x"], selection["start_y"] = e.x, e.y
+                    if selection["rect_id"]:
+                        canvas.delete(selection["rect_id"])
+                    selection["rect_id"] = canvas.create_rectangle(e.x, e.y, e.x, e.y, 
+                                                                   outline="#00FF00", width=2)
+                
+                def on_drag(e):
+                    if selection["rect_id"]:
+                        canvas.coords(selection["rect_id"], selection["start_x"], selection["start_y"], e.x, e.y)
+                
+                def on_release(e):
+                    # Get display coords and convert to Android (original image) coords
+                    x1_disp = min(selection["start_x"], e.x)
+                    y1_disp = min(selection["start_y"], e.y)
+                    x2_disp = max(selection["start_x"], e.x)
+                    y2_disp = max(selection["start_y"], e.y)
+                    
+                    # Scale back to original Android coords
+                    ax1 = max(0, min(int(x1_disp / scale), img_width))
+                    ay1 = max(0, min(int(y1_disp / scale), img_height))
+                    ax2 = max(0, min(int(x2_disp / scale), img_width))
+                    ay2 = max(0, min(int(y2_disp / scale), img_height))
+                    
+                    # Set vars with Android coords
+                    x1_var.set(ax1)
+                    y1_var.set(ay1)
+                    x2_var.set(ax2)
+                    y2_var.set(ay2)
+                    
+                    log(f"[CAPTURE] Android coords: ({ax1},{ay1})-({ax2},{ay2})")
+                    crop_popup.destroy()
+                
+                canvas.bind("<Button-1>", on_press)
+                canvas.bind("<B1-Motion>", on_drag)
+                canvas.bind("<ButtonRelease-1>", on_release)
+                
+                # Info label
+                tk.Label(crop_popup, 
+                        text="🖱️ Kéo chuột để chọn vùng • Tọa độ = Android coords (di chuyển giả lập vẫn hoạt động)",
+                        font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                        bg=S.BG_PRIMARY, fg=S.ACCENT_GREEN).pack(pady=(0, 10))
+                
+            except Exception as e:
+                log(f"[CAPTURE] ADB capture failed: {e}")
+                import traceback
+                log(traceback.format_exc())
+                from tkinter import messagebox
+                messagebox.showerror("Lỗi", f"Capture thất bại: {e}")
         
-        tk.Button(coords_row, text="📍 Capture", command=capture_region,
+        tk.Button(coords_row, text="📍 Capture từ Emulator", command=capture_from_adb,
                  bg=S.ACCENT_BLUE, fg=S.FG_PRIMARY, relief="flat", cursor="hand2",
                  font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=S.PAD_MD)
         
@@ -8515,22 +8993,123 @@ class MainUI:
         tk.Entry(coords_row, textvariable=y2_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
                 insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=2)
         
-        # Capture region button
-        def capture_region():
-            from core.capture_utils import CaptureOverlay
+        # Capture region button - uses ADB screenshot for Android-native coords
+        def capture_from_adb():
+            """Capture region directly from ADB screenshot - returns Android coords"""
+            adb_serial = None
+            try:
+                import subprocess
+                result = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=2,
+                                       creationflags=CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
+                if result.returncode == 0:
+                    lines = result.stdout.strip().split('\n')
+                    for line in lines[1:]:
+                        parts = line.strip().split('\t')
+                        if len(parts) >= 2 and parts[1] == 'device':
+                            adb_serial = parts[0]
+                            break
+            except Exception as e:
+                log(f"[CAPTURE] ADB check failed: {e}")
             
-            def on_capture(result):
-                if result.success:
-                    x1_var.set(result.x)
-                    y1_var.set(result.y)
-                    x2_var.set(result.x2)
-                    y2_var.set(result.y2)
+            if not adb_serial:
+                from tkinter import messagebox
+                messagebox.showwarning("Không có ADB", "Không tìm thấy thiết bị ADB nào.\nVui lòng khởi động giả lập trước.")
+                return
             
-            # ALWAYS full screen overlay
-            overlay = CaptureOverlay(self.root, target_hwnd=None)
-            overlay.capture_region(on_capture)
+            try:
+                import subprocess
+                from PIL import Image, ImageTk
+                import io
+                
+                log(f"[CAPTURE] Getting ADB screenshot from {adb_serial}...")
+                from utils.subprocess_helper import run_hidden
+                p = run_hidden(
+                    ["adb", "-s", adb_serial, "exec-out", "screencap", "-p"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=5
+                )
+                if p.returncode != 0 or not p.stdout:
+                    log(f"[CAPTURE] ADB screenshot failed")
+                    from tkinter import messagebox
+                    messagebox.showerror("Lỗi", "Không thể chụp màn hình từ giả lập")
+                    return
+                
+                img_buffer = io.BytesIO(p.stdout)
+                img = Image.open(img_buffer)
+                img_width, img_height = img.size
+                
+                crop_popup = tk.Toplevel(dialog if dialog else self.root)
+                crop_popup.title(f"📐 Chọn vùng giám sát ({img_width}x{img_height})")
+                crop_popup.geometry(f"{min(img_width+20, 800)}x{min(img_height+80, 700)}")
+                crop_popup.transient(dialog if dialog else self.root)
+                crop_popup.grab_set()
+                crop_popup.configure(bg=S.BG_DARK)
+                
+                scale = 1.0
+                max_display = 600
+                if img_width > max_display or img_height > max_display:
+                    scale = min(max_display / img_width, max_display / img_height)
+                    display_img = img.resize((int(img_width * scale), int(img_height * scale)), Image.LANCZOS)
+                else:
+                    display_img = img
+                
+                tk_img = ImageTk.PhotoImage(display_img)
+                canvas = tk.Canvas(crop_popup, width=display_img.width, height=display_img.height, 
+                                  bg=S.BG_CARD, highlightthickness=0)
+                canvas.pack(padx=10, pady=10)
+                canvas.create_image(0, 0, anchor="nw", image=tk_img)
+                canvas._img = tk_img
+                
+                selection = {"start_x": 0, "start_y": 0, "rect_id": None}
+                
+                def on_press(e):
+                    selection["start_x"], selection["start_y"] = e.x, e.y
+                    if selection["rect_id"]:
+                        canvas.delete(selection["rect_id"])
+                    selection["rect_id"] = canvas.create_rectangle(e.x, e.y, e.x, e.y, 
+                                                                   outline="#00FF00", width=2)
+                
+                def on_drag(e):
+                    if selection["rect_id"]:
+                        canvas.coords(selection["rect_id"], selection["start_x"], selection["start_y"], e.x, e.y)
+                
+                def on_release(e):
+                    x1_disp = min(selection["start_x"], e.x)
+                    y1_disp = min(selection["start_y"], e.y)
+                    x2_disp = max(selection["start_x"], e.x)
+                    y2_disp = max(selection["start_y"], e.y)
+                    
+                    ax1 = max(0, min(int(x1_disp / scale), img_width))
+                    ay1 = max(0, min(int(y1_disp / scale), img_height))
+                    ax2 = max(0, min(int(x2_disp / scale), img_width))
+                    ay2 = max(0, min(int(y2_disp / scale), img_height))
+                    
+                    x1_var.set(ax1)
+                    y1_var.set(ay1)
+                    x2_var.set(ax2)
+                    y2_var.set(ay2)
+                    
+                    log(f"[CAPTURE] Android coords: ({ax1},{ay1})-({ax2},{ay2})")
+                    crop_popup.destroy()
+                
+                canvas.bind("<Button-1>", on_press)
+                canvas.bind("<B1-Motion>", on_drag)
+                canvas.bind("<ButtonRelease-1>", on_release)
+                
+                tk.Label(crop_popup, 
+                        text="🖱️ Kéo chuột để chọn vùng • Tọa độ = Android coords (di chuyển giả lập vẫn hoạt động)",
+                        font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                        bg=S.BG_DARK, fg=S.ACCENT_GREEN).pack(pady=(0, 10))
+                
+            except Exception as e:
+                log(f"[CAPTURE] ADB capture failed: {e}")
+                import traceback
+                log(traceback.format_exc())
+                from tkinter import messagebox
+                messagebox.showerror("Lỗi", f"Capture thất bại: {e}")
         
-        tk.Button(coords_row, text="📍 Capture", command=capture_region,
+        tk.Button(coords_row, text="📍 Capture từ Emulator", command=capture_from_adb,
                  bg=S.ACCENT_BLUE, fg=S.FG_PRIMARY, relief="flat", cursor="hand2",
                  font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=S.PAD_MD)
         
@@ -8662,18 +9241,30 @@ class MainUI:
         # Stable count exit
         stable_row = tk.Frame(color_frame, bg=S.BG_CARD)
         stable_row.pack(fill="x", pady=S.PAD_XS)
-        tk.Label(stable_row, text="Stable exit:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+        tk.Label(stable_row, text="Số lần lặp ổn định:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
                 font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
-        stable_count_var = tk.IntVar(value=value.get("stable_count_exit", 0))
+        stable_count_var = tk.IntVar(value=value.get("stable_count_exit", 3))  # Default 3
         tk.Entry(stable_row, textvariable=stable_count_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
                 insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=S.PAD_SM)
-        tk.Label(stable_row, text="checks (0=disabled, e.g. 10=exit after 10 identical checks)", bg=S.BG_CARD, fg=S.FG_MUTED,
+        tk.Label(stable_row, text="(3=thoát khi 3 lần check giống nhau)", bg=S.BG_CARD, fg=S.FG_MUTED,
                 font=(S.FONT_FAMILY, S.FONT_SIZE_XS)).pack(side="left")
         widgets["stable_count_exit"] = stable_count_var
         
+        # Sample count for auto-detect
+        sample_row = tk.Frame(color_frame, bg=S.BG_CARD)
+        sample_row.pack(fill="x", pady=S.PAD_XS)
+        tk.Label(sample_row, text="Số mẫu phân tích:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
+        sample_count_var = tk.IntVar(value=value.get("sample_count", 5))  # Default 5
+        tk.Entry(sample_row, textvariable=sample_count_var, width=6, bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                insertbackground=S.FG_PRIMARY, relief="flat").pack(side="left", padx=S.PAD_SM)
+        tk.Label(sample_row, text="(5=lấy 5 mẫu để phát hiện màu động)", bg=S.BG_CARD, fg=S.FG_MUTED,
+                font=(S.FONT_FAMILY, S.FONT_SIZE_XS)).pack(side="left")
+        widgets["sample_count"] = sample_count_var
+        
         # Info label
         info_label = tk.Label(color_frame, 
-                             text="💡 Auto-detect: Tracks animated colors (variance-based). Stable exit: Safety for static backgrounds.",
+                             text="💡 Tự động: Theo dõi màu động (spin arc). Lặp ổn định: Thoát khi màn hình tĩnh.",
                              font=(S.FONT_FAMILY, S.FONT_SIZE_XS, "italic"),
                              bg=S.BG_CARD, fg=S.ACCENT_BLUE)
         info_label.pack(anchor="w", pady=(S.PAD_SM, 0))
@@ -9364,9 +9955,36 @@ class MainUI:
             self._input_settings["find_image_click_method"] = find_method_var.get()
             self._save_input_settings()
             update_find_method_info()
+            update_hold_ms_visibility()
         
         find_method_var.trace_add("write", save_find_method)
         update_find_method_info()  # Initial
+        
+        # ADB Tap Hold Duration row (only visible when ADB Tap selected)
+        adb_hold_row = tk.Frame(found_frame, bg=S.BG_CARD)
+        adb_hold_row.pack(fill="x", pady=2)
+        
+        tk.Label(adb_hold_row, text="Hold Duration (ms):", font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                fg=S.FG_PRIMARY, bg=S.BG_CARD).pack(side="left")
+        
+        adb_hold_ms_var = tk.IntVar(value=value.get("adb_tap_hold_ms", 100))
+        adb_hold_ms_entry = tk.Entry(adb_hold_row, textvariable=adb_hold_ms_var, width=8,
+                                     font=(S.FONT_FAMILY, S.FONT_SIZE_MD),
+                                     bg=S.BG_INPUT, fg=S.FG_PRIMARY, insertbackground=S.FG_PRIMARY)
+        adb_hold_ms_entry.pack(side="left", padx=5)
+        widgets["adb_tap_hold_ms"] = adb_hold_ms_var
+        
+        tk.Label(adb_hold_row, text="(100 = normal tap, >200 = long press)", 
+                font=(S.FONT_FAMILY, S.FONT_SIZE_XS), fg=S.FG_MUTED, bg=S.BG_CARD).pack(side="left", padx=5)
+        
+        def update_hold_ms_visibility():
+            m = find_method_var.get()
+            if m in ("ADB Tap", "ADB Sendevent A", "ADB Sendevent B", "ADB Minitouch"):
+                adb_hold_row.pack(fill="x", pady=2)
+            else:
+                adb_hold_row.pack_forget()
+        
+        update_hold_ms_visibility()  # Initial
         
         # Save coordinates row
         save_row = tk.Frame(found_frame, bg=S.BG_CARD)
@@ -9906,142 +10524,145 @@ class MainUI:
                 font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(anchor="w", pady=(S.PAD_SM, 0))
     
     def _render_embed_macro_config(self, parent, widgets, value):
-        """Render EMBED_MACRO config - Modern UI with macro list"""
+        """Render EMBED_MACRO config - Multi-select macro list with execution order"""
         S = ModernStyle
         parent.configure(bg=S.BG_CARD)
         import os
         
         # ==================== EMBED MACRO SETTINGS ====================
-        embed_frame = tk.LabelFrame(parent, text=" 📦 Embed Macro Settings ", 
+        embed_frame = tk.LabelFrame(parent, text=" 📦 Embed Macro(s) ", 
                                     font=(S.FONT_FAMILY, S.FONT_SIZE_MD, "bold"),
                                     bg=S.BG_CARD, fg=S.FG_ACCENT,
                                     padx=S.PAD_MD, pady=S.PAD_MD)
-        embed_frame.pack(fill="x", padx=S.PAD_MD, pady=S.PAD_SM)
+        embed_frame.pack(fill="both", expand=True, padx=S.PAD_MD, pady=S.PAD_SM)
         
-        # Scan available macros (both .macro and legacy formats)
+        # Scan available macros from MACROS_DIR
         available_macros = []
         if os.path.exists(MACROS_DIR):
-            for item in os.listdir(MACROS_DIR):
-                item_path = os.path.join(MACROS_DIR, item)
-                # Check for .macro files (new single-file format)
-                if item.endswith(".macro"):
-                    available_macros.append(f"📄 {item}")
-                # Check for folder with macro.json (legacy)
-                elif os.path.isdir(item_path):
-                    if os.path.exists(os.path.join(item_path, "macro.json")):
-                        available_macros.append(f"📁 {item}")
-                # Check for standalone .json files
-                elif item.endswith(".json"):
-                    available_macros.append(f"📄 {item}")
+            for item in sorted(os.listdir(MACROS_DIR)):
+                if item.endswith(".macro") or item.endswith(".json"):
+                    available_macros.append(item)
         
-        # Macro selection row
-        select_row = tk.Frame(embed_frame, bg=S.BG_CARD)
-        select_row.pack(fill="x", pady=S.PAD_XS)
+        # Parse existing value - can be single string or list
+        existing_macros = value.get("macro_names", [])
+        if not existing_macros:
+            single = value.get("macro_name", "")
+            if single:
+                existing_macros = [single]
         
-        tk.Label(select_row, text="Select macro:", bg=S.BG_CARD, fg=S.FG_PRIMARY,
-                font=(S.FONT_FAMILY, S.FONT_SIZE_MD)).pack(side="left")
+        # Two-panel layout: Available | Selected
+        panels_frame = tk.Frame(embed_frame, bg=S.BG_CARD)
+        panels_frame.pack(fill="both", expand=True, pady=S.PAD_XS)
         
-        name_var = tk.StringVar(value=value.get("macro_name", ""))
+        # Left panel - Available macros
+        left_frame = tk.LabelFrame(panels_frame, text=" 📁 Available ",
+                                   font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                                   bg=S.BG_CARD, fg=S.FG_MUTED)
+        left_frame.pack(side="left", fill="both", expand=True, padx=(0, S.PAD_SM))
         
-        # Clean list for combobox (remove icons)
-        clean_macros = [m.replace("📄 ", "").replace("📁 ", "") for m in available_macros]
-        
-        if clean_macros:
-            macro_combo = ttk.Combobox(select_row, textvariable=name_var, width=30,
-                                       values=clean_macros)
-            macro_combo.pack(side="left", padx=S.PAD_SM)
-        else:
-            macro_entry = tk.Entry(select_row, textvariable=name_var, width=30,
-                                  bg=S.BG_INPUT, fg=S.FG_PRIMARY, insertbackground=S.FG_PRIMARY,
-                                  font=(S.FONT_FAMILY, S.FONT_SIZE_MD), relief="flat")
-            macro_entry.pack(side="left", padx=S.PAD_SM)
-        
-        widgets["macro_name"] = name_var
-        
-        # Browse file button
-        def browse_file():
-            from tkinter import filedialog
-            fp = filedialog.askopenfilename(
-                title="Chọn file Macro",
-                initialdir=MACROS_DIR,
-                filetypes=[
-                    ("File Macro", "*.macro"),
-                    ("File JSON", "*.json"),
-                    ("Tất cả", "*.*")
-                ]
-            )
-            if fp:
-                name_var.set(fp)
-        
-        tk.Button(select_row, text="📁 Browse", command=browse_file,
-                 bg=S.ACCENT_BLUE, fg=S.FG_PRIMARY, relief="flat", cursor="hand2",
-                 font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=S.PAD_XS)
-        
-        # Available macros list
-        if available_macros:
-            list_frame = tk.LabelFrame(embed_frame, text=" 📋 Available Macros ",
-                                       font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
-                                       bg=S.BG_CARD, fg=S.FG_MUTED,
-                                       padx=S.PAD_SM, pady=S.PAD_SM)
-            list_frame.pack(fill="x", pady=(S.PAD_SM, 0))
-            
-            # Create scrollable listbox
-            list_container = tk.Frame(list_frame, bg=S.BG_CARD)
-            list_container.pack(fill="x")
-            
-            macro_listbox = tk.Listbox(list_container, height=5, 
+        available_listbox = tk.Listbox(left_frame, height=6, 
                                        bg=S.BG_INPUT, fg=S.FG_PRIMARY,
                                        selectbackground=S.ACCENT_BLUE,
+                                       selectmode=tk.EXTENDED,
                                        font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
                                        relief="flat", highlightthickness=0)
-            macro_listbox.pack(side="left", fill="x", expand=True)
-            
-            scrollbar = ttk.Scrollbar(list_container, orient="vertical", 
-                                      command=macro_listbox.yview)
-            scrollbar.pack(side="right", fill="y")
-            macro_listbox.config(yscrollcommand=scrollbar.set)
-            
-            for macro in available_macros:
-                macro_listbox.insert(tk.END, f"  {macro}")
-            
-            def on_listbox_select(event):
-                selection = macro_listbox.curselection()
-                if selection:
-                    selected_text = macro_listbox.get(selection[0])
-                    # Remove icon prefix
-                    macro_name = selected_text.strip().replace("📁 ", "").replace("📄 ", "")
-                    name_var.set(macro_name)
-            
-            macro_listbox.bind("<<ListboxSelect>>", on_listbox_select)
-        else:
-            tk.Label(embed_frame, text=f"⚠️ Không tìm thấy macro trong thư mục macros",
-                    bg=S.BG_CARD, fg=S.ACCENT_ORANGE,
-                    font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(anchor="w", pady=S.PAD_XS)
+        available_listbox.pack(side="left", fill="both", expand=True, padx=2, pady=2)
+        
+        for macro in available_macros:
+            available_listbox.insert(tk.END, macro)
+        
+        # Center buttons
+        btn_frame = tk.Frame(panels_frame, bg=S.BG_CARD)
+        btn_frame.pack(side="left", padx=S.PAD_XS)
+        
+        # Right panel - Selected macros (order matters)
+        right_frame = tk.LabelFrame(panels_frame, text=" ▶ Selected ",
+                                    font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                                    bg=S.BG_CARD, fg=S.ACCENT_GREEN)
+        right_frame.pack(side="left", fill="both", expand=True, padx=(S.PAD_SM, 0))
+        
+        selected_listbox = tk.Listbox(right_frame, height=6, 
+                                      bg=S.BG_INPUT, fg=S.FG_PRIMARY,
+                                      selectbackground=S.ACCENT_GREEN,
+                                      font=(S.FONT_FAMILY, S.FONT_SIZE_SM),
+                                      relief="flat", highlightthickness=0)
+        selected_listbox.pack(side="left", fill="both", expand=True, padx=2, pady=2)
+        
+        for i, macro in enumerate(existing_macros, 1):
+            selected_listbox.insert(tk.END, f"{i}. {macro}")
+        
+        selected_macros = list(existing_macros)
+        
+        def refresh_selected():
+            selected_listbox.delete(0, tk.END)
+            for i, m in enumerate(selected_macros, 1):
+                selected_listbox.insert(tk.END, f"{i}. {m}")
+        
+        def add_sel():
+            for idx in available_listbox.curselection():
+                m = available_listbox.get(idx)
+                if m not in selected_macros:
+                    selected_macros.append(m)
+            refresh_selected()
+        
+        def remove_sel():
+            sel = selected_listbox.curselection()
+            for i in reversed(sel):
+                if i < len(selected_macros):
+                    selected_macros.pop(i)
+            refresh_selected()
+        
+        def move_up():
+            sel = selected_listbox.curselection()
+            if sel and sel[0] > 0:
+                i = sel[0]
+                selected_macros[i], selected_macros[i-1] = selected_macros[i-1], selected_macros[i]
+                refresh_selected()
+                selected_listbox.selection_set(i-1)
+        
+        def move_down():
+            sel = selected_listbox.curselection()
+            if sel and sel[0] < len(selected_macros) - 1:
+                i = sel[0]
+                selected_macros[i], selected_macros[i+1] = selected_macros[i+1], selected_macros[i]
+                refresh_selected()
+                selected_listbox.selection_set(i+1)
+        
+        tk.Button(btn_frame, text="➡", command=add_sel, bg=S.ACCENT_BLUE, fg=S.FG_PRIMARY,
+                  relief="flat", width=3, font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(pady=1)
+        tk.Button(btn_frame, text="⬅", command=remove_sel, bg=S.ACCENT_RED, fg=S.FG_PRIMARY,
+                  relief="flat", width=3, font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(pady=1)
+        tk.Button(btn_frame, text="⬆", command=move_up, bg=S.BTN_SECONDARY, fg=S.FG_PRIMARY,
+                  relief="flat", width=3, font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(pady=1)
+        tk.Button(btn_frame, text="⬇", command=move_down, bg=S.BTN_SECONDARY, fg=S.FG_PRIMARY,
+                  relief="flat", width=3, font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(pady=1)
+        
+        available_listbox.bind("<Double-Button-1>", lambda e: add_sel())
+        selected_listbox.bind("<Double-Button-1>", lambda e: remove_sel())
+        
+        widgets["_selected_macros"] = selected_macros
+        name_var = tk.StringVar()
+        widgets["macro_name"] = name_var
         
         # Options
-        options_frame = tk.Frame(embed_frame, bg=S.BG_CARD)
-        options_frame.pack(fill="x", pady=(S.PAD_SM, 0))
+        opts = tk.Frame(embed_frame, bg=S.BG_CARD)
+        opts.pack(fill="x", pady=(S.PAD_SM, 0))
         
-        # Continue on error option
         continue_var = tk.BooleanVar(value=value.get("continue_on_error", True))
-        tk.Checkbutton(options_frame, text="Continue on error", variable=continue_var,
+        tk.Checkbutton(opts, text="Continue on error", variable=continue_var,
                       bg=S.BG_CARD, fg=S.FG_PRIMARY, selectcolor=S.BG_INPUT,
-                      activebackground=S.BG_CARD,
                       font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left")
         widgets["continue_on_error"] = continue_var
         
-        # Inherit variables option
         inherit_var = tk.BooleanVar(value=value.get("inherit_variables", True))
-        tk.Checkbutton(options_frame, text="Inherit variables", variable=inherit_var,
+        tk.Checkbutton(opts, text="Inherit vars", variable=inherit_var,
                       bg=S.BG_CARD, fg=S.FG_PRIMARY, selectcolor=S.BG_INPUT,
-                      activebackground=S.BG_CARD,
                       font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(side="left", padx=S.PAD_MD)
         widgets["inherit_variables"] = inherit_var
         
-        # Info
-        tk.Label(embed_frame, text="💡 Execute another macro inline, then continue with current actions",
+        tk.Label(embed_frame, text="💡 Macros chạy theo thứ tự Selected",
                 bg=S.BG_CARD, fg=S.FG_MUTED,
-                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(anchor="w", pady=(S.PAD_SM, 0))
+                font=(S.FONT_FAMILY, S.FONT_SIZE_SM)).pack(anchor="w")
     
     def _render_group_config(self, parent, widgets, value):
         """Render GROUP config - shows grouped actions"""
@@ -12070,8 +12691,7 @@ class MainUI:
         # Show in messagebox
         detail_window = tk.Toplevel(self.root)
         detail_window.title("Worker Status Check")
-        detail_window.geometry("500x400")
-        
+        detail_window.geometry("800x400")
         text_widget = tk.Text(detail_window, wrap=tk.WORD, padx=10, pady=10)
         text_widget.pack(fill="both", expand=True)
         text_widget.insert("1.0", msg)
@@ -12299,7 +12919,7 @@ class MainUI:
         # Create dialog với Modern Dark theme
         dialog = tk.Toplevel(self.root)
         dialog.title("Set Worker - Gán LDPlayer → Worker ID")
-        dialog.geometry("550x450")
+        dialog.geometry("450x450")
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.configure(bg=S.BG_PRIMARY)
@@ -12516,7 +13136,7 @@ class MainUI:
             self._refresh_workers_silent()
             dialog.destroy()
         
-        tk.Button(action_frame, text="✓ Close", command=close_and_refresh,
+        tk.Button(action_frame, text="✓ OK", command=close_and_refresh,
                   bg=S.ACCENT_BLUE, fg="white", font=(S.FONT_FAMILY, S.FONT_SIZE_SM, "bold"),
                   relief="flat", cursor="hand2", width=8).pack(side="left", padx=3)
         
@@ -12981,20 +13601,20 @@ class MainUI:
         
         dialog = tk.Toplevel(self.root)
         dialog.title("📖 Hướng Dẫn Sử Dụng")
-        dialog.geometry("580x520")
+        dialog.geometry("700x520")
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.resizable(False, False)
         dialog.configure(bg=S.BG_PRIMARY)
         
         # Header
-        header = tk.Frame(dialog, bg=S.BG_SECONDARY, height=50)
+        header = tk.Frame(dialog, bg=S.BG_SECONDARY, height=100)
         header.pack(fill="x")
         header.pack_propagate(False)
         tk.Label(header, text="📖 Hướng Dẫn Sử Dụng", 
                 bg=S.BG_SECONDARY, fg=S.FG_PRIMARY).pack(expand=True)
-        tk.Label(header, text="⚠️ Bắt Buộc Bật ADB Giả Lập: Settings → Khác → Debug ADB", 
-                font=(S.FONT_FAMILY, 14, "bold"),
+        tk.Label(header, text="⚠️ ADB Giả Lập: Settings → Khác → Debug ADB", 
+                font=(S.FONT_FAMILY, 12, "bold"),
                 bg=S.BG_SECONDARY, fg=S.FG_PRIMARY).pack(expand=True)
         
         # Content frame with scrollbar
@@ -13006,7 +13626,7 @@ class MainUI:
         scrollable = tk.Frame(canvas, bg=S.BG_PRIMARY)
         
         scrollable.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.create_window((0, 0), window=scrollable, anchor="nw", width=540)
+        canvas.create_window((0, 0), window=scrollable, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
         
         canvas.pack(side="left", fill="both", expand=True)
@@ -13019,6 +13639,19 @@ class MainUI:
         
         # Guide content - simplified
         guide_sections = [
+            {
+                "title": "SETUP NHANH",
+                "color": S.ACCENT_RED,
+                "content": [
+                    "B1: Vào Giả Lập => Cài Đặt => Khác => Debug ADB => Kết Nối Local",
+                    "B2: Hiển thị sẵn Màn hình Giả Lập - Không ẩn giả lập xuống",
+                    "B3: Bấm Check Giả Lập để quét Simulator",
+                    "B4: Bấm Set Worker => Select All => Set Worker => OK",
+                    "B5: Bảng Danh Sách Action => Load => Input Files Macro vào",
+                    "B6: Play All Để Trải Nghiệm",
+                    "⚠️ Lưu Ý: Luôn để màn hình hiển thị để Worker chạy"
+                ]
+            },
             {
                 "title": "FULL SCREEN",
                 "color": S.ACCENT_BLUE,
